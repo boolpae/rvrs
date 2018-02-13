@@ -1,6 +1,7 @@
 ﻿
 #include "VRCManager.h"
 #include "VRClient.h"
+#include "STTDeliver.h"
 
 #include <vector>
 
@@ -18,8 +19,8 @@ using namespace std;
 
 VRCManager* VRCManager::ms_instance = NULL;
 
-VRCManager::VRCManager()
-	: m_sGearHost("127.0.0.1"), m_nGearPort(4760), m_nSockGearman(0)
+VRCManager::VRCManager(STTDeliver *deliver, log4cpp::Category *logger)
+	: m_sGearHost("127.0.0.1"), m_nGearPort(4760), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger)
 {
 	printf("\t[DEBUG] VRCManager Constructed.\n");
 }
@@ -136,15 +137,15 @@ void VRCManager::getFnamesFromString(std::string & gearResult, std::vector<std::
 
 }
 
-VRCManager* VRCManager::instance()
+VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, STTDeliver *deliver, log4cpp::Category *logger)
 {
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new VRCManager();
+	ms_instance = new VRCManager(deliver, logger);
 
 	// for DEV
-	ms_instance->setGearHost(std::string("192.168.0.220"));//);("192.168.229.135")
-	ms_instance->setGearPort(4730);
+	ms_instance->setGearHost(gearHostIp);//);("192.168.229.135")
+	ms_instance->setGearPort(gearHostPort);
     
     if (!ms_instance->connect2Gearman()) {
         printf("\t[DEBUG] RCManager::instance() - ERROR (Failed to connect gearhost)\n");
@@ -185,7 +186,7 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 	}
 
 	if (iter != vFnames.end()) {
-		client = new VRClient(ms_instance, this->m_sGearHost, this->m_nGearPort, *iter, callid, jobType, noc); // or VRClient(this);
+		client = new VRClient(ms_instance, this->m_sGearHost, this->m_nGearPort, *iter, callid, jobType, noc, m_deliver, m_Logger); // or VRClient(this);
 
 		if (client) {
 			std::lock_guard<std::mutex> g(m_mxMap);

@@ -36,8 +36,8 @@ QueueItem::~QueueItem()
 	printf("\t\t[%d] QueueItem Destroyed!\n", m_nNum);
 }
 
-CallExecutor::CallExecutor(uint16_t num)
-	: m_nNum(num)
+CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
+	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger)
 {
 	printf("\t[%d] CallExecutor Created!\n", m_nNum);
 }
@@ -81,7 +81,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 					// VDC, VRC 요청
 					// 1. VRC 요청 : 성공 시 VDC 요청, 실패 패킷 생성하여 sendto
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_REQ_WORKER);
-					if ((resReq = VRCManager::instance()->requestVRC(sCallId, 'R', cs->getUdpCnt()))) {
+                    if ((resReq = exe->m_vrcm->requestVRC(sCallId, 'R', cs->getUdpCnt()))) {
 						WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_WORKER);
 
 						if (resReq == 1) {
@@ -101,10 +101,10 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 					else {
 						WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_WORKER, 1);
 						WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_REQ_CHANNEL);
-						if ((resReq = VDCManager::instance()->requestVDC(sCallId, cs->getUdpCnt(), vPorts))) {
+						if ((resReq = exe->m_vdcm->requestVDC(sCallId, cs->getUdpCnt(), vPorts))) {
 							// ERRCODE: 507 - 용량부족
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 0);
-							VRCManager::instance()->removeVRC(sCallId);
+                            exe->m_vrcm->removeVRC(sCallId);
 							cs->makePacket(item->m_packet, item->m_packetSize, 507);
 						}
 						else {
@@ -116,7 +116,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 				}
 				else if (cs->getPacketFlag() == 'E') {
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_END_PROC);
-					VDCManager::instance()->removeVDC(sCallId);
+                    exe->m_vdcm->removeVDC(sCallId);
 					cs->makePacket(item->m_packet, item->m_packetSize, 200);
 				}
 			}

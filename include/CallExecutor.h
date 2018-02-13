@@ -15,6 +15,8 @@
 
 #endif
 
+#include <log4cpp/Category.hh>
+
 using namespace std;
 
 class QueueItem {
@@ -30,6 +32,9 @@ public:
 
 };
 
+class VDCManager;
+class VRCManager;
+
 class CallExecutor
 {
 	uint16_t m_nNum;
@@ -37,9 +42,14 @@ class CallExecutor
 	static bool ms_bThrdRun;
 
 	mutable std::mutex m_mxQue;
+    
+    VDCManager *m_vdcm;
+    VRCManager *m_vrcm;
+    
+    log4cpp::Category *m_Logger;
 
 public:
-	CallExecutor(uint16_t num);
+	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger);
 	virtual ~CallExecutor();
 
 	static void thrdMain(CallExecutor* exe);

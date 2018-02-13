@@ -1,10 +1,12 @@
 ﻿
 #include "VDCManager.h"
+#include "VRCManager.h"
 #include "VDClient.h"
 
 VDCManager* VDCManager::ms_instance = NULL;
 
-VDCManager::VDCManager()
+VDCManager::VDCManager(VRCManager *vrcm, log4cpp::Category *logger)
+: m_vrcm(vrcm), m_Logger(logger)
 {
 	printf("\t[DEBUG] VDCManager Constructed.\n");
 }
@@ -21,34 +23,30 @@ VDCManager::~VDCManager()
 	printf("\t[DEBUG] VDCManager Destructed.\n");
 }
 
-#define TOTAL_CHANNEL_COUNT 100
-#define BEGIN_PORT 20000
-#define END_PORT 65500
-VDCManager* VDCManager::instance()
+VDCManager* VDCManager::instance(uint16_t tcount, uint16_t bport, uint16_t eport, VRCManager *vrcm, log4cpp::Category *logger)
 {
-	uint16_t port = BEGIN_PORT;
 	VDClient* client;
 	int i = 0;
 	std::vector< VDClient* >::iterator iter;
 
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new VDCManager();
+	ms_instance = new VDCManager(vrcm, logger);
 
 	// TOTAL_CHANNEL_COUNT : 생성할 채널의 총 갯수
 	// BEGIN_PORT, END_PORT : 음성 데이터를 받기 위한 UDP포트의 범위
 	// 총 채널의 갯수만큼 VDClient를 만들지 못 한 경우 VDCManager instance 생성 실패
-	while (i++ < TOTAL_CHANNEL_COUNT) {
-		client = new VDClient();
+	while (i++ < tcount) {
+		client = new VDClient(vrcm, logger);
 
-		while (client->init(port)) {
-			printf("\t[DEBUG] VDCManager::instance() - init(%d) error\n", port);
-			port++;
-			if (port > END_PORT)
+		while (client->init(bport)) {
+			printf("\t[DEBUG] VDCManager::instance() - init(%d) error\n", bport);
+			bport++;
+			if (bport > eport)
 				break;
 		}
 
-		if (port < END_PORT) {
+		if (bport < eport) {
 			ms_instance->m_vClients.push_back(client);
 		}
 		else {
@@ -56,7 +54,7 @@ VDCManager* VDCManager::instance()
 			return NULL;
 		}
 
-		port++;
+		bport++;
 	}
 	
 	return ms_instance;

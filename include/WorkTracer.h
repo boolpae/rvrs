@@ -63,7 +63,7 @@ class WorkTracer
 	std::queue< WorkQueItem* > m_qTraceQue;
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
-
+    
 public:
 	static WorkTracer* instance();
 	static void release();
@@ -77,5 +77,6 @@ private:
 	static void thrdMain(WorkTracer* trc);
 
 	void insertWork(WorkQueItem *item);
+    
 };
 

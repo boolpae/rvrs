@@ -19,8 +19,8 @@
 
 #endif
 
-VDClient::VDClient()
-	: m_nLiveFlag(1), m_nWorkStat(0), m_nPort(0), m_nSockfd(0), m_sCallId(""), m_nSpkNo(0)
+VDClient::VDClient(VRCManager *vrcm, log4cpp::Category *logger)
+	: m_nLiveFlag(1), m_nWorkStat(0), m_nPort(0), m_nSockfd(0), m_sCallId(""), m_nSpkNo(0), m_vrcm(vrcm), m_Logger(logger)
 {
 	m_pVrc = NULL;
 	m_tTimeout = time(NULL);
@@ -74,7 +74,7 @@ uint16_t VDClient::init(uint16_t port)
 
 #define BUFLEN 65000  //Max length of buffer
 #define VOICE_BUFF_LEN (16000 * 5 + 64)
-#define LEN_OF_VOICE ( 16000 * 3 )
+#define LEN_OF_VOICE ( 16000 * 5 )
 void VDClient::thrdMain(VDClient * client)
 {
 	char buf[BUFLEN];
@@ -90,7 +90,7 @@ void VDClient::thrdMain(VDClient * client)
 
 	while (client->m_nLiveFlag) {
 		//clear the buffer by filling null, it might have previously received data
-		tv.tv_sec = 0;	// for debug
+		tv.tv_sec = 1;	// for debug
 		tv.tv_usec = 10000;
 		FD_ZERO(&rfds);
 		FD_SET(client->m_nSockfd, &rfds);
@@ -203,7 +203,7 @@ VDClient::~VDClient()
 {
 	if (m_nSockfd) closesocket(m_nSockfd);
 
-	printf("\t[DEBUG] VDClinet Destructed.\n");
+	printf("\t[DEBUG] VDClinet Destructed.(%d)\n", m_nPort);
 }
 
 void VDClient::startWork(std::string& callid, uint8_t spkno)
@@ -213,7 +213,7 @@ void VDClient::startWork(std::string& callid, uint8_t spkno)
 	m_tTimeout = time(NULL);
 	m_nWorkStat = uint8_t(1);
 
-	m_pVrc = VRCManager::instance()->getVRClient(callid);
+    m_pVrc = m_vrcm->getVRClient(callid);
 
 	WorkTracer::instance()->insertWork(m_sCallId, 'R', WorkQueItem::PROCTYPE::R_BEGIN_VOICE, m_nSpkNo);
 }

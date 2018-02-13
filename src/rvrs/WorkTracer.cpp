@@ -1,5 +1,6 @@
 ﻿
 #include "WorkTracer.h"
+#include "configuration.h"
 
 #include <iostream>
 #include <thread>
@@ -31,10 +32,12 @@ void WorkTracer::thrdMain(WorkTracer * trc)
 
 			// item을 이용하여 처리
 			std::cout << item->getWorkDescription() << std::endl;
+            
+            //trc->m_Logger.info(item->getWorkDescription());
 			
 			delete item;
 		}
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 }
 
@@ -43,7 +46,7 @@ WorkTracer* WorkTracer::instance()
 	if (ms_instance) return ms_instance;
 
 	ms_instance = new WorkTracer();
-
+    
 	ms_instance->m_thrd = std::thread(WorkTracer::thrdMain, ms_instance);
 	//thrd.detach();
 
@@ -87,19 +90,20 @@ std::string & WorkQueItem::getWorkDescription()
 	struct tm *timeinfo;
 	char sTimeinfo[32];
 
-	m_sWorkDescription.clear();
 	
 	// TODO: 여기에 반환 구문을 삽입합니다.
 	timeinfo = localtime(&m_tRegTime);
 	::strftime(sTimeinfo, sizeof(sTimeinfo), "%F %T", timeinfo);
 
+	m_sWorkDescription.clear();
+	m_sWorkDescription += "[";
 	m_sWorkDescription += sTimeinfo;
-	m_sWorkDescription += " [";
-	m_sWorkDescription += m_sCallId;
 	m_sWorkDescription += "] [";
+	m_sWorkDescription += m_sCallId;
+	m_sWorkDescription += " - ";
 
-	if (m_cJobType == 'R') m_sWorkDescription += "REAL] ";
-	else m_sWorkDescription += "FILE] ";
+	if (m_cJobType == 'R') m_sWorkDescription += "REALTIME] ";
+	else m_sWorkDescription += "FILE-BAT] ";
 
 	switch (m_eProcType) {
 	case R_BEGIN_PROC:
@@ -163,3 +167,4 @@ std::string & WorkQueItem::getWorkDescription()
 
 	return m_sWorkDescription;
 }
+

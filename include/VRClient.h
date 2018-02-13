@@ -6,9 +6,12 @@
 #include <thread>
 #include <mutex>
 
+#include <log4cpp/Category.hh>
+
 using namespace std;
 
 class VRCManager;
+class STTDeliver;
 
 typedef struct _queItem {
 	uint8_t flag;	// 통화 시작과 통화 중: 1, 마지막 데이터 또는 통화 종료: 0
@@ -32,11 +35,14 @@ class VRClient
 	queue< QueItem* > m_qRTQue;
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
+    
+    STTDeliver *m_deliver;
+    log4cpp::Category *m_Logger;
 
 public:
 
 public:
-	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, string& fname, string& callid, uint8_t jobType, uint8_t noc);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger);
 	void finish();
 
 	string& getFname() { return m_sFname; }

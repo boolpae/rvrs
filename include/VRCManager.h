@@ -16,9 +16,12 @@
 
 #endif
 
+#include <log4cpp/Category.hh>
+
 using namespace std;
 
 class VRClient;
+class STTDeliver;
 
 class VRCManager
 {
@@ -31,9 +34,13 @@ class VRCManager
 	map< string, VRClient* > m_mWorkerTable;
 
 	mutable std::mutex m_mxMap;
+    
+    STTDeliver *m_deliver;
+    
+    log4cpp::Category *m_Logger;
 
 public:
-	static VRCManager* instance();
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, STTDeliver *deliver, log4cpp::Category *logger);
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
@@ -49,7 +56,7 @@ public:
 	uint16_t getGearPort() { return m_nGearPort; }
 
 private:
-	VRCManager();
+	VRCManager(STTDeliver *deliver, log4cpp::Category *logger);
 	virtual ~VRCManager();
 
 	bool connect2Gearman();

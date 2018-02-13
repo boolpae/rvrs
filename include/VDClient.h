@@ -13,7 +13,10 @@
 
 #endif
 
+#include <log4cpp/Category.hh>
+
 class VRClient;
+class VRCManager;
 
 class VDClient
 {
@@ -33,9 +36,13 @@ class VDClient
 	time_t m_tTimeout;
 
 	std::thread m_thrd;
+    
+    VRCManager *m_vrcm;
+    
+    log4cpp::Category *m_Logger;
 
 public:
-	VDClient();
+	VDClient(VRCManager *vrcm, log4cpp::Category *logger);
 	void finish();
 
 	// return:	호출 성공 시 : 0 반환, 실패 시 0 이 아닌 양수 값

@@ -11,6 +11,10 @@
 
 #endif
 
+#include <log4cpp/Category.hh>
+
+class VDCManager;
+class VRCManager;
 class CallExecutor;
 
 class CallReceiver
@@ -20,9 +24,14 @@ class CallReceiver
 	SOCKET m_nSockfd;
 
 	uint16_t m_nNumofExecutor;
+    
+    VDCManager *m_vdcm;
+    VRCManager *m_vrcm;
+    
+    log4cpp::Category *m_Logger;
 
 public:
-	static CallReceiver* instance();
+	static CallReceiver* instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger);
 	static void release();
 
 	void setNumOfExecutor(uint16_t num) { m_nNumofExecutor = num; }
@@ -30,7 +39,7 @@ public:
 	SOCKET getSockfd() { return m_nSockfd; }
 
 private:
-	CallReceiver();
+	CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger);
 	virtual ~CallReceiver();
 
 	static void thrdMain(CallReceiver* rcv);

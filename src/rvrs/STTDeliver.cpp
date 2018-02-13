@@ -8,8 +8,8 @@
 
 STTDeliver* STTDeliver::ms_instance = NULL;
 
-STTDeliver::STTDeliver()
-	: m_bLiveFlag(true)
+STTDeliver::STTDeliver(log4cpp::Category *logger)
+	: m_bLiveFlag(true), m_Logger(logger)
 {
 	std::cout << "\t[DEBUG] STTDeliver Constructed." << std::endl;
 }
@@ -80,11 +80,11 @@ void STTDeliver::insertSTT(STTQueItem * item)
 	m_qSttQue.push(item);
 }
 
-STTDeliver* STTDeliver::instance()
+STTDeliver* STTDeliver::instance(log4cpp::Category *logger)
 {
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new STTDeliver();
+	ms_instance = new STTDeliver(logger);
 
 	ms_instance->m_thrd = std::thread(STTDeliver::thrdMain, ms_instance);
 

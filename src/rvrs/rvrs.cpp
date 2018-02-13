@@ -7,41 +7,71 @@
 #include "VDCManager.h"
 #include "WorkTracer.h"
 #include "STTDeliver.h"
+#include "configuration.h"
 
+#include <log4cpp/Category.hh>
+
+#include <cerrno>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
 
 using namespace std;
+using namespace itfact::common;
 
-int main(int argc, char** argv)
+Configuration *config;
+
+int main(int argc, const char** argv)
 {
 	string input;
     
+    log4cpp::Category *logger;
     CallReceiver* rcv=NULL;
+    STTDeliver* deliver = NULL;
+    
+    try {
+        config = new Configuration(argc, argv);
+    } catch (std::exception &e) {
+        perror(e.what());
+        return -1;
+    }
+    
+    logger = config->getLogger();
+
+	logger->info("Realtime Voice Relay Server v0.0.alpha");
+	logger->debug("=========================================");
+	logger->debug("Gearhost IP  : %s", config->getConfig("rvrs.gearhost", "192.168.0.220").c_str());
+	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.gearport", 4730));
+	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.callport", 7777));
+	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.channel_count", 10));
+	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.udp_bport", 10000));
+	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.udp_eport", 11000));
 
 	WorkTracer::instance();
-    STTDeliver::instance();
+    deliver = STTDeliver::instance(logger);
 
-	VDCManager* vdcm = VDCManager::instance();
-	VRCManager* vrcm = VRCManager::instance();
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.gearhost", "192.168.0.220"), config->getConfig("rvrs.gearport", 4730), deliver, logger);
+	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 10), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), vrcm, logger);
     
     if (!vrcm) {
         printf("\t[DEBUG] MAIN - ERROR (Failed to get VRCManager instance)\n");
         VDCManager::release();
         STTDeliver::release();
         WorkTracer::release();
+        delete config;
         return -1;
     }
 
-	rcv = CallReceiver::instance();
+	rcv = CallReceiver::instance(vdcm, vrcm, logger);
 
-	if (!rcv->init(7777)) {
+	if (!rcv->init(config->getConfig("rvrs.callport", 7777))) {
         goto FINISH;
 	}
 
 	printf("\t[DEBUG] input waiting...quit\n");
+    logger->debug("input waiting... quit");
 	while (1) {
 		std::cin >> input;
 		if (!input.compare("quit")) break;
@@ -61,6 +91,7 @@ FINISH:
 
     STTDeliver::release();
 	WorkTracer::release();
+    delete config;
 
     return 0;
 }

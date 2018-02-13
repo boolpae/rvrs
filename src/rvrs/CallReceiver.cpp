@@ -19,13 +19,15 @@
 
 #include "CallReceiver.h"
 #include "CallExecutor.h"
+#include "VDCManager.h"
+#include "VRCManager.h"
 
 #include <thread>
 
 CallReceiver* CallReceiver::m_instance = NULL;
 
-CallReceiver::CallReceiver()
-	: m_nSockfd(0), m_nNumofExecutor(3)
+CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
+	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger)
 {
 	printf("\t[DEBUG] CallReceiver Constructed.\n");
 }
@@ -38,11 +40,11 @@ CallReceiver::~CallReceiver()
 	printf("\t[DEBUG] CallReceiver Destructed.\n");
 }
 
-CallReceiver* CallReceiver::instance()
+CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
 {
 	if (m_instance) return m_instance;
 
-	m_instance = new CallReceiver();
+	m_instance = new CallReceiver(vdcm, vrcm, logger);
 	return m_instance;
 }
 
@@ -77,7 +79,7 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 	}
 
 	for (int i = 0; i < noe; i++) {
-		vExes.push_back(new CallExecutor(i+1));
+		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, rcv->m_Logger));
 	}
 
 	for (int i = 0; i < noe; i++) {

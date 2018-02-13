@@ -7,6 +7,8 @@
 #include <thread>
 #include <mutex>
 
+#include <log4cpp/Category.hh>
+
 class STTQueItem {
 	std::string m_sCallId;
 	uint8_t m_cJobType;		// 'R': 실기간, 'F': 파일
@@ -40,16 +42,18 @@ class STTDeliver
 	std::queue< STTQueItem* > m_qSttQue;
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
+    
+    log4cpp::Category *m_Logger;
 
 public:
-	static STTDeliver* instance();
+	static STTDeliver* instance(log4cpp::Category *logger);
 	static void release();
 
 	void insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
 
 private:
-	STTDeliver();
+	STTDeliver(log4cpp::Category *logger);
 	virtual ~STTDeliver();
 
 	static void thrdMain(STTDeliver* dlv);
