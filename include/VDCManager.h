@@ -18,11 +18,13 @@ class VDCManager
 
 	mutable std::mutex m_mxVec;
     
+    uint32_t m_nPlaytime;
+    
     VRCManager *m_vrcm;
     log4cpp::Category *m_Logger;
 
 public:
-	static VDCManager* instance(uint16_t tcount, uint16_t bport, uint16_t eport, VRCManager *vrcm, log4cpp::Category *logger);
+	static VDCManager* instance(uint16_t tcount, uint16_t bport, uint16_t eport, uint32_t pt, VRCManager *vrcm, log4cpp::Category *logger);
 	static void release();
 
 	int16_t requestVDC(std::string& callid, uint8_t noc, std::vector< uint16_t > &vPorts);
@@ -31,7 +33,7 @@ public:
 	void outputVDCStat();
 
 private:
-	VDCManager(VRCManager *vrcm, log4cpp::Category *logger);
+	VDCManager(uint32_t pt, VRCManager *vrcm, log4cpp::Category *logger);
 	virtual ~VDCManager();
 };
 

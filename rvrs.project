@@ -35,6 +35,7 @@
     <File Name="include/configuration.h"/>
     <File Name="include/CallSignal.h"/>
     <File Name="include/VRClient.h"/>
+    <File Name="include/rvrs.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>

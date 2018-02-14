@@ -8,6 +8,7 @@
 #include "WorkTracer.h"
 #include "STTDeliver.h"
 #include "configuration.h"
+#include "rvrs.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
@@ -65,14 +66,15 @@ int main(int argc, const char** argv)
     log4cpp::Category &tracerLog = log4cpp::Category::getInstance(std::string("WorkTracer"));
     tracerLog.addAppender(appender);
     
-	logger->info("Realtime Voice Relay Server v0.0.alpha");
-	logger->debug("=========================================");
-	logger->debug("Gearhost IP  : %s", config->getConfig("rvrs.gearhost", "127.0.0.1").c_str());
-	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.gearport", 4730));
-	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.callport", 7000));
-	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.channel_count", 200));
-	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.udp_bport", 10000));
-	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.udp_eport", 11000));
+	logger->info("Realtime Voice Relay Server ver %d.%d.%d", RVRS_VERSION_MAJ, RVRS_VERSION_MIN, RVRS_VERSION_BLD);
+	logger->info("=========================================");
+	logger->info("Gearhost IP  :  %s", config->getConfig("rvrs.gearhost", "127.0.0.1").c_str());
+	logger->info("Gearhost Port:  %d", config->getConfig("rvrs.gearport", 4730));
+	logger->info("Call Rcv Port:  %d", config->getConfig("rvrs.callport", 7000));
+	logger->info("Gearhost Port:  %d", config->getConfig("rvrs.channel_count", 200));
+	logger->info("Voice Playtime: %d", config->getConfig("rvrs.playtime", 3));
+	logger->info("Gearhost Port:  %d", config->getConfig("rvrs.udp_bport", 10000));
+	logger->info("Call Rcv Port:  %d", config->getConfig("rvrs.udp_eport", 11000));
 
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
@@ -80,7 +82,7 @@ int main(int argc, const char** argv)
     deliver = STTDeliver::instance(logger);
 
 	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.gearhost", "127.0.0.1"), config->getConfig("rvrs.gearport", 4730), deliver, logger);
-	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), vrcm, logger);
+	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
     
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");

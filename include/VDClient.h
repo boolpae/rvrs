@@ -40,6 +40,8 @@ class VDClient
     VRCManager *m_vrcm;
     
     log4cpp::Category *m_Logger;
+    
+    uint32_t m_nPlaytime;
 
 public:
 	VDClient(VRCManager *vrcm, log4cpp::Category *logger);
@@ -61,6 +63,7 @@ public:
 	void stopWork() { m_nWorkStat = uint8_t(2); }
 
 	void setVRClient(VRClient* vrc) { m_pVrc = vrc; }
+    void setPlaytime(uint32_t pt) { m_nPlaytime = pt * 16000; }
 
 private:
 	static void thrdMain(VDClient* client);

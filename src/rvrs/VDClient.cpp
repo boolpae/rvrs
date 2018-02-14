@@ -20,7 +20,7 @@
 #endif
 
 VDClient::VDClient(VRCManager *vrcm, log4cpp::Category *logger)
-	: m_nLiveFlag(1), m_nWorkStat(0), m_nPort(0), m_nSockfd(0), m_sCallId(""), m_nSpkNo(0), m_vrcm(vrcm), m_Logger(logger)
+	: m_nLiveFlag(1), m_nWorkStat(0), m_nPort(0), m_nSockfd(0), m_sCallId(""), m_nSpkNo(0), m_vrcm(vrcm), m_Logger(logger), m_nPlaytime(3*16000)
 {
 	m_pVrc = NULL;
 	m_tTimeout = time(NULL);
@@ -143,7 +143,7 @@ void VDClient::thrdMain(VDClient * client)
                 
                 // printf("\t[DEBUG] VDClient::thrdMain() - VoiceDataLen(%d)\n", item->lenVoiceData);
 
-				if (item->lenVoiceData >= LEN_OF_VOICE) {
+				if (item->lenVoiceData >= client->m_nPlaytime) {
                     // printf("\t[DEBUG] ItemVoiceSize(%d)\n", item->lenVoiceData);
 					client->m_pVrc->insertQueItem(item);
 					item = NULL;
