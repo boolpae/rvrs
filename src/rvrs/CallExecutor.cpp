@@ -39,7 +39,8 @@ QueueItem::~QueueItem()
 CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
 	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger)
 {
-	printf("\t[%d] CallExecutor Created!\n", m_nNum);
+	//printf("\t[%d] CallExecutor Created!\n", m_nNum);
+    m_Logger->debug("[%d] CallExecutor Created!", m_nNum);
 }
 
 
@@ -50,14 +51,15 @@ CallExecutor::~CallExecutor()
 		m_Que.pop();
 	}
 
-	printf("\t[%d] CallExecutor Destroyed!\n", m_nNum);
+	//printf("\t[%d] CallExecutor Destroyed!\n", m_nNum);
+    m_Logger->debug("[%d] CallExecutor Destroyed!", m_nNum);
 }
 
 void CallExecutor::thrdMain(CallExecutor* exe)
 {
 	uint16_t num = exe->getExecNum();
 	QueueItem* item = NULL;
-	CallSignal *cs = new CallSignal();
+	CallSignal *cs = new CallSignal(exe->m_Logger);
 	std::vector< uint16_t > vPorts;
 	std::string sCallId;
 	uint16_t resReq;
@@ -66,7 +68,8 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 	while (ms_bThrdRun) {
 		while ((item = exe->popPacket())) {
 			//printf("\t[%d] Received packet from %s:%d\n", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port));
-			printf("\t[%d] Received packet size: %d\n", num, item->m_packetSize);
+			//printf("\t[%d] Received packet size: %d\n", num, item->m_packetSize);
+            exe->m_Logger->debug("[%d] Received packet size: %d\n", num, item->m_packetSize);
 
 			// 패킷 파싱 후 호 시작/종료 에 대한 처리 및 응답 패킷 생성 후 응답 로직
 			cs->init();

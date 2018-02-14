@@ -14,8 +14,8 @@
 
 #include <string>
 
-Protocol::CallSignal::CallSignal()
-	: m_nPacketSize(0), m_Packet(NULL)
+Protocol::CallSignal::CallSignal(log4cpp::Category *logger)
+	: m_nPacketSize(0), m_Packet(NULL), m_Logger(logger)
 {
 }
 
@@ -228,7 +228,8 @@ void Protocol::CallSignal::setPacCallId(uint8_t * callid, uint16_t len)
 	memset(pacCallId, 0x00, sizeof(pacCallId));
 	if (len > 32) len = 32;
 	memcpy(pacCallId, callid, len);
-	printf("\t[DEBUG] CallSignal::setPacCallId() - Call-ID(%s : %s), Len(%d)\n", callid, pacCallId, len);
+	//printf("\t[DEBUG] CallSignal::setPacCallId() - Call-ID(%s : %s), Len(%d)\n", callid, pacCallId, len);
+    m_Logger->debug("CallSignal::setPacCallId() - Call-ID(%s : %s), Len(%d)", callid, pacCallId, len);
 }
 #if 0
 void Protocol::CallSignal::setPlayTime(uint16_t ptime)
@@ -242,11 +243,13 @@ void Protocol::CallSignal::setFingerPrint(uint8_t * fprint, uint16_t len)
 	pacFingerPrint[sizeof(pacFingerPrint)] = 0;
 	if (len > 64) len = 64;
 	memcpy(pacFingerPrint, fprint, len);
-	printf("\t[DEBUG] CallSignal::setFingerPrint() - FingerPrint(%s : %s), Len(%d)\n", fprint, pacFingerPrint, len);
+	//printf("\t[DEBUG] CallSignal::setFingerPrint() - FingerPrint(%s : %s), Len(%d)\n", fprint, pacFingerPrint, len);
+    m_Logger->debug("CallSignal::setFingerPrint() - FingerPrint(%s : %s), Len(%d)", fprint, pacFingerPrint, len);
 }
 
 void Protocol::CallSignal::printPacketInfo()
 {
+#if 0
 	printf("\n  **---- Packet Info ----**\n");
 	printf("  Packet Size : %d\n", pacSize);
 	printf("  Flag : %c\n", pacFlag);
@@ -256,4 +259,16 @@ void Protocol::CallSignal::printPacketInfo()
 	printf("  Channel Count : %d\n", pacChnCnt);
 	printf("  Encoding : %d\n", pacEnc);
 	printf("  Fingerprint(%lu) : [%s]\n", sizeof(pacFingerPrint), pacFingerPrint);
+#endif
+	m_Logger->debug("\n  **---- Packet Info ----**\n"
+	"  Packet Size : %d\n"
+	"  Flag : %c\n"
+	"  Call-ID(%lu) : [%s]\n"
+	"  UDP Count : %d\n"
+	"  SampleRate : %d\n"
+	"  Channel Count : %d\n"
+	"  Encoding : %d\n"
+	"  Fingerprint(%lu) : [%s]"
+    , pacSize, pacFlag, sizeof(pacCallId), pacCallId, pacUdpCnt, pacSampleRate, pacChnCnt, pacEnc, sizeof(pacFingerPrint), pacFingerPrint);
+
 }

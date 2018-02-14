@@ -25,7 +25,8 @@ VDClient::VDClient(VRCManager *vrcm, log4cpp::Category *logger)
 	m_pVrc = NULL;
 	m_tTimeout = time(NULL);
 
-	printf("\t[DEBUG] VDClinet Constructed.\n");
+	//printf("\t[DEBUG] VDClinet Constructed.\n");
+    m_Logger->debug("VDClinet Constructed.");
 }
 
 void VDClient::finish()
@@ -47,6 +48,7 @@ uint16_t VDClient::init(uint16_t port)
 
 	if ((m_nSockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		perror("VDClient::init() :");
+        m_Logger->error("VDClient::init() - failed get socket : %d", errno);
 		m_nSockfd = 0;
 		return uint16_t(1);	// socket 생성 오류
 	}
@@ -58,6 +60,7 @@ uint16_t VDClient::init(uint16_t port)
 
 	if (::bind(m_nSockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("VDClient::init() - bind : ");
+        m_Logger->error("VDClient::init() - failed get bind : %d", errno);
 		closesocket(m_nSockfd);
 		m_nSockfd = 0;
 		return uint16_t(2);	// bind 오류
@@ -65,7 +68,8 @@ uint16_t VDClient::init(uint16_t port)
 
 	m_nPort = port;
 
-	printf("\t[DEBUG] VDClient::init() - port(%d)\n", port);
+	//printf("\t[DEBUG] VDClient::init() - port(%d)\n", port);
+    m_Logger->info("VDClient::init() - port(%d)", port);
 
 	m_thrd = std::thread(VDClient::thrdMain, this);
 
@@ -104,13 +108,15 @@ void VDClient::thrdMain(VDClient * client)
 			if ((recv_len = recvfrom(client->m_nSockfd, buf, BUFLEN - 1, 0, (struct sockaddr *) &si_other, &slen)) == -1)
 			{
 				perror("VDClient::thrdMain() - recvfrom() failed with error :");
+                client->m_Logger->error("VDClient::thrdMain() - recvfrom() failed with error : %d", errno);
 				break;
 			}
 
 			pos = buf;
 			// 인입된 UDP패킷이 RT-STT 음성 패킷이 아닌 경우 처리하지 않음
 			if (memcmp(pos, "RT-STT", 6)) {
-				printf("\t[DEBUG] Invalid Voice Data Packet - VDClient(%d) recv_len(%d), pVrc(0x%p), nWorkStat(%d)\n", client->m_nPort, recv_len, client->m_pVrc, client->m_nWorkStat);
+				//printf("\t[DEBUG] Invalid Voice Data Packet - VDClient(%d) recv_len(%d), pVrc(0x%p), nWorkStat(%d)\n", client->m_nPort, recv_len, client->m_pVrc, client->m_nWorkStat);
+                client->m_Logger->warn("VDClient::thrdMain() - Invalid Voice Data Packet - VDClient(%d) recv_len(%d), pVrc(0x%p), nWorkStat(%d)", client->m_nPort, recv_len, client->m_pVrc, client->m_nWorkStat);
 				continue;
 			}
 			pos += 6;
@@ -148,7 +154,8 @@ void VDClient::thrdMain(VDClient * client)
 			if (client->m_pVrc && (client->m_nWorkStat == 2)) {	// 호 종료 요청이 들어왔을 때
 			END_CALL:
 				if (client->m_pVrc) {
-					printf("\t[DEBUG] VDClient(%d) work ending...\n", client->m_nPort);
+					//printf("\t[DEBUG] VDClient(%d) work ending...\n", client->m_nPort);
+                    client->m_Logger->debug("VDClient::thrdMain() - VDClient(%d) work ending...", client->m_nPort);
 					if (!item) {
 						item = new QueItem;
 						item->voiceData = NULL;
@@ -178,16 +185,15 @@ void VDClient::thrdMain(VDClient * client)
 			}
 		}
 		else if ((selVal == 0) && (client->m_nWorkStat == 1)) {	// 이 로직은 수정해야할 필요가 있다. 현재는 30초동안 데이터가 안들어 올 경우 호를 종료
-#if 1
 			// timeout : 현재 30초로 고정
 			if ((time(NULL) - client->m_tTimeout) > 30) {
 				WorkTracer::instance()->insertWork(client->m_sCallId, 'R', WorkQueItem::PROCTYPE::R_END_VOICE, client->m_nSpkNo);
 				recv_len = 0;
 				goto END_CALL;
 			}
-#else
-			printf("\t[DEBUG] VDClient::thrdMain(%d) - Working... timeout(%llu)\n", client->m_nPort, (time(NULL) - client->m_tTimeout));
-#endif
+
+			//printf("\t[DEBUG] VDClient::thrdMain(%d) - Working... timeout(%llu)\n", client->m_nPort, (time(NULL) - client->m_tTimeout));
+            client->m_Logger->info("VDClient::thrdMain(%d) - Working... timeout(%llu)", client->m_nPort, (time(NULL) - client->m_tTimeout));
 		}
 		else if ((selVal == 0) && (client->m_nWorkStat == 2)) {
 			recv_len = 0;
@@ -203,7 +209,8 @@ VDClient::~VDClient()
 {
 	if (m_nSockfd) closesocket(m_nSockfd);
 
-	printf("\t[DEBUG] VDClinet Destructed.(%d)\n", m_nPort);
+	//printf("\t[DEBUG] VDClinet Destructed.(%d)\n", m_nPort);
+    m_Logger->debug("VDClinet Destructed.(%d)", m_nPort);
 }
 
 void VDClient::startWork(std::string& callid, uint8_t spkno)

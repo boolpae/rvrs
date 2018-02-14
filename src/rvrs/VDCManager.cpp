@@ -8,7 +8,8 @@ VDCManager* VDCManager::ms_instance = NULL;
 VDCManager::VDCManager(VRCManager *vrcm, log4cpp::Category *logger)
 : m_vrcm(vrcm), m_Logger(logger)
 {
-	printf("\t[DEBUG] VDCManager Constructed.\n");
+	//printf("\t[DEBUG] VDCManager Constructed.\n");
+    m_Logger->debug("VDCManager Constructed.");
 }
 
 
@@ -20,7 +21,8 @@ VDCManager::~VDCManager()
 	}
 	m_vClients.clear();
 
-	printf("\t[DEBUG] VDCManager Destructed.\n");
+	//printf("\t[DEBUG] VDCManager Destructed.\n");
+    m_Logger->debug("VDCManager Destructed.");
 }
 
 VDCManager* VDCManager::instance(uint16_t tcount, uint16_t bport, uint16_t eport, VRCManager *vrcm, log4cpp::Category *logger)
@@ -40,7 +42,8 @@ VDCManager* VDCManager::instance(uint16_t tcount, uint16_t bport, uint16_t eport
 		client = new VDClient(vrcm, logger);
 
 		while (client->init(bport)) {
-			printf("\t[DEBUG] VDCManager::instance() - init(%d) error\n", bport);
+			//printf("\t[DEBUG] VDCManager::instance() - init(%d) error\n", bport);
+            logger->error("VDCManager::instance() - init(%d) error", bport);
 			bport++;
 			if (bport > eport)
 				break;
@@ -126,6 +129,7 @@ void VDCManager::outputVDCStat()
 	std::vector< VDClient* >::iterator iter;
 
 	for (iter = m_vClients.begin(); iter != m_vClients.end(); iter++) {
-		printf("\t[DEBUG] VDCManager::outputVDCStat() - VDCLlient(%d) Stat(%d)\n", ((VDClient*)(*iter))->getPort(), ((VDClient*)(*iter))->getWorkStat());
+		//printf("\t[DEBUG] VDCManager::outputVDCStat() - VDCLlient(%d) Stat(%d)\n", ((VDClient*)(*iter))->getPort(), ((VDClient*)(*iter))->getWorkStat());
+        m_Logger->debug("VDCManager::outputVDCStat() - VDCLlient(%d) Stat(%d)", ((VDClient*)(*iter))->getPort(), ((VDClient*)(*iter))->getWorkStat());
 	}
 }

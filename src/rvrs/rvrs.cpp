@@ -10,6 +10,9 @@
 #include "configuration.h"
 
 #include <log4cpp/Category.hh>
+#include <log4cpp/Appender.hh>
+#include <log4cpp/PatternLayout.hh>
+#include <log4cpp/RollingFileAppender.hh>
 
 #include <cerrno>
 #include <cstdio>
@@ -39,24 +42,48 @@ int main(int argc, const char** argv)
     }
     
     logger = config->getLogger();
+    
+    int max_size = -1, max_backup = 0;
+    std::string traceName;
+    std::string log_max;
+    traceName = config->getConfig("rvrs.trace_name", "worktrace.trc");
+    log_max = config->getConfig("rvrs.trace_max", "1MiB");
+    max_backup = config->getConfig("rvrs.trace_backup", 5);
+    max_size = std::stoul(log_max.c_str()) * itfact::common::convertUnit(log_max);
+    log4cpp::Appender *appender = new log4cpp::RollingFileAppender("default", traceName, max_size, max_backup);
+	log4cpp::Layout *layout = new log4cpp::PatternLayout();
+    try {
+        ((log4cpp::PatternLayout *) layout)->setConversionPattern("[%d{%Y-%m-%d %H:%M:%S.%l}] %-6p %m%n");
+        appender->setLayout(layout);
+    } catch (log4cpp::ConfigureFailure &e) {
+        if (layout)
+            delete layout;
+        layout = new log4cpp::BasicLayout();
+        appender->setLayout(layout);
+    }
 
+    log4cpp::Category &tracerLog = log4cpp::Category::getInstance(std::string("WorkTracer"));
+    tracerLog.addAppender(appender);
+    
 	logger->info("Realtime Voice Relay Server v0.0.alpha");
 	logger->debug("=========================================");
-	logger->debug("Gearhost IP  : %s", config->getConfig("rvrs.gearhost", "192.168.0.220").c_str());
+	logger->debug("Gearhost IP  : %s", config->getConfig("rvrs.gearhost", "127.0.0.1").c_str());
 	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.gearport", 4730));
-	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.callport", 7777));
-	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.channel_count", 10));
+	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.callport", 7000));
+	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.channel_count", 200));
 	logger->debug("Gearhost Port: %d", config->getConfig("rvrs.udp_bport", 10000));
 	logger->debug("Call Rcv Port: %d", config->getConfig("rvrs.udp_eport", 11000));
 
 	WorkTracer::instance();
+    WorkTracer::instance()->setLogger(&tracerLog);
+    
     deliver = STTDeliver::instance(logger);
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.gearhost", "192.168.0.220"), config->getConfig("rvrs.gearport", 4730), deliver, logger);
-	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 10), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), vrcm, logger);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.gearhost", "127.0.0.1"), config->getConfig("rvrs.gearport", 4730), deliver, logger);
+	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), vrcm, logger);
     
     if (!vrcm) {
-        printf("\t[DEBUG] MAIN - ERROR (Failed to get VRCManager instance)\n");
+        logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
         VDCManager::release();
         STTDeliver::release();
         WorkTracer::release();
@@ -65,12 +92,12 @@ int main(int argc, const char** argv)
     }
 
 	rcv = CallReceiver::instance(vdcm, vrcm, logger);
+    rcv->setNumOfExecutor(config->getConfig("rvrs.callexe_count", 5));
 
-	if (!rcv->init(config->getConfig("rvrs.callport", 7777))) {
+	if (!rcv->init(config->getConfig("rvrs.callport", 7000))) {
         goto FINISH;
 	}
 
-	printf("\t[DEBUG] input waiting...quit\n");
     logger->debug("input waiting... quit");
 	while (1) {
 		std::cin >> input;
@@ -83,7 +110,7 @@ int main(int argc, const char** argv)
 
 FINISH:
 
-	printf("\t[DEBUG] MAIN\n");
+	logger->debug("MAIN FINISH!");
 
 	vdcm->release();
 	vrcm->release();

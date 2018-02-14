@@ -22,7 +22,8 @@ VRCManager* VRCManager::ms_instance = NULL;
 VRCManager::VRCManager(STTDeliver *deliver, log4cpp::Category *logger)
 	: m_sGearHost("127.0.0.1"), m_nGearPort(4760), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger)
 {
-	printf("\t[DEBUG] VRCManager Constructed.\n");
+	//printf("\t[DEBUG] VRCManager Constructed.\n");
+    m_Logger->debug("VRCManager Constructed.");
 }
 
 
@@ -33,7 +34,8 @@ VRCManager::~VRCManager()
 	}
 	removeAllVRC();
 
-	printf("\t[DEBUG] VRCManager Destructed.\n");
+	//printf("\t[DEBUG] VRCManager Destructed.\n");
+    m_Logger->debug("VRCManager Destructed.");
 }
 
 bool VRCManager::connect2Gearman()
@@ -44,6 +46,7 @@ bool VRCManager::connect2Gearman()
 
 	if ((m_nSockGearman = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {//소켓 생성
 		perror("VRCManager::connect2Gearman() - socket :");
+        m_Logger->error("VRCManager::connect2Gearman() - socket : %d", errno);
 		m_nSockGearman = 0;
 		return false;
 	}
@@ -55,6 +58,7 @@ bool VRCManager::connect2Gearman()
 
 	if (::connect(m_nSockGearman, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("VRCManager::connect2Gearman() - connect :");
+        m_Logger->error("VRCManager::connect2Gearman() - connect : %d", errno);
 		closesocket(m_nSockGearman);
 		m_nSockGearman = 0;
 		return false;
@@ -74,14 +78,17 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 
 	RECONNECT:
 	if (!m_nSockGearman && !connect2Gearman()) {
-		printf("\t[DEBUG] VRCManager::getGearmanFnames() - error connect to GearHost.\n");
+		//printf("\t[DEBUG] VRCManager::getGearmanFnames() - error connect to GearHost.\n");
+        m_Logger->error("VRCManager::getGearmanFnames() - error connect to GearHost.");
 		return false;
 	}
 
 	if ( ::send(m_nSockGearman, sReq.c_str(), sReq.length(), 0) <= 0) {
 		perror("VRCManager::getGearmanFnames() - send :");
+        m_Logger->error("VRCManager::getGearmanFnames() - send : %d", errno);
 		if (++rec > 3) {
-			printf("\t[DEBUG] VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.\n");
+			//printf("\t[DEBUG] VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.\n");
+            m_Logger->warn("VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.");
 			return false;
 		}
 		goto RECONNECT;
@@ -91,6 +98,7 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 		recvLen = ::recv(m_nSockGearman, recvBuf, RECV_BUFF_LEN-1, 0);
 		if (recvLen <= 0) {
 			perror("VRCManager::getGearmanFnames() - send :");
+            m_Logger->error("VRCManager::getGearmanFnames() - send : %d", errno);
 			return false;
 		}
 		recvBuf[recvLen] = 0;
@@ -103,7 +111,8 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 	
 	getFnamesFromString(sRes, vFnames);
 
-	printf("\t[DEBUG] - Gearman STATUS <<\n%s\n>>\n", sRes.c_str());
+	//printf("\t[DEBUG] - Gearman STATUS <<\n%s\n>>\n", sRes.c_str());
+    m_Logger->debug("\n --- Gearman STATUS --- \n%s ---------------------- \n", sRes.c_str());
 	return true;
 }
 
@@ -148,7 +157,8 @@ VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t ge
 	ms_instance->setGearPort(gearHostPort);
     
     if (!ms_instance->connect2Gearman()) {
-        printf("\t[DEBUG] RCManager::instance() - ERROR (Failed to connect gearhost)\n");
+        //printf("\t[DEBUG] RCManager::instance() - ERROR (Failed to connect gearhost)\n");
+        logger->error("VRCManager::instance() - ERROR (Failed to connect gearhost)");
         delete ms_instance;
         ms_instance = NULL;
     }
@@ -174,7 +184,8 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 
 	// 1. vFnames에 실시간STT 처리를 위한 worker의 fname 가져오기 &vFnames
 	if (!getGearmanFnames(vFnames)) {
-		printf("\t[DEBUG] VRCManager::requestVRC() - error Failed to get gearman status\n");
+		//printf("\t[DEBUG] VRCManager::requestVRC() - error Failed to get gearman status\n");
+        m_Logger->error("VRCManager::requestVRC() - error Failed to get gearman status");
 		return int16_t(3);	// Gearman으로부터 Fn Name 가져오기 실패
 	}
 	// DEBUG
@@ -244,7 +255,8 @@ void VRCManager::outputVRCStat()
 
 	for (iter = m_mWorkerTable.begin(); iter != m_mWorkerTable.end(); iter++) {
 		client = (VRClient*)iter->second;
-		printf("\t[DEBUG] VRCManager::outputVRCStat() - VRClient(%s)\n", iter->first.c_str());
+		//printf("\t[DEBUG] VRCManager::outputVRCStat() - VRClient(%s)\n", iter->first.c_str());
+        m_Logger->debug("VRCManager::outputVRCStat() - VRClient(%s)", iter->first.c_str());
 	}
 }
 

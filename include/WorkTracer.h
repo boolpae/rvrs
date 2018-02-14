@@ -8,6 +8,8 @@
 
 #include <time.h>
 
+#include <log4cpp/Category.hh>
+
 /*
 	보통 모든 작업은 아래의 단계를 거친다.
 	1. 시작		: [START]
@@ -64,9 +66,12 @@ class WorkTracer
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
     
+    log4cpp::Category *m_Logger;
 public:
 	static WorkTracer* instance();
 	static void release();
+    
+    void setLogger(log4cpp::Category *logger);
 	
 	void insertWork(std::string callid, uint8_t jobType, WorkQueItem::PROCTYPE pType, uint8_t res=0);
 

@@ -29,7 +29,8 @@ CallReceiver* CallReceiver::m_instance = NULL;
 CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
 	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger)
 {
-	printf("\t[DEBUG] CallReceiver Constructed.\n");
+	//printf("\t[DEBUG] CallReceiver Constructed.\n");
+    m_Logger->debug("CallReceiver Constructed.");
 }
 
 
@@ -37,7 +38,8 @@ CallReceiver::~CallReceiver()
 {
 	if (m_nSockfd) closesocket(m_nSockfd);
 
-	printf("\t[DEBUG] CallReceiver Destructed.\n");
+	//printf("\t[DEBUG] CallReceiver Destructed.\n");
+    m_Logger->debug("CallReceiver Destructed.");
 }
 
 CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
@@ -74,7 +76,8 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 
 	if (!rcv->m_nSockfd)
 	{
-		printf("CallReceiver::thrdMain() - not exist socket\n");
+		//printf("CallReceiver::thrdMain() - not exist socket\n");
+        rcv->m_Logger->error("CallReceiver::thrdMain() - not exist socket");
 		return;
 	}
 
@@ -97,6 +100,7 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 		if ((recv_len = recvfrom(rcv->m_nSockfd, buf, BUFLEN-1, 0, (struct sockaddr *) &si_other, &slen)) == -1)
 		{
 			perror("CallReceiver::thrdMain() - recvfrom() failed with error :");
+            rcv->m_Logger->error("CallReceiver::thrdMain() - recvfrom() failed with error : %d", errno);
 			break;
 		}
 
@@ -112,6 +116,7 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 		printf("Received packet from %s:%d\n", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port));
 		printf("Received packet size: %d\n", recv_len);
 #endif
+        rcv->m_Logger->debug("CallReceiver::thrdMain() - Received packet from %s:%d, size: %d", inet_ntoa(si_other.sin_addr), ntohs(si_other.sin_port), recv_len);
 	}
 
 	CallExecutor::thrdFinish();
@@ -131,6 +136,7 @@ bool CallReceiver::init(uint16_t port)
 	struct sockaddr_in addr;
 	if ((m_nSockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		perror("CallReceiver::init() :");
+        m_Logger->error("CallReceiver::init() - failed get socket : %d", errno);
 		return false;
 	}
 
@@ -141,6 +147,7 @@ bool CallReceiver::init(uint16_t port)
 
 	if (::bind(m_nSockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("CallReceiver::init() - bind : ");
+        m_Logger->error("CallReceiver::init() - bind : %d", errno);
 		closesocket(m_nSockfd);
 		return false;
 	}

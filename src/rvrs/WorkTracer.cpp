@@ -8,7 +8,7 @@
 WorkTracer* WorkTracer::ms_instance = NULL;
 
 WorkTracer::WorkTracer()
-	: m_bLiveFlag(true)
+	: m_bLiveFlag(true), m_Logger(NULL)
 {
 	std::cout << "\t[DEBUG] WorkTracer Constructed." << std::endl;
 }
@@ -30,11 +30,14 @@ void WorkTracer::thrdMain(WorkTracer * trc)
 			trc->m_qTraceQue.pop();
 			delete g;
 
-			// item을 이용하여 처리
-			std::cout << item->getWorkDescription() << std::endl;
+            if (!trc->m_Logger) {
+                // item을 이용하여 처리
+                std::cout << item->getWorkDescription() << std::endl;
+            }
+            else {
+                trc->m_Logger->info(item->getWorkDescription());
+			}
             
-            //trc->m_Logger.info(item->getWorkDescription());
-			
 			delete item;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -168,3 +171,7 @@ std::string & WorkQueItem::getWorkDescription()
 	return m_sWorkDescription;
 }
 
+void WorkTracer::setLogger(log4cpp::Category *logger)
+{
+    m_Logger = logger;
+}

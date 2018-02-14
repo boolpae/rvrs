@@ -11,13 +11,13 @@ STTDeliver* STTDeliver::ms_instance = NULL;
 STTDeliver::STTDeliver(log4cpp::Category *logger)
 	: m_bLiveFlag(true), m_Logger(logger)
 {
-	std::cout << "\t[DEBUG] STTDeliver Constructed." << std::endl;
+	m_Logger->debug("STTDeliver Constructed.");
 }
 
 
 STTDeliver::~STTDeliver()
 {
-	std::cout << "\t[DEBUG] STTDeliver Destructed." << std::endl;
+	m_Logger->debug("STTDeliver Destructed.");
 }
 
 void STTDeliver::thrdMain(STTDeliver * dlv)

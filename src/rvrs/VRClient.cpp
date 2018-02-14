@@ -20,7 +20,8 @@ VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, string&
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
 	//thrd.detach();
-	printf("\t[DEBUG] VRClinet Constructed.\n");
+	//printf("\t[DEBUG] VRClinet Constructed.\n");
+    m_Logger->debug("VRClinet Constructed.");
 }
 
 
@@ -35,7 +36,8 @@ VRClient::~VRClient()
 		delete item;
 	}
 
-	printf("\t[DEBUG] VRClinet Destructed.\n");
+	//printf("\t[DEBUG] VRClinet Destructed.\n");
+    m_Logger->debug("VRClinet Destructed.");
 }
 
 void VRClient::finish()
@@ -75,7 +77,8 @@ void VRClient::thrdMain(VRClient* client) {
     
     gearClient = gearman_client_create(NULL);
     if (!gearClient) {
-        printf("\t[DEBUG] VRClient::thrdMain() - ERROR (Failed gearman_client_create - %s)\n", client->m_sCallId.c_str());
+        //printf("\t[DEBUG] VRClient::thrdMain() - ERROR (Failed gearman_client_create - %s)\n", client->m_sCallId.c_str());
+        client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed gearman_client_create - %s)", client->m_sCallId.c_str());
 
         WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
 
@@ -86,7 +89,8 @@ void VRClient::thrdMain(VRClient* client) {
     ret= gearman_client_add_server(gearClient, client->m_sGearHost.c_str(), client->m_nGearPort);
     if (gearman_failed(ret))
     {
-        printf("\t[DEBUG] VRClient::thrdMain() - ERROR (Failed gearman_client_add_server - %s)\n", client->m_sCallId.c_str());
+        //printf("\t[DEBUG] VRClient::thrdMain() - ERROR (Failed gearman_client_add_server - %s)\n", client->m_sCallId.c_str());
+        client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed gearman_client_add_server - %s)", client->m_sCallId.c_str());
 
         WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
 
@@ -146,7 +150,8 @@ void VRClient::thrdMain(VRClient* client) {
                 vPos[item->spkNo -1].bpos = vPos[item->spkNo -1].epos + 1;
 
 				if (!item->flag) {	// 호가 종료되었음을 알리는 flag, 채널 갯수와 flag(0)이 들어온 갯수를 비교해야한다.
-					printf("\t[DEBUG] VRClient::thrdMain(%s) - final item delivered.\n", client->m_sCallId.c_str());
+					//printf("\t[DEBUG] VRClient::thrdMain(%s) - final item delivered.\n", client->m_sCallId.c_str());
+                    client->m_Logger->debug("VRClient::thrdMain(%s) - final item delivered.", client->m_sCallId.c_str());
 					if (!(--client->m_nNumofChannel)) {
 						client->m_Mgr->removeVRC(client->m_sCallId);
 						if ( item->voiceData != NULL ) delete[] item->voiceData;
