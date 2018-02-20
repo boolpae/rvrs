@@ -26,6 +26,7 @@ class VRClient
 
 	string m_sGearHost;
 	uint16_t m_nGearPort;
+    int m_nGearTimeout;
 	string m_sFname;
 	string m_sCallId;
 	volatile uint8_t m_nLiveFlag;	// Threading Class로서 객체 삭제를 thread에서 수행하도록 설계
@@ -42,7 +43,7 @@ class VRClient
 public:
 
 public:
-	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger);
 	void finish();
 
 	string& getFname() { return m_sFname; }

@@ -13,6 +13,12 @@
 
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
+
+#include <arpa/inet.h>
+
+#undef htons
+#undef ntohs
+
 #else
 
 #include <WS2tcpip.h> // for socklen_t type

@@ -29,7 +29,9 @@ class VRCManager
 
 	string m_sGearHost;
 	uint16_t m_nGearPort;
-	SOCKET m_nSockGearman;
+    int m_GearTimeout;
+    
+    SOCKET m_nSockGearman;
 
 	map< string, VRClient* > m_mWorkerTable;
 
@@ -40,7 +42,7 @@ class VRCManager
     log4cpp::Category *m_Logger;
 
 public:
-	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, STTDeliver *deliver, log4cpp::Category *logger);
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STTDeliver *deliver, log4cpp::Category *logger);
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
@@ -56,7 +58,7 @@ public:
 	uint16_t getGearPort() { return m_nGearPort; }
 
 private:
-	VRCManager(STTDeliver *deliver, log4cpp::Category *logger);
+	VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger);
 	virtual ~VRCManager();
 
 	bool connect2Gearman();

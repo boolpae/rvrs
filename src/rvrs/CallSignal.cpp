@@ -8,6 +8,9 @@
 #include <string.h>
 #include <arpa/inet.h>
 
+#undef htons
+#undef ntohs
+
 #endif
 
 #include "CallSignal.h"
@@ -64,7 +67,7 @@ uint16_t Protocol::CallSignal::parsePacket(uint8_t * packet)
 	// 4. Check Call-ID
 	pos += sizeof(uint8_t);
 	memcpy(this->pacCallId, pos, sizeof(this->pacCallId)-1);
-	this->pacCallId[sizeof(this->pacCallId)] = 0;
+	this->pacCallId[sizeof(this->pacCallId)-1] = 0;
     for (int i=::strlen((const char*)this->pacCallId); i>0; i--) {
         if (::isspace(this->pacCallId[i])) {
             this->pacCallId[i] = 0;
@@ -97,7 +100,7 @@ uint16_t Protocol::CallSignal::parsePacket(uint8_t * packet)
 
 	// 9. Check Finger-Print
 	memcpy(this->pacFingerPrint, pos, sizeof(this->pacFingerPrint) - 1);
-	this->pacFingerPrint[sizeof(this->pacFingerPrint)] = 0;
+	this->pacFingerPrint[sizeof(this->pacFingerPrint)-1] = 0;
 
 	return uint16_t(200);
 }
@@ -240,7 +243,7 @@ void Protocol::CallSignal::setPlayTime(uint16_t ptime)
 void Protocol::CallSignal::setFingerPrint(uint8_t * fprint, uint16_t len)
 {
 	memset(pacFingerPrint, 0x00, sizeof(pacFingerPrint));
-	pacFingerPrint[sizeof(pacFingerPrint)] = 0;
+	pacFingerPrint[sizeof(pacFingerPrint)-1] = 0;
 	if (len > 64) len = 64;
 	memcpy(pacFingerPrint, fprint, len);
 	//printf("\t[DEBUG] CallSignal::setFingerPrint() - FingerPrint(%s : %s), Len(%d)\n", fprint, pacFingerPrint, len);

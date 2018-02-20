@@ -14,8 +14,8 @@
 // For Gearman
 #include <libgearman/gearman.h>
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -103,6 +103,10 @@ void VRClient::thrdMain(VRClient* client) {
 	if (client->m_cJobType == 'R') {
 		// 실시간의 경우 통화가 종료되기 전까지 Queue에서 입력 데이터를 받아 처리
 		// FILE인 경우 기존과 동일하게 filename을 전달하는 방법 이용
+        if (client->m_nGearTimeout) {
+            gearman_client_set_timeout(gearClient, client->m_nGearTimeout);
+        }
+        
 #if 0 // for DEBUG
 		std::string filename = client->m_sCallId + std::string("_") + std::to_string(client->m_nNumofChannel) + std::string(".pcm");
 		std::ofstream pcmFile;
@@ -145,6 +149,9 @@ void VRClient::thrdMain(VRClient* client) {
                         client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         free(value);
                     }
+                }
+                else if (gearman_failed(rc)){
+                    client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos, client->m_nGearTimeout);
                 }
                 
                 vPos[item->spkNo -1].bpos = vPos[item->spkNo -1].epos + 1;
