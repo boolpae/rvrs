@@ -5,15 +5,15 @@
 ## Debug
 ProjectName            :=rvrs
 ConfigurationName      :=Debug
-WorkspacePath          :=/home/boolpae/Devel/rvrs
-ProjectPath            :=/home/boolpae/Devel/rvrs
+WorkspacePath          :=/home/boolpae/Dev/rvrs
+ProjectPath            :=/home/boolpae/Dev/rvrs
 IntermediateDirectory  :=./Debug
 OutDir                 := $(IntermediateDirectory)
 CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=SEUNG-HOON LEE
-Date                   :=02/20/18
+Date                   :=02/21/18
 CodeLitePath           :=/home/boolpae/.codelite
 LinkerName             :=/usr/bin/g++
 SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
@@ -93,7 +93,7 @@ PreBuild:
 ## Objects
 ##
 $(IntermediateDirectory)/src_common_configuration.cpp$(ObjectSuffix): src/common/configuration.cpp $(IntermediateDirectory)/src_common_configuration.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/common/configuration.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_common_configuration.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/common/configuration.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_common_configuration.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_common_configuration.cpp$(DependSuffix): src/common/configuration.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_common_configuration.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_common_configuration.cpp$(DependSuffix) -MM src/common/configuration.cpp
 
@@ -101,7 +101,7 @@ $(IntermediateDirectory)/src_common_configuration.cpp$(PreprocessSuffix): src/co
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_common_configuration.cpp$(PreprocessSuffix) src/common/configuration.cpp
 
 $(IntermediateDirectory)/src_rvrs_rvrs.cpp$(ObjectSuffix): src/rvrs/rvrs.cpp $(IntermediateDirectory)/src_rvrs_rvrs.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/rvrs.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_rvrs.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/rvrs.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_rvrs.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_rvrs.cpp$(DependSuffix): src/rvrs/rvrs.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_rvrs.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_rvrs.cpp$(DependSuffix) -MM src/rvrs/rvrs.cpp
 
@@ -109,7 +109,7 @@ $(IntermediateDirectory)/src_rvrs_rvrs.cpp$(PreprocessSuffix): src/rvrs/rvrs.cpp
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_rvrs.cpp$(PreprocessSuffix) src/rvrs/rvrs.cpp
 
 $(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(ObjectSuffix): src/rvrs/VRCManager.cpp $(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/VRCManager.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/VRCManager.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(DependSuffix): src/rvrs/VRCManager.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(DependSuffix) -MM src/rvrs/VRCManager.cpp
 
@@ -117,7 +117,7 @@ $(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(PreprocessSuffix): src/rvrs/VR
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(PreprocessSuffix) src/rvrs/VRCManager.cpp
 
 $(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(ObjectSuffix): src/rvrs/CallReceiver.cpp $(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/CallReceiver.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/CallReceiver.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(DependSuffix): src/rvrs/CallReceiver.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(DependSuffix) -MM src/rvrs/CallReceiver.cpp
 
@@ -125,7 +125,7 @@ $(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(PreprocessSuffix): src/rvrs/
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(PreprocessSuffix) src/rvrs/CallReceiver.cpp
 
 $(IntermediateDirectory)/src_rvrs_VRClient.cpp$(ObjectSuffix): src/rvrs/VRClient.cpp $(IntermediateDirectory)/src_rvrs_VRClient.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/VRClient.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VRClient.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/VRClient.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VRClient.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_VRClient.cpp$(DependSuffix): src/rvrs/VRClient.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_VRClient.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_VRClient.cpp$(DependSuffix) -MM src/rvrs/VRClient.cpp
 
@@ -133,7 +133,7 @@ $(IntermediateDirectory)/src_rvrs_VRClient.cpp$(PreprocessSuffix): src/rvrs/VRCl
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_VRClient.cpp$(PreprocessSuffix) src/rvrs/VRClient.cpp
 
 $(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(ObjectSuffix): src/rvrs/CallExecutor.cpp $(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/CallExecutor.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/CallExecutor.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(DependSuffix): src/rvrs/CallExecutor.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(DependSuffix) -MM src/rvrs/CallExecutor.cpp
 
@@ -141,7 +141,7 @@ $(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(PreprocessSuffix): src/rvrs/
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(PreprocessSuffix) src/rvrs/CallExecutor.cpp
 
 $(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(ObjectSuffix): src/rvrs/CallSignal.cpp $(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/CallSignal.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/CallSignal.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(DependSuffix): src/rvrs/CallSignal.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(DependSuffix) -MM src/rvrs/CallSignal.cpp
 
@@ -149,7 +149,7 @@ $(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(PreprocessSuffix): src/rvrs/Ca
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(PreprocessSuffix) src/rvrs/CallSignal.cpp
 
 $(IntermediateDirectory)/src_rvrs_VDClient.cpp$(ObjectSuffix): src/rvrs/VDClient.cpp $(IntermediateDirectory)/src_rvrs_VDClient.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/VDClient.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VDClient.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/VDClient.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VDClient.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_VDClient.cpp$(DependSuffix): src/rvrs/VDClient.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_VDClient.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_VDClient.cpp$(DependSuffix) -MM src/rvrs/VDClient.cpp
 
@@ -157,7 +157,7 @@ $(IntermediateDirectory)/src_rvrs_VDClient.cpp$(PreprocessSuffix): src/rvrs/VDCl
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_VDClient.cpp$(PreprocessSuffix) src/rvrs/VDClient.cpp
 
 $(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(ObjectSuffix): src/rvrs/WorkTracer.cpp $(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/WorkTracer.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/WorkTracer.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(DependSuffix): src/rvrs/WorkTracer.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(DependSuffix) -MM src/rvrs/WorkTracer.cpp
 
@@ -165,7 +165,7 @@ $(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(PreprocessSuffix): src/rvrs/Wo
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(PreprocessSuffix) src/rvrs/WorkTracer.cpp
 
 $(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(ObjectSuffix): src/rvrs/STTDeliver.cpp $(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/STTDeliver.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/STTDeliver.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(DependSuffix): src/rvrs/STTDeliver.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(DependSuffix) -MM src/rvrs/STTDeliver.cpp
 
@@ -173,7 +173,7 @@ $(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(PreprocessSuffix): src/rvrs/ST
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(PreprocessSuffix) src/rvrs/STTDeliver.cpp
 
 $(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(ObjectSuffix): src/rvrs/VDCManager.cpp $(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Devel/rvrs/src/rvrs/VDCManager.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(ObjectSuffix) $(IncludePath)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/VDCManager.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(ObjectSuffix) $(IncludePath)
 $(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(DependSuffix): src/rvrs/VDCManager.cpp
 	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(DependSuffix) -MM src/rvrs/VDCManager.cpp
 
