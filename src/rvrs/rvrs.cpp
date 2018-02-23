@@ -68,9 +68,9 @@ int main(int argc, const char** argv)
     
 	logger->info("Realtime Voice Relay Server ver %d.%d.%d", RVRS_VERSION_MAJ, RVRS_VERSION_MIN, RVRS_VERSION_BLD);
 	logger->info("=========================================");
-	logger->info("Gearhost IP      :  %s", config->getConfig("rvrs.gearhost", "127.0.0.1").c_str());
-	logger->info("Gearhost Port    :  %d", config->getConfig("rvrs.gearport", 4730));
-	logger->info("Gearhost Timeout :  %d", config->getConfig("rvrs.geartimeout", 0));
+	logger->info("Gearhost IP      :  %s", config->getConfig("rvrs.mpihost", "127.0.0.1").c_str());
+	logger->info("Gearhost Port    :  %d", config->getConfig("rvrs.mpiport", 4730));
+	logger->info("Gearhost Timeout :  %d", config->getConfig("rvrs.mpitimeout", 0));
 	logger->info("Call Rcv Port    :  %d", config->getConfig("rvrs.callport", 7000));
 	logger->info("Call Chnl Cnt    :  %d", config->getConfig("rvrs.channel_count", 200));
 	logger->info("Voice Playtime   :  %d", config->getConfig("rvrs.playtime", 3));
@@ -82,7 +82,7 @@ int main(int argc, const char** argv)
     
     deliver = STTDeliver::instance(logger);
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.gearhost", "127.0.0.1"), config->getConfig("rvrs.gearport", 4730), config->getConfig("rvrs.geartimeout", 0), deliver, logger);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
     
     if (!vrcm) {
