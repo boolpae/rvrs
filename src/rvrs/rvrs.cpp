@@ -68,14 +68,14 @@ int main(int argc, const char** argv)
     
 	logger->info("Realtime Voice Relay Server ver %d.%d.%d", RVRS_VERSION_MAJ, RVRS_VERSION_MIN, RVRS_VERSION_BLD);
 	logger->info("=========================================");
-	logger->info("Gearhost IP      :  %s", config->getConfig("rvrs.mpihost", "127.0.0.1").c_str());
-	logger->info("Gearhost Port    :  %d", config->getConfig("rvrs.mpiport", 4730));
-	logger->info("Gearhost Timeout :  %d", config->getConfig("rvrs.mpitimeout", 0));
-	logger->info("Call Rcv Port    :  %d", config->getConfig("rvrs.callport", 7000));
-	logger->info("Call Chnl Cnt    :  %d", config->getConfig("rvrs.channel_count", 200));
+	logger->info("MPI host IP      :  %s", config->getConfig("rvrs.mpihost", "127.0.0.1").c_str());
+	logger->info("MPI host Port    :  %d", config->getConfig("rvrs.mpiport", 4730));
+	logger->info("MPI host Timeout :  %d", config->getConfig("rvrs.mpitimeout", 0));
+	logger->info("Call Signal Port :  %d", config->getConfig("rvrs.callport", 7000));
+	logger->info("Call Channel Cnt :  %d", config->getConfig("rvrs.channel_count", 200));
 	logger->info("Voice Playtime   :  %d", config->getConfig("rvrs.playtime", 3));
-	logger->info("Gearhost Port    :  %d", config->getConfig("rvrs.udp_bport", 10000));
-	logger->info("Call Rcv Port    :  %d", config->getConfig("rvrs.udp_eport", 11000));
+	logger->info("Voice Begin Port :  %d", config->getConfig("rvrs.udp_bport", 10000));
+	logger->info("Voice END Port   :  %d", config->getConfig("rvrs.udp_eport", 11000));
 
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
