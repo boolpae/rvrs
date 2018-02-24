@@ -8,13 +8,16 @@ bool HAManager::m_bHAState = false;
 
 
 HAManager::HAManager()
+: m_thrd(nullptr), m_bLiveFlag(false)
 {
     
 }
 
 HAManager::~HAManager()
 {
-    
+    if (m_thrd) {
+        m_thrd->join();
+    }
 }
 
 HAManager* HAManager::instance()
@@ -32,4 +35,21 @@ void HAManager::release()
         delete m_instance;
         m_instance = nullptr;
     }
+}
+
+void HAManager::threMain(HAManager* mgr)
+{
+    while (mgr->m_bLiveFlag) {
+        
+    }
+}
+
+int HAManager::start()
+{
+    int ret=0;
+    
+    m_thrd = new std::thread(HAManager::threMain, this);
+    m_bLiveFlag = true;
+    
+    return ret;
 }
