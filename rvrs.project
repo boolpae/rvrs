@@ -20,6 +20,7 @@
       <File Name="src/rvrs/WorkTracer.cpp"/>
       <File Name="src/rvrs/STTDeliver.cpp"/>
       <File Name="src/rvrs/VDCManager.cpp"/>
+      <File Name="src/rvrs/HAManager.cpp"/>
     </VirtualDirectory>
   </VirtualDirectory>
   <Description/>
@@ -36,6 +37,7 @@
     <File Name="include/CallSignal.h"/>
     <File Name="include/VRClient.h"/>
     <File Name="include/rvrs.h"/>
+    <File Name="include/HAManager.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
