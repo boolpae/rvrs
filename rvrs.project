@@ -38,6 +38,7 @@
     <File Name="include/VRClient.h"/>
     <File Name="include/rvrs.h"/>
     <File Name="include/HAManager.h"/>
+    <File Name="include/DBHandler.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
