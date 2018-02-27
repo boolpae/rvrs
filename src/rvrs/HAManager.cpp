@@ -8,15 +8,15 @@ bool HAManager::m_bHAState = false;
 
 
 HAManager::HAManager()
-: m_thrd(nullptr), m_bLiveFlag(false)
+: m_bLiveFlag(false)
 {
     
 }
 
 HAManager::~HAManager()
 {
-    if (m_thrd) {
-        m_thrd->join();
+    if (m_thrd.joinable()) {
+        m_thrd.join();
     }
 }
 
@@ -48,7 +48,7 @@ int HAManager::start()
 {
     int ret=0;
     
-    m_thrd = new std::thread(HAManager::threMain, this);
+    m_thrd = std::thread(HAManager::threMain, this);
     m_bLiveFlag = true;
     
     return ret;

@@ -8,7 +8,7 @@ private:
     static HAManager* m_instance;
     static bool m_bHAState; // Active: true, Standby: false
     
-    std::thread *m_thrd;
+    std::thread m_thrd;
     bool m_bLiveFlag;
     
 public:
