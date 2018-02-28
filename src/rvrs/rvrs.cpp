@@ -94,9 +94,9 @@ int main(int argc, const char** argv)
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
     
-    deliver = STTDeliver::instance(logger);
+    deliver = STTDeliver::instance(logger, rt2db);
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger, rt2db);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
     
     if (!vrcm) {

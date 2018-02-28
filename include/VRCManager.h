@@ -22,7 +22,6 @@ using namespace std;
 
 class VRClient;
 class STTDeliver;
-class RT2DB;
 
 class VRCManager
 {
@@ -42,10 +41,9 @@ class VRCManager
     
     log4cpp::Category *m_Logger;
     
-    RT2DB* m_rt2db;
 
 public:
-	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* rt2db);
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STTDeliver *deliver, log4cpp::Category *logger);
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
@@ -61,7 +59,7 @@ public:
 	uint16_t getGearPort() { return m_nGearPort; }
 
 private:
-	VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* rt2db);
+	VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger);
 	virtual ~VRCManager();
 
 	bool connect2Gearman();

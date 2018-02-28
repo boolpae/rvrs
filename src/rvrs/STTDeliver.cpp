@@ -1,15 +1,19 @@
 ﻿
 
 #include "STTDeliver.h"
+#include "RT2DB.h"
 
 #include <thread>
 #include <iostream>
 #include <fstream>
 
+#include <iconv.h>
+#include <string.h>
+
 STTDeliver* STTDeliver::ms_instance = NULL;
 
-STTDeliver::STTDeliver(log4cpp::Category *logger)
-	: m_bLiveFlag(true), m_Logger(logger)
+STTDeliver::STTDeliver(log4cpp::Category *logger, RT2DB* rt2db)
+	: m_bLiveFlag(true), m_Logger(logger), m_rt2db(rt2db)
 {
 	m_Logger->debug("STTDeliver Constructed.");
 }
@@ -33,6 +37,27 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
 			dlv->m_qSttQue.pop();
 			delete g;
 
+    int ret=0;
+    char *utf_buf = NULL;
+    size_t in_size, out_size;
+    iconv_t it;
+    char *input_buf_ptr = NULL;
+    char *output_buf_ptr = NULL;
+
+    in_size = item->getSTTValue().length();
+    out_size = item->getSTTValue().size() * 1.5;
+    utf_buf = (char *)malloc(out_size);
+    memset(utf_buf, 0, out_size);
+    
+    input_buf_ptr = (char *)item->getSTTValue().c_str();
+    output_buf_ptr = utf_buf;
+    
+    it = iconv_open("UTF-8", "EUC-KR");
+    
+    ret = iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
+     
+    iconv_close(it);
+
 			// item으로 로직 수행
 			if (item->getJobType() == 'R') {
 				sttFilename = item->getCallId();
@@ -49,13 +74,13 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getBpos()) << std::endl;
                 }
-				sttresult << item->getSTTValue();
+				sttresult << utf_buf;//item->getSTTValue();
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getEpos()) << std::endl;
                 }
 				sttresult.close();
 			}
-
+free(utf_buf);
 			delete item;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -80,11 +105,11 @@ void STTDeliver::insertSTT(STTQueItem * item)
 	m_qSttQue.push(item);
 }
 
-STTDeliver* STTDeliver::instance(log4cpp::Category *logger)
+STTDeliver* STTDeliver::instance(log4cpp::Category *logger, RT2DB* rt2db)
 {
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new STTDeliver(logger);
+	ms_instance = new STTDeliver(logger, rt2db);
 
 	ms_instance->m_thrd = std::thread(STTDeliver::thrdMain, ms_instance);
 

@@ -2,7 +2,6 @@
 #include "VRCManager.h"
 #include "VRClient.h"
 #include "STTDeliver.h"
-#include "RT2DB.h"
 
 #include <vector>
 
@@ -20,8 +19,8 @@ using namespace std;
 
 VRCManager* VRCManager::ms_instance = NULL;
 
-VRCManager::VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* rt2db)
-	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger), m_rt2db(rt2db)
+VRCManager::VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger)
+	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger)
 {
 	//printf("\t[DEBUG] VRCManager Constructed.\n");
     m_Logger->debug("VRCManager Constructed.");
@@ -147,11 +146,11 @@ void VRCManager::getFnamesFromString(std::string & gearResult, std::vector<std::
 
 }
 
-VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* rt2db)
+VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, STTDeliver *deliver, log4cpp::Category *logger)
 {
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new VRCManager(geartimeout, deliver, logger, rt2db);
+	ms_instance = new VRCManager(geartimeout, deliver, logger);
 
 	// for DEV
 	ms_instance->setGearHost(gearHostIp);//);("192.168.229.135")
@@ -198,7 +197,7 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 	}
 
 	if (iter != vFnames.end()) {
-		client = new VRClient(ms_instance, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, *iter, callid, jobType, noc, m_deliver, m_Logger, m_rt2db); // or VRClient(this);
+		client = new VRClient(ms_instance, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, *iter, callid, jobType, noc, m_deliver, m_Logger); // or VRClient(this);
 
 		if (client) {
 			std::lock_guard<std::mutex> g(m_mxMap);

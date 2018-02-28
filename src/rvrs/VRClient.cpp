@@ -3,7 +3,6 @@
 #include "VRCManager.h"
 #include "WorkTracer.h"
 #include "STTDeliver.h"
-#include "RT2DB.h"
 
 #include <thread>
 #include <iostream>
@@ -15,8 +14,8 @@
 // For Gearman
 #include <libgearman/gearman.h>
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* rt2db)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_rt2db(rt2db)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -147,7 +146,6 @@ void VRClient::thrdMain(VRClient* client) {
                 {
                 // Make use of value
                     if (value) {
-                        client->m_rt2db->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos, std::string((const char*)value));
                         //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         free(value);

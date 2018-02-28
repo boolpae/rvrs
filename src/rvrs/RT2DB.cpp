@@ -1,7 +1,9 @@
 
 #include "RT2DB.h"
 
+#include <iconv.h>
 
+#include <string.h>
 
 RT2DB* RT2DB::m_instance = nullptr;
 
