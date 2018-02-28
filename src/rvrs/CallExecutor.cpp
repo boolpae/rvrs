@@ -4,6 +4,7 @@
 #include "VRCManager.h"
 #include "VDCManager.h"
 #include "WorkTracer.h"
+#include "RT2DB.h"
 
 #include <thread>
 #include <chrono>
@@ -23,8 +24,8 @@ using namespace Protocol;
 
 bool CallExecutor::ms_bThrdRun;
 
-QueueItem::QueueItem(uint16_t num, SOCKET sockfd, struct sockaddr_in si, uint16_t psize, uint8_t* packet)
-	: m_nNum(num), m_sockfd(sockfd), m_si(si), m_packetSize(psize)
+QueueItem::QueueItem(uint16_t num, SOCKET sockfd, struct sockaddr_in si, time_t tm, uint16_t psize, uint8_t* packet)
+	: m_nNum(num), m_sockfd(sockfd), m_si(si), m_time(tm), m_packetSize(psize)
 {
 	m_packet = packet;
 	printf("\t\t[%d] QueueItem Created!\n", m_nNum);
@@ -36,8 +37,8 @@ QueueItem::~QueueItem()
 	printf("\t\t[%d] QueueItem Destroyed!\n", m_nNum);
 }
 
-CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
-	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger)
+CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db)
+	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db)
 {
 	//printf("\t[%d] CallExecutor Created!\n", m_nNum);
     m_Logger->debug("[%d] CallExecutor Created!", m_nNum);
@@ -112,12 +113,14 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 						}
 						else {
 							// SUCCESS
+                            exe->m_rt2db->insertCallInfo(sCallId, item->m_time);
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 1);
 							cs->makePacket(item->m_packet, item->m_packetSize, vPorts);
 						}
 					}
 				}
 				else if (cs->getPacketFlag() == 'E') {
+                    exe->m_rt2db->updateCallInfo(sCallId, item->m_time);
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_END_PROC);
                     exe->m_vdcm->removeVDC(sCallId);
 					cs->makePacket(item->m_packet, item->m_packetSize, 200);
@@ -149,7 +152,7 @@ void CallExecutor::pushPacket(SOCKET sockfd, struct sockaddr_in si, uint16_t psi
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
 	//m_Que.push(packet);
-	QueueItem* item = new QueueItem(this->m_nNum, sockfd, si, psize, packet);
+	QueueItem* item = new QueueItem(this->m_nNum, sockfd, si, time(NULL), psize, packet);
 	m_Que.push(item);
 }
 

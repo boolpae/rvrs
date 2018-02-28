@@ -12,8 +12,8 @@ OutDir                 := $(IntermediateDirectory)
 CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
-User                   :=SEUNG-HOON LEE
-Date                   :=27/02/18
+User                   :=이승훈
+Date                   :=28/02/18
 CodeLitePath           :=/home/boolpae/.codelite
 LinkerName             :=/usr/bin/g++
 SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
@@ -36,11 +36,11 @@ ObjectsFileList        :="rvrs.txt"
 PCHCompileFlags        :=
 MakeDirCommand         :=mkdir -p
 LinkOptions            :=  
-IncludePath            :=  $(IncludeSwitch). $(IncludeSwitch). $(IncludeSwitch)include 
+IncludePath            :=  $(IncludeSwitch). $(IncludeSwitch). $(IncludeSwitch)include $(IncludeSwitch)/usr/include/zdb 
 IncludePCH             := 
 RcIncludePath          := 
-Libs                   := $(LibrarySwitch)pthread $(LibrarySwitch)gearman $(LibrarySwitch)log4cpp $(LibrarySwitch)boost_program_options $(LibrarySwitch)boost_filesystem $(LibrarySwitch)boost_system 
-ArLibs                 :=  "pthread" "gearman" "log4cpp" "boost_program_options" "boost_filesystem" "boost_system" 
+Libs                   := $(LibrarySwitch)pthread $(LibrarySwitch)gearman $(LibrarySwitch)log4cpp $(LibrarySwitch)boost_program_options $(LibrarySwitch)boost_filesystem $(LibrarySwitch)boost_system $(LibrarySwitch)zdb 
+ArLibs                 :=  "pthread" "gearman" "log4cpp" "boost_program_options" "boost_filesystem" "boost_system" "zdb" 
 LibPath                := $(LibraryPathSwitch). 
 
 ##
@@ -61,7 +61,7 @@ AS       := /usr/bin/as
 ##
 CodeLiteDir:=/usr/share/codelite
 Objects0=$(IntermediateDirectory)/src_common_configuration.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_rvrs.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_VRCManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_CallReceiver.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_VRClient.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_CallExecutor.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_CallSignal.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_VDClient.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_WorkTracer.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_STTDeliver.cpp$(ObjectSuffix) \
-	$(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_HAManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_DBManager.cpp$(ObjectSuffix) 
+	$(IntermediateDirectory)/src_rvrs_VDCManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_HAManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(ObjectSuffix) 
 
 
 
@@ -188,13 +188,13 @@ $(IntermediateDirectory)/src_rvrs_HAManager.cpp$(DependSuffix): src/rvrs/HAManag
 $(IntermediateDirectory)/src_rvrs_HAManager.cpp$(PreprocessSuffix): src/rvrs/HAManager.cpp
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_HAManager.cpp$(PreprocessSuffix) src/rvrs/HAManager.cpp
 
-$(IntermediateDirectory)/src_rvrs_DBManager.cpp$(ObjectSuffix): src/rvrs/DBManager.cpp $(IntermediateDirectory)/src_rvrs_DBManager.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/DBManager.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_DBManager.cpp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/src_rvrs_DBManager.cpp$(DependSuffix): src/rvrs/DBManager.cpp
-	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_DBManager.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_DBManager.cpp$(DependSuffix) -MM src/rvrs/DBManager.cpp
+$(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(ObjectSuffix): src/rvrs/RT2DB.cpp $(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/rvrs/src/rvrs/RT2DB.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(DependSuffix): src/rvrs/RT2DB.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(DependSuffix) -MM src/rvrs/RT2DB.cpp
 
-$(IntermediateDirectory)/src_rvrs_DBManager.cpp$(PreprocessSuffix): src/rvrs/DBManager.cpp
-	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_DBManager.cpp$(PreprocessSuffix) src/rvrs/DBManager.cpp
+$(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(PreprocessSuffix): src/rvrs/RT2DB.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/src_rvrs_RT2DB.cpp$(PreprocessSuffix) src/rvrs/RT2DB.cpp
 
 
 -include $(IntermediateDirectory)/*$(DependSuffix)

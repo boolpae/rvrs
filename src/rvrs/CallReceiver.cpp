@@ -21,13 +21,14 @@
 #include "CallExecutor.h"
 #include "VDCManager.h"
 #include "VRCManager.h"
+#include "RT2DB.h"
 
 #include <thread>
 
 CallReceiver* CallReceiver::m_instance = NULL;
 
-CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
-	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger)
+CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db)
+	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db)
 {
 	//printf("\t[DEBUG] CallReceiver Constructed.\n");
     m_Logger->debug("CallReceiver Constructed.");
@@ -42,11 +43,11 @@ CallReceiver::~CallReceiver()
     m_Logger->debug("CallReceiver Destructed.");
 }
 
-CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger)
+CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db)
 {
 	if (m_instance) return m_instance;
 
-	m_instance = new CallReceiver(vdcm, vrcm, logger);
+	m_instance = new CallReceiver(vdcm, vrcm, logger, rt2db);
 	return m_instance;
 }
 
@@ -82,7 +83,7 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 	}
 
 	for (int i = 0; i < noe; i++) {
-		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, rcv->m_Logger));
+		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, rcv->m_Logger, rcv->m_rt2db));
 	}
 
 	for (int i = 0; i < noe; i++) {

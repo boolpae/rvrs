@@ -21,7 +21,7 @@
       <File Name="src/rvrs/STTDeliver.cpp"/>
       <File Name="src/rvrs/VDCManager.cpp"/>
       <File Name="src/rvrs/HAManager.cpp"/>
-      <File Name="src/rvrs/DBManager.cpp"/>
+      <File Name="src/rvrs/RT2DB.cpp"/>
     </VirtualDirectory>
   </VirtualDirectory>
   <Description/>
@@ -39,7 +39,7 @@
     <File Name="include/VRClient.h"/>
     <File Name="include/rvrs.h"/>
     <File Name="include/HAManager.h"/>
-    <File Name="include/DBManager.h"/>
+    <File Name="include/RT2DB.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
@@ -55,6 +55,7 @@
       <Compiler Options="-g;-O0;-std=c++11;-Wall" C_Options="-g;-O0;-Wall" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
         <IncludePath Value="."/>
         <IncludePath Value="include"/>
+        <IncludePath Value="/usr/include/zdb"/>
       </Compiler>
       <Linker Options="" Required="yes">
         <Library Value="pthread"/>
@@ -63,6 +64,7 @@
         <Library Value="boost_program_options"/>
         <Library Value="boost_filesystem"/>
         <Library Value="boost_system"/>
+        <Library Value="zdb"/>
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
       <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>

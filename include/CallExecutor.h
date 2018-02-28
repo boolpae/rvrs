@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <stdint.h>
+#include <time.h>
 #include <queue>
 #include <mutex>
 
@@ -19,17 +20,19 @@
 
 using namespace std;
 
+class RT2DB;
+
 class QueueItem {
 	uint16_t m_nNum;
 public:
-	QueueItem(uint16_t num, SOCKET sockfd, struct sockaddr_in si, uint16_t psize, uint8_t* packet);
+	QueueItem(uint16_t num, SOCKET sockfd, struct sockaddr_in si, time_t tm, uint16_t psize, uint8_t* packet);
 	virtual ~QueueItem();
 
 	SOCKET m_sockfd;
 	struct sockaddr_in m_si;
+    time_t m_time;
 	uint16_t m_packetSize;
 	uint8_t* m_packet;
-
 };
 
 class VDCManager;
@@ -47,9 +50,11 @@ class CallExecutor
     VRCManager *m_vrcm;
     
     log4cpp::Category *m_Logger;
+    
+    RT2DB* m_rt2db;
 
 public:
-	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger);
+	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db);
 	virtual ~CallExecutor();
 
 	static void thrdMain(CallExecutor* exe);

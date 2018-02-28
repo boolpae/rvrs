@@ -9,6 +9,7 @@
 #include "STTDeliver.h"
 #include "configuration.h"
 #include "rvrs.h"
+#include "RT2DB.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
@@ -21,6 +22,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <clocale>
 
 using namespace std;
 using namespace itfact::common;
@@ -32,8 +34,12 @@ int main(int argc, const char** argv)
 	string input;
     
     log4cpp::Category *logger;
-    CallReceiver* rcv=NULL;
-    STTDeliver* deliver = NULL;
+    RT2DB* rt2db=nullptr;
+    CallReceiver* rcv=nullptr;
+    STTDeliver* deliver = nullptr;
+    
+    //std::locale::global(std::locale(LC_ALL, "korean"));
+    setlocale(LC_ALL, "C");
     
     try {
         config = new Configuration(argc, argv);
@@ -76,13 +82,21 @@ int main(int argc, const char** argv)
 	logger->info("Voice Playtime   :  %d", config->getConfig("rvrs.playtime", 3));
 	logger->info("Voice Begin Port :  %d", config->getConfig("rvrs.udp_bport", 10000));
 	logger->info("Voice END Port   :  %d", config->getConfig("rvrs.udp_eport", 11000));
+    
+    // std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname
+    rt2db = RT2DB::instance(std::string("mysql"), std::string("localhost"), std::string("3306"), std::string("boolpae"), std::string("tjsl4fkd"), std::string("rt_stt"));
+    if (!rt2db) {
+        logger->error("MAIN - ERROR (Failed to get RT2DB instance)");
+        delete config;
+        return -1;
+    }
 
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
     
     deliver = STTDeliver::instance(logger);
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger, rt2db);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
     
     if (!vrcm) {
@@ -94,7 +108,7 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-	rcv = CallReceiver::instance(vdcm, vrcm, logger);
+	rcv = CallReceiver::instance(vdcm, vrcm, logger, rt2db);
     rcv->setNumOfExecutor(config->getConfig("rvrs.callexe_count", 5));
 
 	if (!rcv->init(config->getConfig("rvrs.callport", 7000))) {
