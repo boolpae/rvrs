@@ -12,6 +12,7 @@ using namespace std;
 
 class VRCManager;
 class STTDeliver;
+class RT2DB;
 
 typedef struct _queItem {
 	uint8_t flag;	// 통화 시작과 통화 중: 1, 마지막 데이터 또는 통화 종료: 0
@@ -39,12 +40,12 @@ class VRClient
     
     STTDeliver *m_deliver;
     log4cpp::Category *m_Logger;
-    
+    RT2DB* m_r2d;
 
 public:
 
 public:
-	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);
 	void finish();
 
 	string& getFname() { return m_sFname; }

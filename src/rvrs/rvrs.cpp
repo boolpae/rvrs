@@ -38,9 +38,6 @@ int main(int argc, const char** argv)
     CallReceiver* rcv=nullptr;
     STTDeliver* deliver = nullptr;
     
-    //std::locale::global(std::locale(LC_ALL, "korean"));
-    setlocale(LC_ALL, "C");
-    
     try {
         config = new Configuration(argc, argv);
     } catch (std::exception &e) {
@@ -84,7 +81,7 @@ int main(int argc, const char** argv)
 	logger->info("Voice END Port   :  %d", config->getConfig("rvrs.udp_eport", 11000));
     
     // std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname
-    rt2db = RT2DB::instance(std::string("mysql"), std::string("localhost"), std::string("3306"), std::string("boolpae"), std::string("tjsl4fkd"), std::string("rt_stt"));
+    rt2db = RT2DB::instance(std::string("mysql"), std::string("localhost"), std::string("3306"), std::string("boolpae"), std::string("tjsl4fkd"), std::string("rt_stt"), std::string("utf8"));
     if (!rt2db) {
         logger->error("MAIN - ERROR (Failed to get RT2DB instance)");
         delete config;
@@ -94,9 +91,9 @@ int main(int argc, const char** argv)
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
     
-    deliver = STTDeliver::instance(logger, rt2db);
+    deliver = STTDeliver::instance(logger);
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger, rt2db);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
     
     if (!vrcm) {
@@ -135,6 +132,7 @@ FINISH:
 
     STTDeliver::release();
 	WorkTracer::release();
+    RT2DB::release();
     delete config;
 
     return 0;

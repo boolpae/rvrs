@@ -9,8 +9,6 @@
 
 #include <log4cpp/Category.hh>
 
-class RT2DB;
-
 class STTQueItem {
 	std::string m_sCallId;
 	uint8_t m_cJobType;		// 'R': 실기간, 'F': 파일
@@ -47,17 +45,15 @@ class STTDeliver
     
     log4cpp::Category *m_Logger;
     
-    RT2DB* m_rt2db;
-
 public:
-	static STTDeliver* instance(log4cpp::Category *logger, RT2DB* rt2db);
+	static STTDeliver* instance(log4cpp::Category *logger);
 	static void release();
 
 	void insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
 
 private:
-	STTDeliver(log4cpp::Category *logger, RT2DB* rt2db);
+	STTDeliver(log4cpp::Category *logger);
 	virtual ~STTDeliver();
 
 	static void thrdMain(STTDeliver* dlv);
