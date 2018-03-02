@@ -1,4 +1,4 @@
-﻿
+
 
 #include "STTDeliver.h"
 
@@ -8,11 +8,12 @@
 
 #include <iconv.h>
 #include <string.h>
+#include <unistd.h>
 
 STTDeliver* STTDeliver::ms_instance = NULL;
 
-STTDeliver::STTDeliver(log4cpp::Category *logger)
-	: m_bLiveFlag(true), m_Logger(logger)
+STTDeliver::STTDeliver(std::string path, log4cpp::Category *logger)
+	: m_bLiveFlag(true), m_sResultPath(path), m_Logger(logger)
 {
 	m_Logger->debug("STTDeliver Constructed.");
 }
@@ -58,7 +59,7 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
 
 			// item으로 로직 수행
 			if (item->getJobType() == 'R') {
-				sttFilename = item->getCallId();
+				sttFilename = dlv->m_sResultPath + "/" + item->getCallId();
 				sttFilename += "_";
 				sttFilename += std::to_string(item->getSpkNo());
 				sttFilename += ".stt";
@@ -103,11 +104,22 @@ void STTDeliver::insertSTT(STTQueItem * item)
 	m_qSttQue.push(item);
 }
 
-STTDeliver* STTDeliver::instance(log4cpp::Category *logger)
+STTDeliver* STTDeliver::instance(std::string path, log4cpp::Category *logger)
 {
 	if (ms_instance) return ms_instance;
+    
+    if ( ::access(path.c_str(), 0) ) {
+        std::string cmd = "mkdir -p ";
+        cmd += path;
+        std::system(cmd.c_str());
+        
+        if ( ::access(path.c_str(), 0) ) {
+            logger->error("STTDeliver::instance - failed create path : %s", path.c_str());
+            return nullptr;
+        }
+    }
 
-	ms_instance = new STTDeliver(logger);
+	ms_instance = new STTDeliver(path, logger);
 
 	ms_instance->m_thrd = std::thread(STTDeliver::thrdMain, ms_instance);
 

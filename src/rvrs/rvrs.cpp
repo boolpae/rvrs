@@ -1,4 +1,4 @@
-﻿// rvrs.cpp: 콘솔 응용 프로그램의 진입점을 정의합니다.
+// rvrs.cpp: 콘솔 응용 프로그램의 진입점을 정의합니다.
 //
 
 
@@ -22,12 +22,21 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include <clocale>
+#include <thread>
+#include <chrono>
+#include <csignal>
 
 using namespace std;
 using namespace itfact::common;
 
 Configuration *config;
+
+volatile bool gRunning = true;
+
+void term_handle(int sig)
+{
+    gRunning = false;
+}
 
 int main(int argc, const char** argv)
 {
@@ -37,6 +46,10 @@ int main(int argc, const char** argv)
     RT2DB* rt2db=nullptr;
     CallReceiver* rcv=nullptr;
     STTDeliver* deliver = nullptr;
+    
+    std::signal(SIGINT, term_handle);
+    std::signal(SIGTERM, term_handle);
+    //std::signal(SIGABRT, term_handle);
     
     try {
         config = new Configuration(argc, argv);
@@ -79,9 +92,22 @@ int main(int argc, const char** argv)
 	logger->info("Voice Playtime   :  %d", config->getConfig("rvrs.playtime", 3));
 	logger->info("Voice Begin Port :  %d", config->getConfig("rvrs.udp_bport", 10000));
 	logger->info("Voice END Port   :  %d", config->getConfig("rvrs.udp_eport", 11000));
+
+	logger->info("Database Type    :  %s", config->getConfig("database.type", "mysql").c_str());
+	logger->info("Database Addr    :  %s", config->getConfig("database.addr", "localhost").c_str());
+	logger->info("Database Port    :  %s", config->getConfig("database.port", "3306").c_str());
+	logger->info("Database ID      :  %s", config->getConfig("database.id", "stt").c_str());
+	logger->info("Database Name    :  %s", config->getConfig("database.name", "rt_stt").c_str());
+	logger->info("Database CharSet :  %s", config->getConfig("database.chset", "utf8").c_str());
     
-    // std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname
-    rt2db = RT2DB::instance(std::string("mysql"), std::string("localhost"), std::string("3306"), std::string("boolpae"), std::string("tjsl4fkd"), std::string("rt_stt"), std::string("utf8"));
+    rt2db = RT2DB::instance(config->getConfig("database.type", "mysql"),
+                            config->getConfig("database.addr", "localhost"),
+                            config->getConfig("database.port", "3306"),
+                            config->getConfig("database.id", "stt"),
+                            config->getConfig("database.pw", "rt_stt"),
+                            config->getConfig("database.name", "rt_stt"),
+                            config->getConfig("database.chset", "utf8"),
+                            logger);
     if (!rt2db) {
         logger->error("MAIN - ERROR (Failed to get RT2DB instance)");
         delete config;
@@ -91,7 +117,7 @@ int main(int argc, const char** argv)
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
     
-    deliver = STTDeliver::instance(logger);
+    deliver = STTDeliver::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
 
 	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger, rt2db);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
@@ -112,12 +138,18 @@ int main(int argc, const char** argv)
         goto FINISH;
 	}
 
+#if 0
     logger->debug("input waiting... quit");
 	while (1) {
 		std::cin >> input;
 		if (!input.compare("quit")) break;
 	}
-
+#else
+    while (gRunning)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+#endif
 
 	vdcm->outputVDCStat();
 	vrcm->outputVRCStat();

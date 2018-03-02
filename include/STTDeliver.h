@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <stdint.h>
 
@@ -43,17 +43,19 @@ class STTDeliver
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
     
+    std::string m_sResultPath;
+    
     log4cpp::Category *m_Logger;
     
 public:
-	static STTDeliver* instance(log4cpp::Category *logger);
+	static STTDeliver* instance(std::string path, log4cpp::Category *logger);
 	static void release();
 
 	void insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
 
 private:
-	STTDeliver(log4cpp::Category *logger);
+	STTDeliver(std::string path, log4cpp::Category *logger);
 	virtual ~STTDeliver();
 
 	static void thrdMain(STTDeliver* dlv);

@@ -49,14 +49,14 @@ private:
     log4cpp::Category *m_Logger;
     
 private:
-    RT2DB();
+    RT2DB(log4cpp::Category *logger);
 	static void thrdMain(RT2DB* r2d);
 	void insertRtSTTData(RTSTTQueItem* item);
     
 public:
     virtual ~RT2DB();
     
-    static RT2DB* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset);
+    static RT2DB* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger);
     static void release();
     
     void setLogger(log4cpp::Category *logger) { m_Logger = logger; }

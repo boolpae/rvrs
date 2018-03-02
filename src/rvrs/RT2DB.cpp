@@ -8,10 +8,10 @@
 RT2DB* RT2DB::m_instance = nullptr;
 
 
-RT2DB::RT2DB()
-: m_bLiveFlag(true), m_Logger(NULL)
+RT2DB::RT2DB(log4cpp::Category *logger)
+: m_bLiveFlag(true), m_Logger(logger)
 {
-    
+	m_Logger->debug("RT2DB Constructed.");
 }
 
 RT2DB::~RT2DB()
@@ -19,6 +19,7 @@ RT2DB::~RT2DB()
     ConnectionPool_stop(m_pool);
     ConnectionPool_free(&m_pool);
     URL_free(&m_url);
+	m_Logger->debug("RT2DB Destructed.");
 }
 
 void RT2DB::thrdMain(RT2DB * r2d)
@@ -66,7 +67,7 @@ void RT2DB::thrdMain(RT2DB * r2d)
             }
             CATCH(SQLException)
             {
-                printf("RT2DB::insertCallInfo - SQLException -- %s\n", Exception_frame.message);
+                r2d->m_Logger->error("RT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
                 Connection_close(con);
                 con = ConnectionPool_getConnection(r2d->m_pool);
             }
@@ -80,11 +81,11 @@ void RT2DB::thrdMain(RT2DB * r2d)
     Connection_close(con);
 }
 
-RT2DB* RT2DB::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset)
+RT2DB* RT2DB::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger)
 {
     if (m_instance) return m_instance;
     
-    m_instance = new RT2DB();
+    m_instance = new RT2DB(logger);
     
     std::string sUrl = dbtype + "://" + dbuser + ":" + dbpw + "@" + dbhost + ":" + dbport + "/" + dbname + "?charset=" + charset;
     m_instance->m_url = URL_new(sUrl.c_str());
@@ -97,7 +98,7 @@ RT2DB* RT2DB::instance(std::string dbtype, std::string dbhost, std::string dbpor
     }
     CATCH(SQLException)
     {
-        printf("SQLException -- %s\n", Exception_frame.message);
+        logger->error("RT2DB::instance - SQLException -- %s", Exception_frame.message);
         
         ConnectionPool_free(&m_instance->m_pool);
         URL_free(&m_instance->m_url);
@@ -135,20 +136,20 @@ int RT2DB::insertCallInfo(std::string callid, time_t stime)
     {
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
-            printf("RT2DB::insertCallInfo - can't get connection from pool\n");
+            m_Logger->error("RT2DB::insertCallInfo - can't get connection from pool");
             return 1;
         }
         else if ( !Connection_ping(con) ) {
-            printf("RT2DB::insertCallInfo - inactive connection from pool\n");
+            m_Logger->error("RT2DB::insertCallInfo - inactive connection from pool");
             Connection_close(con);
             return 2;
         }
         Connection_execute(con, "INSERT INTO CALL_LIST (CALL_ID, STIME, FLAG, REGTIME) VALUES ('%s', '%04d-%02d-%02d %02d:%02d:%02d', 'S', now())",
-        callid.c_str(), resultT.tm_year, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec);
+        callid.c_str(), resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec);
     }
     CATCH(SQLException)
     {
-        printf("RT2DB::insertCallInfo - SQLException -- %s\n", Exception_frame.message);
+        m_Logger->error("RT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
     }
     FINALLY
     {
@@ -169,20 +170,20 @@ int RT2DB::updateCallInfo(std::string callid, time_t stime)
     {
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
-            printf("RT2DB::updateCallInfo - can't get connection from pool\n");
+            m_Logger->error("RT2DB::updateCallInfo - can't get connection from pool");
             return 1;
         }
         else if ( !Connection_ping(con) ) {
-            printf("RT2DB::updateCallInfo - inactive connection from pool\n");
+            m_Logger->error("RT2DB::updateCallInfo - inactive connection from pool");
             Connection_close(con);
             return 2;
         }
         Connection_execute(con, "UPDATE CALL_LIST SET ETIME='%04d-%02d-%02d %02d:%02d:%02d', FLAG='E' WHERE CALL_ID='%s' AND FLAG='S'",
-        resultT.tm_year, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec, callid.c_str());
+        resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec, callid.c_str());
     }
     CATCH(SQLException)
     {
-        printf("RT2DB::updateCallInfo - SQLException -- %s\n", Exception_frame.message);
+        m_Logger->error("RT2DB::updateCallInfo - SQLException -- %s", Exception_frame.message);
     }
     FINALLY
     {
