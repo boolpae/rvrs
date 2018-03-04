@@ -1,4 +1,4 @@
-﻿
+
 #ifdef WIN32
 
 #include <WinSock2.h>
@@ -155,9 +155,9 @@ int16_t Protocol::CallSignal::makePacket(uint8_t flag)
         memcpy(pos, &pacChnCnt, 1);
 		pos += sizeof(uint8_t);
         memcpy(pos, &pacEnc, 1);
+        pos += sizeof(uint8_t);
 	}
 
-    pos += sizeof(uint8_t);
 	memcpy(pos, pacFingerPrint, ::strlen((const char*)pacFingerPrint));
 
 	return int16_t(0);
