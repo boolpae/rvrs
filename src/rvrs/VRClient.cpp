@@ -1,4 +1,4 @@
-﻿
+
 #include "VRClient.h"
 #include "VRCManager.h"
 #include "WorkTracer.h"
@@ -153,7 +153,9 @@ void VRClient::thrdMain(VRClient* client) {
                         }
                         //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         // to STTDeliver(file)
-                        client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                        if (client->m_deliver) {
+                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                        }
                         free(value);
                         
                         diaNumber++;

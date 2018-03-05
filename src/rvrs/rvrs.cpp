@@ -93,31 +93,37 @@ int main(int argc, const char** argv)
 	logger->info("Voice Begin Port :  %d", config->getConfig("rvrs.udp_bport", 10000));
 	logger->info("Voice END Port   :  %d", config->getConfig("rvrs.udp_eport", 11000));
 
-	logger->info("Database Type    :  %s", config->getConfig("database.type", "mysql").c_str());
-	logger->info("Database Addr    :  %s", config->getConfig("database.addr", "localhost").c_str());
-	logger->info("Database Port    :  %s", config->getConfig("database.port", "3306").c_str());
-	logger->info("Database ID      :  %s", config->getConfig("database.id", "stt").c_str());
-	logger->info("Database Name    :  %s", config->getConfig("database.name", "rt_stt").c_str());
-	logger->info("Database CharSet :  %s", config->getConfig("database.chset", "utf8").c_str());
-    
-    rt2db = RT2DB::instance(config->getConfig("database.type", "mysql"),
-                            config->getConfig("database.addr", "localhost"),
-                            config->getConfig("database.port", "3306"),
-                            config->getConfig("database.id", "stt"),
-                            config->getConfig("database.pw", "rt_stt"),
-                            config->getConfig("database.name", "rt_stt"),
-                            config->getConfig("database.chset", "utf8"),
-                            logger);
-    if (!rt2db) {
-        logger->error("MAIN - ERROR (Failed to get RT2DB instance)");
-        delete config;
-        return -1;
+    logger->info("Database USE     :  %s", config->getConfig("database.use", "false").c_str());
+    if (!config->getConfig("database.use", "false").compare("true")) {
+        logger->info("Database Type    :  %s", config->getConfig("database.type", "mysql").c_str());
+        logger->info("Database Addr    :  %s", config->getConfig("database.addr", "localhost").c_str());
+        logger->info("Database Port    :  %s", config->getConfig("database.port", "3306").c_str());
+        logger->info("Database ID      :  %s", config->getConfig("database.id", "stt").c_str());
+        logger->info("Database Name    :  %s", config->getConfig("database.name", "rt_stt").c_str());
+        logger->info("Database CharSet :  %s", config->getConfig("database.chset", "utf8").c_str());
+        
+        rt2db = RT2DB::instance(config->getConfig("database.type", "mysql"),
+                                config->getConfig("database.addr", "localhost"),
+                                config->getConfig("database.port", "3306"),
+                                config->getConfig("database.id", "stt"),
+                                config->getConfig("database.pw", "rt_stt"),
+                                config->getConfig("database.name", "rt_stt"),
+                                config->getConfig("database.chset", "utf8"),
+                                logger);
+        if (!rt2db) {
+            logger->error("MAIN - ERROR (Failed to get RT2DB instance)");
+            delete config;
+            return -1;
+        }
     }
+    logger->info("STT Result USE       :  %s", config->getConfig("stt_result.use", "true").c_str());
 
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
     
-    deliver = STTDeliver::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
+    if (!config->getConfig("stt_result.use", "false").compare("true")) {
+        deliver = STTDeliver::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
+    }
 
 	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger, rt2db);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
