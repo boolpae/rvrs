@@ -63,7 +63,7 @@ void RT2DB::thrdMain(RT2DB * r2d)
             TRY
             {
                 Connection_execute(con, "INSERT INTO RTSTT_DATA (IDX,CALL_ID,SPKNO,SPOS,EPOS,STT,REGTIME) VALUES (%d,'%s','%c',%lu,%lu,'%s',now())",
-                item->getDiaIdx(), item->getCallId().c_str(),((item->getSpkNo() == 1)?'R':'L'), item->getBpos()/160, item->getEpos()/160, ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
+                item->getDiaIdx(), item->getCallId().c_str(),((item->getSpkNo() == 1)?'R':'L'), item->getBpos(), item->getEpos(), ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
             }
             CATCH(SQLException)
             {

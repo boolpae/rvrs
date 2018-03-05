@@ -64,6 +64,9 @@ void VRClient::thrdMain(VRClient* client) {
     gearman_return_t rc;
     PosPair stPos;
     std::vector< PosPair > vPos;
+    
+    char* pEndpos=NULL;
+    std::size_t start,end;
 
     
     char buf[BUFLEN];
@@ -147,14 +150,20 @@ void VRClient::thrdMain(VRClient* client) {
                 {
                 // Make use of value
                     if (value) {
+                        pEndpos = strchr((char*)value, '|');
+                        if (pEndpos) {
+                            sscanf(pEndpos, "|%lu|%lu", &start, &end);
+                            client->m_Logger->debug("VRClient::thrdMain(%s) - start_pos(%lu), end_pos(%lu).", client->m_sCallId.c_str(), start, end);
+                            *pEndpos = 0;
+                        }
                         // to DB
                         if (client->m_r2d) {
-                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos, std::string((const char*)value));
+                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
                         }
                         //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         // to STTDeliver(file)
                         if (client->m_deliver) {
-                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos/160, vPos[item->spkNo -1].epos/160);
                         }
                         free(value);
                         

@@ -116,7 +116,7 @@ int main(int argc, const char** argv)
             return -1;
         }
     }
-    logger->info("STT Result USE       :  %s", config->getConfig("stt_result.use", "true").c_str());
+    logger->info("STT Result USE   :  %s", config->getConfig("stt_result.use", "true").c_str());
 
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
