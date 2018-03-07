@@ -150,7 +150,6 @@ void VRClient::thrdMain(VRClient* client) {
                 {
                     // Make use of value
                     if (value) {
-                        //((char *)value)[result_size-1] = 0;
                         std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                         pEndpos = strchr((char*)value, '|');
                         if (pEndpos) {

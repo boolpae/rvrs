@@ -41,6 +41,7 @@ void VDClient::finish()
 
 	// 인스턴스 생성 후 init() 실패 후 finish() 호출한 경우, 생성된 인스턴스 삭제
 	if (m_nSockfd) {
+        close(m_nSockfd);
 		m_thrd.join();
 	}
 
@@ -100,8 +101,8 @@ void VDClient::thrdMain(VDClient * client)
 
 	while (client->m_nLiveFlag) {
 		//clear the buffer by filling null, it might have previously received data
-		tv.tv_sec = 0;	// for debug
-		tv.tv_usec = 100000;
+		tv.tv_sec = 1;	// for debug
+		tv.tv_usec = 10000;
 		FD_ZERO(&rfds);
 		FD_SET(client->m_nSockfd, &rfds);
 
