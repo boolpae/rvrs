@@ -44,18 +44,25 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
 			delete g;
 
             in_size = item->getSTTValue().size();
-            out_size = item->getSTTValue().size() * 1.5;
+            out_size = item->getSTTValue().size() * 2;
             utf_buf = (char *)malloc(out_size);
-            memset(utf_buf, 0, out_size);
+            
+            if (utf_buf) {
+                memset(utf_buf, 0, out_size);
 
-            input_buf_ptr = (char *)item->getSTTValue().c_str();
-            output_buf_ptr = utf_buf;
+                input_buf_ptr = (char *)item->getSTTValue().c_str();
+                output_buf_ptr = utf_buf;
 
-            it = iconv_open("UTF-8", "EUC-KR");
+                it = iconv_open("UTF-8", "EUC-KR");
 
-            ret = iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
-             
-            iconv_close(it);
+                ret = iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
+                 
+                iconv_close(it);
+            }
+            else {
+                utf_buf = nullptr;
+                ret = -1;
+            }
 
 			// item으로 로직 수행
 			if (item->getJobType() == 'R') {
@@ -73,13 +80,14 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getBpos()) << std::endl;
                 }
-				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf) << std::endl;//item->getSTTValue();
+				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf);//item->getSTTValue();
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getEpos()) << std::endl;
                 }
+                sttresult << std::endl;
 				sttresult.close();
 			}
-            free(utf_buf);
+            if (utf_buf) free(utf_buf);
 			delete item;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));

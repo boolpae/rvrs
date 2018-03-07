@@ -150,8 +150,8 @@ void VRClient::thrdMain(VRClient* client) {
                 {
                     // Make use of value
                     if (value) {
-                        ((char *)value)[result_size-1] = 0;
-                        //std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
+                        //((char *)value)[result_size-1] = 0;
+                        std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                         pEndpos = strchr((char*)value, '|');
                         if (pEndpos) {
                             sscanf(pEndpos, "|%lu|%lu", &start, &end);
@@ -165,7 +165,7 @@ void VRClient::thrdMain(VRClient* client) {
                         //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         // to STTDeliver(file)
                         if (client->m_deliver) {
-                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos/160, vPos[item->spkNo -1].epos/160);
+                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                         }
                         free(value);
                         
