@@ -4,7 +4,7 @@
 
 #define RVRS_VERSION_MAJ 0
 #define RVRS_VERSION_MIN 0
-#define RVRS_VERSION_BLD 180228
+#define RVRS_VERSION_BLD 180307
 
 
 #endif // _RVRS_H_

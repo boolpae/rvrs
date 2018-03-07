@@ -73,7 +73,7 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getBpos()) << std::endl;
                 }
-				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf);//item->getSTTValue();
+				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf) << std::endl;//item->getSTTValue();
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getEpos()) << std::endl;
                 }

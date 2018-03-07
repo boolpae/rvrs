@@ -148,8 +148,10 @@ void VRClient::thrdMain(VRClient* client) {
 #endif
                 if (gearman_success(rc))
                 {
-                // Make use of value
+                    // Make use of value
                     if (value) {
+                        ((char *)value)[result_size-1] = 0;
+                        //std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                         pEndpos = strchr((char*)value, '|');
                         if (pEndpos) {
                             sscanf(pEndpos, "|%lu|%lu", &start, &end);

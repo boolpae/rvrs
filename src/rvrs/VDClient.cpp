@@ -1,4 +1,4 @@
-﻿
+
 #include "VDClient.h"
 #include "VRClient.h"
 #include "VRCManager.h"
@@ -100,8 +100,8 @@ void VDClient::thrdMain(VDClient * client)
 
 	while (client->m_nLiveFlag) {
 		//clear the buffer by filling null, it might have previously received data
-		tv.tv_sec = 1;	// for debug
-		tv.tv_usec = 10000;
+		tv.tv_sec = 0;	// for debug
+		tv.tv_usec = 100000;
 		FD_ZERO(&rfds);
 		FD_SET(client->m_nSockfd, &rfds);
 
