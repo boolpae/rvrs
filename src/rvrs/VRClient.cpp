@@ -154,7 +154,7 @@ void VRClient::thrdMain(VRClient* client) {
                         pEndpos = strchr((char*)value, '|');
                         if (pEndpos) {
                             sscanf(pEndpos, "|%lu|%lu", &start, &end);
-                            client->m_Logger->debug("VRClient::thrdMain(%s) - start_pos(%lu), end_pos(%lu).", client->m_sCallId.c_str(), start, end);
+                            //client->m_Logger->debug("VRClient::thrdMain(%s) - start_pos(%lu), end_pos(%lu).", client->m_sCallId.c_str(), start, end);
                             *pEndpos = 0;
                         }
                         // to DB

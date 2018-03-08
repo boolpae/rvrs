@@ -42,7 +42,8 @@ void VDClient::finish()
 	// 인스턴스 생성 후 init() 실패 후 finish() 호출한 경우, 생성된 인스턴스 삭제
 	if (m_nSockfd) {
         close(m_nSockfd);
-		m_thrd.join();
+		m_thrd.detach();//
+        //m_thrd.join();
 	}
 
 	delete this;
@@ -101,8 +102,8 @@ void VDClient::thrdMain(VDClient * client)
 
 	while (client->m_nLiveFlag) {
 		//clear the buffer by filling null, it might have previously received data
-		tv.tv_sec = 1;	// for debug
-		tv.tv_usec = 10000;
+		tv.tv_sec = 0;	// for debug
+		tv.tv_usec = 500000;
 		FD_ZERO(&rfds);
 		FD_SET(client->m_nSockfd, &rfds);
 
@@ -195,12 +196,13 @@ void VDClient::thrdMain(VDClient * client)
 			// timeout : 현재 30초로 고정
 			if ((time(NULL) - client->m_tTimeout) > 30) {
 				WorkTracer::instance()->insertWork(client->m_sCallId, 'R', WorkQueItem::PROCTYPE::R_END_VOICE, client->m_nSpkNo);
+                client->m_Logger->debug("VDClient::thrdMain(%d) - Working... timeout(%llu)", client->m_nPort, (time(NULL) - client->m_tTimeout));
 				recv_len = 0;
 				goto END_CALL;
 			}
 
 			//printf("\t[DEBUG] VDClient::thrdMain(%d) - Working... timeout(%llu)\n", client->m_nPort, (time(NULL) - client->m_tTimeout));
-            client->m_Logger->info("VDClient::thrdMain(%d) - Working... timeout(%llu)", client->m_nPort, (time(NULL) - client->m_tTimeout));
+            //client->m_Logger->debug("VDClient::thrdMain(%d) - Working... timeout(%llu)", client->m_nPort, (time(NULL) - client->m_tTimeout));
 		}
 		else if ((selVal == 0) && (client->m_nWorkStat == 2)) {
 			recv_len = 0;

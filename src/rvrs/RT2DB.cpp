@@ -19,6 +19,8 @@ RT2DB::~RT2DB()
     ConnectionPool_stop(m_pool);
     ConnectionPool_free(&m_pool);
     URL_free(&m_url);
+    m_thrd.join();
+        
 	m_Logger->debug("RT2DB Destructed.");
 }
 
@@ -126,8 +128,6 @@ void RT2DB::release()
     if (m_instance) {
         m_instance->m_bLiveFlag = false;
 
-        m_instance->m_thrd.join();
-        
         delete m_instance;
         m_instance = nullptr;
     }

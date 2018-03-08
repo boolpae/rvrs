@@ -153,7 +153,10 @@ int main(int argc, const char** argv)
 #else
     while (gRunning)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        vdcm->outputVDCStat();
+        vrcm->outputVRCStat();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 #endif
 
