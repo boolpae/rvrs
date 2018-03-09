@@ -16,6 +16,8 @@
 
 #endif
 
+#define CONN_GEARMAN_PER_CALL
+
 using namespace std;
 
 VRCManager* VRCManager::ms_instance = NULL;
@@ -83,6 +85,10 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 	std::string sRes = "";
 	int rec = 0;
 
+	struct timeval tv;
+	fd_set rfds;
+	int selVal;
+
 	RECONNECT:
 	if (!m_nSockGearman && !connectGearman()) {
 		//printf("\t[DEBUG] VRCManager::getGearmanFnames() - error connect to GearHost.\n");
@@ -95,6 +101,7 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
         m_Logger->error("VRCManager::getGearmanFnames() - send : %d", errno);
 		if (++rec > 3) {
 			//printf("\t[DEBUG] VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.\n");
+            disconnectGearman();
             m_Logger->warn("VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.");
 			return false;
 		}
@@ -102,24 +109,44 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 	}
 
 	while (1) {
-		recvLen = ::recv(m_nSockGearman, recvBuf, RECV_BUFF_LEN-1, 0);
-		if (recvLen <= 0) {
-			perror("VRCManager::getGearmanFnames() - send :");
-            m_Logger->error("VRCManager::getGearmanFnames() - send : %d", errno);
-			return false;
-		}
-		recvBuf[recvLen] = 0;
-		sRes.append(recvBuf);
+		tv.tv_sec = 0;	// for debug
+		tv.tv_usec = 500000;
+		FD_ZERO(&rfds);
+		FD_SET(m_nSockGearman, &rfds);
 
-		if ( !strncmp( (sRes.c_str() + (sRes.length() - 2)), ".\n", 2) ) {	// 마지막 문장이 ".\r\n" 인 경우 루프 탈출
-			break;
-		}
+		selVal = select(m_nSockGearman+1, &rfds, NULL, NULL, &tv);
+
+        if (selVal > 0) {
+            recvLen = ::recv(m_nSockGearman, recvBuf, RECV_BUFF_LEN-1, 0);
+            if (recvLen <= 0) {
+                perror("VRCManager::getGearmanFnames() - send :");
+                disconnectGearman();
+                m_Logger->error("VRCManager::getGearmanFnames() - send : %d", errno);
+                return false;
+            }
+            recvBuf[recvLen] = 0;
+            sRes.append(recvBuf);
+
+            if ( !strncmp( (sRes.c_str() + (sRes.length() - 2)), ".\n", 2) ) {	// 마지막 문장이 ".\r\n" 인 경우 루프 탈출
+                break;
+            }
+        }
+        else if (selVal == 0) {
+            m_Logger->error("VRCManager::getGearmanFnames() - recv timeout : reconnect(%d)", rec);
+            if (++rec > 3) {
+                disconnectGearman();
+                //printf("\t[DEBUG] VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.\n");
+                m_Logger->warn("VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.");
+                return false;
+            }
+            goto RECONNECT;
+        }
 	}
 	
 	getFnamesFromString(sRes, vFnames);
 
 	//printf("\t[DEBUG] - Gearman STATUS <<\n%s\n>>\n", sRes.c_str());
-    m_Logger->debug("\n --- Gearman STATUS --- \n%s ---------------------- \n", sRes.c_str());
+    //m_Logger->debug("\n --- Gearman STATUS --- \n%s ---------------------- \n", sRes.c_str());
 	return true;
 }
 
@@ -163,7 +190,7 @@ VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t ge
 	ms_instance->setGearHost(gearHostIp);//);("192.168.229.135")
 	ms_instance->setGearPort(gearHostPort);
     
-#if 0   // 항시 연결인 경우 사용
+#ifndef CONN_GEARMAN_PER_CALL   // 항시 연결인 경우 사용
     if (!ms_instance->connectGearman()) {
         //printf("\t[DEBUG] RCManager::instance() - ERROR (Failed to connect gearhost)\n");
         logger->error("VRCManager::instance() - ERROR (Failed to connect gearhost)");
@@ -191,8 +218,10 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 	vector< string > vFnames;
 	vector< string >::iterator iter;
 
+	std::lock_guard<std::mutex> g(m_mxQue);
+
 	// 1. vFnames에 실시간STT 처리를 위한 worker의 fname 가져오기 &vFnames
-#if 0   // Gearmand과 항시 연결일 경우에 사용
+#ifndef CONN_GEARMAN_PER_CALL   // Gearmand과 항시 연결일 경우에 사용
 	if (!getGearmanFnames(vFnames))
 #else   // 요청 시 마다 Gearman에 연결
     if (!connectGearman() || !getGearmanFnames(vFnames))
@@ -202,7 +231,10 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
         m_Logger->error("VRCManager::requestVRC() - error Failed to get gearman status");
 		return int16_t(3);	// Gearman으로부터 Fn Name 가져오기 실패
 	}
+    
+#ifdef CONN_GEARMAN_PER_CALL
     disconnectGearman();
+#endif
 	// DEBUG
 	// vFnames.push_back(callid);
 
@@ -271,9 +303,11 @@ void VRCManager::outputVRCStat()
 	for (iter = m_mWorkerTable.begin(); iter != m_mWorkerTable.end(); iter++) {
 		//client = (VRClient*)iter->second;
 		//printf("\t[DEBUG] VRCManager::outputVRCStat() - VRClient(%s)\n", iter->first.c_str());
-        m_Logger->debug("VRCManager::outputVRCStat() - VRClient(%s)", iter->first.c_str());
+        m_Logger->debug("VRCManager::outputVRCStat() - VRClient(%s, %s)", iter->first.c_str(), iter->second->getCallId().c_str());
 	}
-    m_Logger->info("VRCManager::outputVRCStat() - Current working VRClient count(%d)", m_mWorkerTable.size());
+    
+    if ( m_mWorkerTable.size() )
+        m_Logger->info("VRCManager::outputVRCStat() - Current working VRClient count(%d)", m_mWorkerTable.size());
 }
 
 VRClient* VRCManager::getVRClient(string& callid)

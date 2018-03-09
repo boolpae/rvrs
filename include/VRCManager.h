@@ -43,6 +43,8 @@ class VRCManager
     log4cpp::Category *m_Logger;
     RT2DB* m_r2d;
 
+	mutable std::mutex m_mxQue;
+
 public:
 	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);
 	static void release();
