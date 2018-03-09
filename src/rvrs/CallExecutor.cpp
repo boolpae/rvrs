@@ -1,4 +1,4 @@
-﻿
+
 #include "CallExecutor.h"
 #include "CallSignal.h"
 #include "VRCManager.h"
@@ -68,9 +68,9 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 	ms_bThrdRun = true;
 	while (ms_bThrdRun) {
 		while ((item = exe->popPacket())) {
-			//printf("\t[%d] Received packet from %s:%d\n", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port));
+			exe->m_Logger->debug("CallExecutor::thrdMain() - [%d] Received CallSignal from %s:%d", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port));
 			//printf("\t[%d] Received packet size: %d\n", num, item->m_packetSize);
-            exe->m_Logger->debug("[%d] Received packet size: %d\n", num, item->m_packetSize);
+            //exe->m_Logger->debug("[%d] Received packet size: %d\n", num, item->m_packetSize);
 
 			// 패킷 파싱 후 호 시작/종료 에 대한 처리 및 응답 패킷 생성 후 응답 로직
 			cs->init();
@@ -100,6 +100,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 							// ERRCODE: 504 - Gearman 호스트 연결/통신 실패
 							cs->makePacket(item->m_packet, item->m_packetSize, 504);
 						}
+                        exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Failed requestVRC() from %s:%d - (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), resReq);
 					}
 					// 2. VDC 요청 : 성공 시 성공 패킷 생성하여 sendto, 실패 시 removeVRC 수행 후 실패 패킷 생성하여 sendto
 					else {
@@ -110,6 +111,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 0);
                             exe->m_vrcm->removeVRC(sCallId);
 							cs->makePacket(item->m_packet, item->m_packetSize, 507);
+                            exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Failed requestVDC() from %s:%d - (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), resReq);
 						}
 						else {
 							// SUCCESS
@@ -133,6 +135,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 				}
 			}
 			else {
+                exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Error parse packet from %s:%d (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), resReq);
 				switch (resReq) {
 				case 404:	// 패킷 형태 오류 : 잘 못 된 패킷에 대한 응답
 					cs->makePacket(item->m_packet, item->m_packetSize);
@@ -144,6 +147,8 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 
 			sendto(item->m_sockfd, (const char*)cs->getPacket(), cs->getPacketSize(), 0, (struct sockaddr *)&item->m_si, sizeof(struct sockaddr_in));
 
+            exe->m_Logger->debug("CallExecutor::thrdMain() - [%d] Send response packet from %s:%d", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port));
+            
 			vPorts.clear();
 			delete item;
 			item = NULL;
