@@ -76,7 +76,8 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 			cs->init();
 			if ((resReq = cs->parsePacket(item->m_packet)) == 200) {
 				
-                cs->printPacketInfo();
+                // cs->printPacketInfo();
+                exe->m_Logger->info("CallExecutor::thrdMain() - [%d] Received CallSignal from %s:%d(%s)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), cs->getCallId());
 				
                 sCallId = std::string(cs->getCallId());
 
@@ -100,7 +101,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 							// ERRCODE: 504 - Gearman 호스트 연결/통신 실패
 							cs->makePacket(item->m_packet, item->m_packetSize, 504);
 						}
-                        exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Failed requestVRC() from %s:%d - (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), resReq);
+                        exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Failed requestVRC() from %s:%d(%s) - (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), cs->getCallId(), resReq);
 					}
 					// 2. VDC 요청 : 성공 시 성공 패킷 생성하여 sendto, 실패 시 removeVRC 수행 후 실패 패킷 생성하여 sendto
 					else {
@@ -111,7 +112,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 0);
                             exe->m_vrcm->removeVRC(sCallId);
 							cs->makePacket(item->m_packet, item->m_packetSize, 507);
-                            exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Failed requestVDC() from %s:%d - (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), resReq);
+                            exe->m_Logger->error("CallExecutor::thrdMain() - [%d] Failed requestVDC() from %s:%d(%s) - (%d)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), cs->getCallId(), resReq);
 						}
 						else {
 							// SUCCESS

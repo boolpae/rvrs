@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <stdint.h>
 
@@ -63,7 +63,8 @@ private:
 	VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);
 	virtual ~VRCManager();
 
-	bool connect2Gearman();
+	bool connectGearman();
+    void disconnectGearman();
 	bool getGearmanFnames(std::vector< std::string > &vFnames);
 	void getFnamesFromString(std::string &gearResult, std::vector< std::string > &vFnames);
 	void setGearHost(string host) { m_sGearHost = host; }

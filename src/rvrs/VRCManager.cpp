@@ -30,24 +30,22 @@ VRCManager::VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *
 
 VRCManager::~VRCManager()
 {
-	if (m_nSockGearman > 0) {
-		closesocket(m_nSockGearman);
-	}
+    disconnectGearman();
 	removeAllVRC();
 
 	//printf("\t[DEBUG] VRCManager Destructed.\n");
     m_Logger->debug("VRCManager Destructed.");
 }
 
-bool VRCManager::connect2Gearman()
+bool VRCManager::connectGearman()
 {
 	struct sockaddr_in addr;
 
 	if (m_nSockGearman) closesocket(m_nSockGearman);
 
 	if ((m_nSockGearman = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {//소켓 생성
-		perror("VRCManager::connect2Gearman() - socket :");
-        m_Logger->error("VRCManager::connect2Gearman() - socket : %d", errno);
+		perror("VRCManager::connectGearman() - socket :");
+        m_Logger->error("VRCManager::connectGearman() - socket : %d", errno);
 		m_nSockGearman = 0;
 		return false;
 	}
@@ -58,14 +56,22 @@ bool VRCManager::connect2Gearman()
 	addr.sin_port = htons(m_nGearPort);
 
 	if (::connect(m_nSockGearman, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		perror("VRCManager::connect2Gearman() - connect :");
-        m_Logger->error("VRCManager::connect2Gearman() - connect : %d", errno);
+		perror("VRCManager::connectGearman() - connect :");
+        m_Logger->error("VRCManager::connectGearman() - connect : %d", errno);
 		closesocket(m_nSockGearman);
 		m_nSockGearman = 0;
 		return false;
 	}
 
 	return true;
+}
+
+void VRCManager::disconnectGearman()
+{
+	if (m_nSockGearman > 0) {
+		closesocket(m_nSockGearman);
+        m_nSockGearman = 0;
+	}
 }
 
 #define RECV_BUFF_LEN 512
@@ -78,7 +84,7 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 	int rec = 0;
 
 	RECONNECT:
-	if (!m_nSockGearman && !connect2Gearman()) {
+	if (!m_nSockGearman && !connectGearman()) {
 		//printf("\t[DEBUG] VRCManager::getGearmanFnames() - error connect to GearHost.\n");
         m_Logger->error("VRCManager::getGearmanFnames() - error connect to GearHost.");
 		return false;
@@ -157,13 +163,15 @@ VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t ge
 	ms_instance->setGearHost(gearHostIp);//);("192.168.229.135")
 	ms_instance->setGearPort(gearHostPort);
     
-    if (!ms_instance->connect2Gearman()) {
+#if 0   // 항시 연결인 경우 사용
+    if (!ms_instance->connectGearman()) {
         //printf("\t[DEBUG] RCManager::instance() - ERROR (Failed to connect gearhost)\n");
         logger->error("VRCManager::instance() - ERROR (Failed to connect gearhost)");
         delete ms_instance;
         ms_instance = NULL;
     }
-	
+#endif
+
 	return ms_instance;
 }
 
@@ -184,11 +192,17 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 	vector< string >::iterator iter;
 
 	// 1. vFnames에 실시간STT 처리를 위한 worker의 fname 가져오기 &vFnames
-	if (!getGearmanFnames(vFnames)) {
+#if 0   // Gearmand과 항시 연결일 경우에 사용
+	if (!getGearmanFnames(vFnames))
+#else   // 요청 시 마다 Gearman에 연결
+    if (!connectGearman() || !getGearmanFnames(vFnames))
+#endif
+    {
 		//printf("\t[DEBUG] VRCManager::requestVRC() - error Failed to get gearman status\n");
         m_Logger->error("VRCManager::requestVRC() - error Failed to get gearman status");
 		return int16_t(3);	// Gearman으로부터 Fn Name 가져오기 실패
 	}
+    disconnectGearman();
 	// DEBUG
 	// vFnames.push_back(callid);
 
