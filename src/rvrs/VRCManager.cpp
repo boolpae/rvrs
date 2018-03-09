@@ -1,4 +1,4 @@
-﻿
+
 #include "VRCManager.h"
 #include "VRClient.h"
 #include "STTDeliver.h"
@@ -251,14 +251,15 @@ void VRCManager::removeAllVRC()
 
 void VRCManager::outputVRCStat()
 {
-	VRClient* client = NULL;
+	//VRClient* client = NULL;
 	map< string, VRClient* >::iterator iter;
 
 	for (iter = m_mWorkerTable.begin(); iter != m_mWorkerTable.end(); iter++) {
-		client = (VRClient*)iter->second;
+		//client = (VRClient*)iter->second;
 		//printf("\t[DEBUG] VRCManager::outputVRCStat() - VRClient(%s)\n", iter->first.c_str());
         m_Logger->debug("VRCManager::outputVRCStat() - VRClient(%s)", iter->first.c_str());
 	}
+    m_Logger->info("VRCManager::outputVRCStat() - Current working VRClient count(%d)", m_mWorkerTable.size());
 }
 
 VRClient* VRCManager::getVRClient(string& callid)

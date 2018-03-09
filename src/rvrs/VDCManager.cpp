@@ -127,11 +127,16 @@ void VDCManager::removeVDC(std::string & callid)
 
 void VDCManager::outputVDCStat()
 {
+    int vdccount=0;
 	std::vector< VDClient* >::iterator iter;
 
 	for (iter = m_vClients.begin(); iter != m_vClients.end(); iter++) {
 		//printf("\t[DEBUG] VDCManager::outputVDCStat() - VDCLlient(%d) Stat(%d)\n", ((VDClient*)(*iter))->getPort(), ((VDClient*)(*iter))->getWorkStat());
-        if (((VDClient*)(*iter))->getWorkStat())
+        if (((VDClient*)(*iter))->getWorkStat()) {
             m_Logger->debug("VDCManager::outputVDCStat() - VDCLlient(%d) Stat(%d)", ((VDClient*)(*iter))->getPort(), ((VDClient*)(*iter))->getWorkStat());
+            vdccount++;
+        }
 	}
+    
+    m_Logger->info("VDCManager::outputVDCStat() - Current working VDClient count(%d)", vdccount);
 }
