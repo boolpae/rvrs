@@ -179,7 +179,7 @@ void VRClient::thrdMain(VRClient* client) {
 
 				if (!item->flag) {	// 호가 종료되었음을 알리는 flag, 채널 갯수와 flag(0)이 들어온 갯수를 비교해야한다.
 					//printf("\t[DEBUG] VRClient::thrdMain(%s) - final item delivered.\n", client->m_sCallId.c_str());
-                    client->m_Logger->debug("VRClient::thrdMain(%s) - final item delivered.", client->m_sCallId.c_str());
+                    client->m_Logger->debug("VRClient::thrdMain(%s, %d) - final item delivered.", client->m_sCallId.c_str(), item->spkNo);
 					if (!(--client->m_nNumofChannel)) {
 						client->m_Mgr->removeVRC(client->m_sCallId);
 						if ( item->voiceData != NULL ) delete[] item->voiceData;
