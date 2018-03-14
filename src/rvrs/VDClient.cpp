@@ -5,6 +5,8 @@
 #include "WorkTracer.h"
 
 #include <thread>
+#include <iostream>
+#include <fstream>
 
 #ifndef WIN32
 #include <unistd.h>
@@ -99,7 +101,11 @@ void VDClient::thrdMain(VDClient * client)
 	QueItem* item = NULL;
 	char* pos = NULL;
 	uint16_t nVDSize;
-
+#if 0 // save pcm file
+    int nRecvCount=0;
+    std::string filename;
+    std::ofstream pcmFile;
+#endif
 	while (client->m_nLiveFlag) {
 		//clear the buffer by filling null, it might have previously received data
 		tv.tv_sec = 0;	// for debug
@@ -145,7 +151,15 @@ void VDClient::thrdMain(VDClient * client)
 					item->lenVoiceData = 0;
 					memset(item->voiceData, 0x00, VOICE_BUFF_LEN);
 				}
-
+#if 0 // save pcm file
+                nRecvCount++;
+                filename = client->getCallId() + std::string("_") + std::to_string(client->getSpkNo()) + std::string(".pcm");
+                pcmFile.open(filename, ios::out | ios::app | ios::binary);
+				if (pcmFile.is_open()) {
+					pcmFile.write((const char*)pos, recv_len);
+                    pcmFile.close();
+				}
+#endif
 				memcpy(item->voiceData + item->lenVoiceData, pos, recv_len);
 				item->lenVoiceData += recv_len;
                 
@@ -162,7 +176,7 @@ void VDClient::thrdMain(VDClient * client)
 			if (client->m_pVrc && (client->m_nWorkStat == 2)) {	// 호 종료 요청이 들어왔을 때
 			END_CALL:
 				if (client->m_pVrc) {
-					//printf("\t[DEBUG] VDClient(%d) work ending...\n", client->m_nPort);
+					//printf("\t[DEBUG] VDClient(%d) work ending...(%d)\n", client->m_nPort, nRecvCount);
                     client->m_Logger->debug("VDClient::thrdMain() - VDClient(%d) work ending...", client->m_nPort);
 					if (!item) {
 						item = new QueItem;
@@ -189,7 +203,9 @@ void VDClient::thrdMain(VDClient * client)
 				client->m_nSpkNo = 0;
 				client->m_nWorkStat = 0;
 				client->m_pVrc = NULL;
-
+#if 0 // save pcm file
+                nRecvCount=0;
+#endif
 			}
 		}
 		else if ((selVal == 0) && (client->m_nWorkStat == 1)) {	// 이 로직은 수정해야할 필요가 있다. 현재는 30초동안 데이터가 안들어 올 경우 호를 종료
