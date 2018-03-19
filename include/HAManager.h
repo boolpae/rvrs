@@ -1,31 +1,95 @@
-#ifndef __HAMANAGER_H__
-#define __HAMANAGER_H__
+#ifndef _HAMANAGER_H_
+#define _HAMANAGER_H_
 
+#include <iostream>
+#include <map>
+#include <queue>
 #include <thread>
+#include <mutex>
+
+
+#define LOG4CPP
+
+#ifdef LOG4CPP
+
+#include <log4cpp/Category.hh>
+
+class VRCManager;
+class VDCManager;
+
+#endif
+
+class SyncItem {
+    public:
+    SyncItem(
+        bool bSignalType, // true: call start, false: call end
+        std::string sCallId,
+        std::string sFuncName,
+        unsigned short n1port,
+        unsigned short n2port);
+    virtual ~SyncItem();
+
+    bool m_bSignalType; // true: call start, false: call end
+    std::string m_sCallId;
+    std::string m_sFuncName;
+    unsigned short m_n1port;
+    unsigned short m_n2port;
+};
 
 class HAManager {
-private:
-    static HAManager* m_instance;
-    static bool m_bHAState; // Active: true, Standby: false
-    
-    std::thread m_thrd;
-    bool m_bLiveFlag;
-    
-public:
-    
-private:
-    HAManager();
-    
-    static void threMain(HAManager* mgr);
-    
-public:
+    public:
     virtual ~HAManager();
-    
+
+#ifdef LOG4CPP
+    static HAManager* instance(VRCManager *vrm, VDCManager *vdm, log4cpp::Category *logger);
+#else
     static HAManager* instance();
+#endif
+    static HAManager* getInstance();
     static void release();
-    
-    int start();
+
+    int init(std::string ipaddr, uint16_t port);
+
+    //int sendCallSignal();
+
+    int insertSyncItem( bool calltype, std::string callid, std::string funcname, uint16_t port1, uint16_t port2 );
+    //void deleteSyncItem( std::string callid );
+
+    bool getHAStat() { return m_bStat; }
+    void outputSignals();
+
+    private:
+#ifdef LOG4CPP
+    HAManager(VRCManager *vrm, VDCManager *vdm, log4cpp::Category *logger);
+#else
+    HAManager();
+#endif
+
+    static void thrdActive(HAManager* mgr);
+    static void thrdSender(HAManager* mgr, int sockfd);
+
+    static void thrdStandby(HAManager* mgr, int standbysock);
+
+    private:
+    static HAManager* m_instance;
+
+    volatile bool m_bLiveFlag;
+    volatile bool m_bSenderFlag;
+#ifdef LOG4CPP
+    VRCManager *m_vrm;
+    VDCManager *m_vdm;
+    log4cpp::Category *m_Logger;
+#endif
+    volatile bool m_bStat;   // true: active, false: standby
+    int m_nActiveSock;
+    int m_nStandbySock;
+    std::string m_sAddr;
+    short m_nPort;
+
+    std::map< std::string, SyncItem* > m_mSyncTable;
+    std::queue< SyncItem* > m_qSignalQue;
+	mutable std::mutex m_mxQue;
 };
 
 
-#endif // __HAMANAGER_H__
+#endif  // _HAMANAGER_H_

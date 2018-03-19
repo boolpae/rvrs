@@ -5,6 +5,8 @@
 #include "VDCManager.h"
 #include "WorkTracer.h"
 #include "RT2DB.h"
+#include "HAManager.h"
+#include "VRClient.h"
 
 #include <thread>
 #include <chrono>
@@ -37,8 +39,8 @@ QueueItem::~QueueItem()
 	printf("\t\t[%d] QueueItem Destroyed!\n", m_nNum);
 }
 
-CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db)
-	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db)
+CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham)
+	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db), m_ham(ham)
 {
 	//printf("\t[%d] CallExecutor Created!\n", m_nNum);
     m_Logger->debug("[%d] CallExecutor Created!", m_nNum);
@@ -122,6 +124,10 @@ void CallExecutor::thrdMain(CallExecutor* exe)
                             }
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 1);
 							cs->makePacket(item->m_packet, item->m_packetSize, vPorts);
+                            
+                            // HA
+                            if (exe->m_ham)
+                                exe->m_ham->insertSyncItem(true, sCallId, exe->m_vrcm->getVRClient(sCallId)->getFname(), vPorts[0], vPorts[1]);
 						}
 					}
 				}
@@ -133,6 +139,10 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_END_PROC);
                     exe->m_vdcm->removeVDC(sCallId);
 					cs->makePacket(item->m_packet, item->m_packetSize, 200);
+
+                    // HA
+                    if (exe->m_ham)
+                        exe->m_ham->insertSyncItem(false, sCallId, std::string("remove"), 1, 1);
 				}
 			}
 			else {

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <stdint.h>
 #include <time.h>
@@ -37,6 +37,7 @@ public:
 
 class VDCManager;
 class VRCManager;
+class HAManager;
 
 class CallExecutor
 {
@@ -52,9 +53,10 @@ class CallExecutor
     log4cpp::Category *m_Logger;
     
     RT2DB* m_rt2db;
+    HAManager *m_ham;
 
 public:
-	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db);
+	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham=nullptr);
 	virtual ~CallExecutor();
 
 	static void thrdMain(CallExecutor* exe);

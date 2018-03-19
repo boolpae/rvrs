@@ -10,6 +10,7 @@
 #include "configuration.h"
 #include "rvrs.h"
 #include "RT2DB.h"
+#include "HAManager.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
@@ -46,6 +47,7 @@ int main(int argc, const char** argv)
     RT2DB* rt2db=nullptr;
     CallReceiver* rcv=nullptr;
     STTDeliver* deliver = nullptr;
+    HAManager* ham = nullptr;
     
     std::signal(SIGINT, term_handle);
     std::signal(SIGTERM, term_handle);
@@ -117,6 +119,11 @@ int main(int argc, const char** argv)
         }
     }
     logger->info("STT Result USE   :  %s", config->getConfig("stt_result.use", "true").c_str());
+    logger->info("HA USE           :  %s", config->getConfig("ha.use", "true").c_str());
+    if (!config->getConfig("ha.use", "true").compare("true")) {
+        logger->info("HA Address       :  %s", config->getConfig("ha.addr", "192.168.0.1").c_str());
+        logger->info("HA Port          :  %s", config->getConfig("ha.port", "7777").c_str());
+    }
 
 	WorkTracer::instance();
     WorkTracer::instance()->setLogger(&tracerLog);
@@ -137,7 +144,20 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-	rcv = CallReceiver::instance(vdcm, vrcm, logger, rt2db);
+    if (!config->getConfig("ha.use", "false").compare("true")) {
+        ham = HAManager::instance(vrcm, vdcm, logger);
+        if (ham->init(config->getConfig("ha.addr", "192.168.0.1"), config->getConfig("ha.port", 7777)) < 0) {
+            logger->error("MAIN - ERROR (Failed to get HAManager instance)");
+            VDCManager::release();
+            STTDeliver::release();
+            WorkTracer::release();
+            HAManager::release();
+            delete config;
+            return -1;
+        }
+    }
+    
+	rcv = CallReceiver::instance(vdcm, vrcm, logger, rt2db, ham);
     rcv->setNumOfExecutor(config->getConfig("rvrs.callexe_count", 5));
 
 	if (!rcv->init(config->getConfig("rvrs.callport", 7000))) {
@@ -155,6 +175,9 @@ int main(int argc, const char** argv)
     {
         vdcm->outputVDCStat();
         vrcm->outputVRCStat();
+        if (!config->getConfig("ha.use", "false").compare("true")) {
+            ham->outputSignals();
+        }
         std::this_thread::sleep_for(std::chrono::seconds(1));
         //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -167,6 +190,9 @@ FINISH:
 
 	logger->debug("MAIN FINISH!");
 
+    if (!config->getConfig("ha.use", "false").compare("true")) {
+        HAManager::release();
+    }
 	vdcm->release();
 	vrcm->release();
 	rcv->release();

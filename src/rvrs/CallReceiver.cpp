@@ -1,4 +1,4 @@
-﻿
+
 #ifdef WIN32
 
 #include <WS2tcpip.h>	// for socklen_t type
@@ -22,13 +22,14 @@
 #include "VDCManager.h"
 #include "VRCManager.h"
 #include "RT2DB.h"
+#include "HAManager.h"
 
 #include <thread>
 
 CallReceiver* CallReceiver::m_instance = NULL;
 
-CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db)
-	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db)
+CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham)
+	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db), m_ham(ham)
 {
 	//printf("\t[DEBUG] CallReceiver Constructed.\n");
     m_Logger->debug("CallReceiver Constructed.");
@@ -43,11 +44,11 @@ CallReceiver::~CallReceiver()
     m_Logger->debug("CallReceiver Destructed.");
 }
 
-CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db)
+CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham)
 {
 	if (m_instance) return m_instance;
 
-	m_instance = new CallReceiver(vdcm, vrcm, logger, rt2db);
+	m_instance = new CallReceiver(vdcm, vrcm, logger, rt2db, ham);
 	return m_instance;
 }
 
@@ -83,7 +84,7 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 	}
 
 	for (int i = 0; i < noe; i++) {
-		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, rcv->m_Logger, rcv->m_rt2db));
+		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, rcv->m_Logger, rcv->m_rt2db, rcv->m_ham));
 	}
 
 	for (int i = 0; i < noe; i++) {

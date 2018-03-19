@@ -261,7 +261,7 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 	return res;
 }
 
-void VRCManager::removeVRC(string& callid)
+void VRCManager::removeVRC(string callid)
 {
 	//m_vWorkerTable.erase(find(m_vWorkerTable.begin(), m_vWorkerTable.end(), fname));
 	VRClient* client = NULL;
@@ -324,4 +324,22 @@ VRClient* VRCManager::getVRClient(string& callid)
 	}
 
 	return client;
+}
+
+int VRCManager::addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc)
+{
+	int16_t res = 0;
+	VRClient* client;
+
+    client = new VRClient(this, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, fname, callid, jobtype, noc, m_deliver, m_Logger, m_r2d); // or VRClient(this);
+
+    if (client) {
+        std::lock_guard<std::mutex> g(m_mxMap);
+        m_mWorkerTable[fname] = client;
+    }
+    else {
+        res = 1;	// 실시간 STT 처리를 위한 VRClient 인스턴스 생성에 실패
+    }
+
+    return res;
 }

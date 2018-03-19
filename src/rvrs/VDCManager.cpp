@@ -111,7 +111,7 @@ int16_t VDCManager::requestVDC(std::string & callid, uint8_t noc, std::vector< u
 	return res;
 }
 
-void VDCManager::removeVDC(std::string & callid)
+void VDCManager::removeVDC(std::string callid)
 {
 	std::vector< VDClient* >::iterator iter;
 
@@ -140,4 +140,26 @@ void VDCManager::outputVDCStat()
     
     if ( vdccount )
         m_Logger->info("VDCManager::outputVDCStat() - Current working VDClient count(%d)", vdccount);
+}
+
+int VDCManager::setActiveVDC(std::string callid, uint8_t spkno, uint16_t port)
+{
+	int16_t res = 0;
+	std::vector< VDClient* >::iterator iter;
+
+	std::lock_guard<std::mutex> g(m_mxVec);
+
+	for (iter = m_vClients.begin(); iter != m_vClients.end(); iter++) {
+		if (((VDClient*)(*iter))->getPort() == port) {	// 현재 대기중인 VDClient를 찾음
+            (*iter)->startWork(callid, spkno);
+            break;
+		}
+	}
+    
+    if (iter == m_vClients.end()) {
+        res = 1;  // 요청한 port를 가진 client가 없을 경우
+        m_Logger->error("VDCManager::setActiveVDC() - can't find port(%d) error", port);
+    }
+
+    return res;
 }

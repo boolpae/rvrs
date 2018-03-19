@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <stdint.h>
 
@@ -17,6 +17,7 @@ class VDCManager;
 class VRCManager;
 class CallExecutor;
 class RT2DB;
+class HAManager;
 
 class CallReceiver
 {
@@ -32,9 +33,10 @@ class CallReceiver
     log4cpp::Category *m_Logger;
     
     RT2DB* m_rt2db;
+    HAManager *m_ham;
 
 public:
-	static CallReceiver* instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db);
+	static CallReceiver* instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham=nullptr);
 	static void release();
 
 	void setNumOfExecutor(uint16_t num) { m_nNumofExecutor = num; }
@@ -42,7 +44,7 @@ public:
 	SOCKET getSockfd() { return m_nSockfd; }
 
 private:
-	CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db);
+	CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham=nullptr);
 	virtual ~CallReceiver();
 
 	static void thrdMain(CallReceiver* rcv);

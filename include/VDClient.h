@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <stdint.h>
 #include <string>
@@ -42,7 +42,7 @@ class VDClient
     log4cpp::Category *m_Logger;
     
     uint32_t m_nPlaytime;
-
+    
 public:
 	VDClient(VRCManager *vrcm, log4cpp::Category *logger);
 	void finish();

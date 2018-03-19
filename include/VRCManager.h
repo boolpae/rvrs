@@ -50,7 +50,7 @@ public:
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
-	void removeVRC(string& callid);
+	void removeVRC(string callid);
 	void removeAllVRC();
 
 	void outputVRCStat();
@@ -60,6 +60,8 @@ public:
 	string& getGearHost() { return m_sGearHost; }
 
 	uint16_t getGearPort() { return m_nGearPort; }
+    
+    int addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc);
 
 private:
 	VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);

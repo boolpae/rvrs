@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <stdint.h>
 #include <string>
@@ -28,9 +28,11 @@ public:
 	static void release();
 
 	int16_t requestVDC(std::string& callid, uint8_t noc, std::vector< uint16_t > &vPorts);
-	void removeVDC(std::string& callid);
+	void removeVDC(std::string callid);
 
 	void outputVDCStat();
+    
+    int setActiveVDC(std::string callid, uint8_t spkno, uint16_t port);
 
 private:
 	VDCManager(uint32_t pt, VRCManager *vrcm, log4cpp::Category *logger);
