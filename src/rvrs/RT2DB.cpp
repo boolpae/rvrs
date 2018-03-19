@@ -167,7 +167,7 @@ int RT2DB::insertCallInfo(std::string callid, time_t stime)
     return 0;
 }
 
-int RT2DB::updateCallInfo(std::string callid, time_t stime)
+int RT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
 {
     Connection_T con;
     struct tm resultT;
@@ -186,8 +186,14 @@ int RT2DB::updateCallInfo(std::string callid, time_t stime)
             Connection_close(con);
             return 2;
         }
-        Connection_execute(con, "UPDATE CALL_LIST SET ETIME='%04d-%02d-%02d %02d:%02d:%02d', FLAG='E' WHERE CALL_ID='%s' AND FLAG='S'",
-        resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec, callid.c_str());
+        if (end) {
+            Connection_execute(con, "UPDATE CALL_LIST SET ETIME='%04d-%02d-%02d %02d:%02d:%02d' WHERE CALL_ID='%s' AND FLAG='S'",
+            resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec, callid.c_str());
+        }
+        else {
+            Connection_execute(con, "UPDATE CALL_LIST SET FLAG='E' WHERE CALL_ID='%s' AND FLAG='S'",
+            callid.c_str());
+        }
     }
     CATCH(SQLException)
     {

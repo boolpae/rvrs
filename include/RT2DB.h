@@ -63,6 +63,6 @@ public:
     
     // for Realtime Call Siganl
     int insertCallInfo(std::string callid, time_t stime);
-    int updateCallInfo(std::string callid, time_t stime);
+    int updateCallInfo(std::string callid, time_t stime, bool end=false);
     void insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt);
 };

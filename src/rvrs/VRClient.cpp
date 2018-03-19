@@ -185,6 +185,10 @@ void VRClient::thrdMain(VRClient* client) {
 						client->m_Mgr->removeVRC(client->m_sCallId);
 						if ( item->voiceData != NULL ) delete[] item->voiceData;
 						delete item;
+
+                        if (client->m_r2d) {
+                            client->m_r2d->updateCallInfo(client->m_sCallId, time(NULL), true);
+                        }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);
 #else
