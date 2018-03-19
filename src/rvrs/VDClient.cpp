@@ -210,17 +210,18 @@ void VDClient::thrdMain(VDClient * client)
 			}
 		}
 		else if ((selVal == 0) && (client->m_nWorkStat == 1)) {	// 이 로직은 수정해야할 필요가 있다. 현재는 30초동안 데이터가 안들어 올 경우 호를 종료
-            if (!HAManager::getInstance() || !HAManager::getInstance()->getHAStat()) {
+            if (HAManager::getInstance() && !HAManager::getInstance()->getHAStat()) {
                 continue;
-            }
-            
-            if (HAManager::getInstance()) {
-                HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, std::string("RemoveSyncItem"), 1, 1);
             }
             
 			// timeout : 현재 30초로 고정
 			if ((time(NULL) - client->m_tTimeout) > 30) {
 				WorkTracer::instance()->insertWork(client->m_sCallId, 'R', WorkQueItem::PROCTYPE::R_END_VOICE, client->m_nSpkNo);
+
+                if (HAManager::getInstance()) {
+                    HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, std::string("RemoveSyncItem"), 1, 1);
+                }
+                
                 client->m_Logger->debug("VDClient::thrdMain(%d) - Working... timeout(%llu)", client->m_nPort, (time(NULL) - client->m_tTimeout));
 				recv_len = 0;
 				goto END_CALL;
