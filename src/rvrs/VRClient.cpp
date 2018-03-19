@@ -4,6 +4,7 @@
 #include "WorkTracer.h"
 #include "STTDeliver.h"
 #include "RT2DB.h"
+#include "HAManager.h"
 
 #include <thread>
 #include <iostream>
@@ -184,7 +185,14 @@ void VRClient::thrdMain(VRClient* client) {
 						client->m_Mgr->removeVRC(client->m_sCallId);
 						if ( item->voiceData != NULL ) delete[] item->voiceData;
 						delete item;
+#if 0
+                        HAManager::getInstance()->deleteSyncItem(client->m_sCallId);
+#else
+                        // HA
+                        if (HAManager::getInstance())
+                            HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, std::string("remove"), 1, 1);
 
+#endif
 						break;
 					}
 				}

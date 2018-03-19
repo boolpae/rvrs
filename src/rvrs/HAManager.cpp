@@ -249,7 +249,7 @@ void HAManager::thrdStandby(HAManager *mgr, int standbysock)
                             if (mgr->m_Logger) mgr->m_Logger->info("HAManager::thrdStandby() - Remove CallSignal : %s", sCallId);
 #endif
                         }
-                        mgr->outputSignals();
+                        //mgr->outputSignals();
                     }
                 }
             }
@@ -504,7 +504,7 @@ void HAManager::thrdSender(HAManager *mgr, int sockfd)
 #endif
             }
             delete item;
-            mgr->outputSignals();
+            //mgr->outputSignals();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
@@ -529,9 +529,19 @@ int HAManager::insertSyncItem( bool calltype, std::string callid, std::string fu
         m_mSyncTable.erase(callid);
     }
 
-    outputSignals();
+    //outputSignals();
     
     return 0;
+}
+
+void HAManager::deleteSyncItem(std::string callid)
+{
+    if (m_mSyncTable.find(callid) != m_mSyncTable.end()) {
+        std::lock_guard<std::mutex> g(m_mxQue);
+        delete m_mSyncTable[callid];
+        m_mSyncTable.erase(callid);
+        
+    }
 }
 
 void HAManager::outputSignals()

@@ -56,6 +56,8 @@ class HAManager {
     //void deleteSyncItem( std::string callid );
 
     bool getHAStat() { return m_bStat; }
+    
+    void deleteSyncItem(std::string callid);
     void outputSignals();
 
     private:

@@ -139,10 +139,11 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_END_PROC);
                     exe->m_vdcm->removeVDC(sCallId);
 					cs->makePacket(item->m_packet, item->m_packetSize, 200);
-
+#if 0
                     // HA
                     if (exe->m_ham)
                         exe->m_ham->insertSyncItem(false, sCallId, std::string("remove"), 1, 1);
+#endif
 				}
 			}
 			else {
