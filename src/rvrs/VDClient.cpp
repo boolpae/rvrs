@@ -213,6 +213,11 @@ void VDClient::thrdMain(VDClient * client)
             if (!HAManager::getInstance() || !HAManager::getInstance()->getHAStat()) {
                 continue;
             }
+            
+            if (HAManager::getInstance()) {
+                HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, std::string("RemoveSyncItem"), 1, 1);
+            }
+            
 			// timeout : 현재 30초로 고정
 			if ((time(NULL) - client->m_tTimeout) > 30) {
 				WorkTracer::instance()->insertWork(client->m_sCallId, 'R', WorkQueItem::PROCTYPE::R_END_VOICE, client->m_nSpkNo);
