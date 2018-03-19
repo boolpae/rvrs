@@ -221,10 +221,6 @@ void VDClient::thrdMain(VDClient * client)
 			if ((time(NULL) - client->m_tTimeout) > 30) {
 				WorkTracer::instance()->insertWork(client->m_sCallId, 'R', WorkQueItem::PROCTYPE::R_END_VOICE, client->m_nSpkNo);
 
-                if (HAManager::getInstance()) {
-                    HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, std::string("RemoveSyncItem"), 1, 1);
-                }
-                
                 client->m_Logger->debug("VDClient::thrdMain(%d) - Working... timeout(%llu)", client->m_nPort, (time(NULL) - client->m_tTimeout));
 				recv_len = 0;
 				goto END_CALL;
