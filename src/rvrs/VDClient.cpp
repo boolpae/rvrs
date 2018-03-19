@@ -176,29 +176,32 @@ void VDClient::thrdMain(VDClient * client)
 
 			if (client->m_pVrc && (client->m_nWorkStat == 2)) {	// 호 종료 요청이 들어왔을 때
 			END_CALL:
-				if (client->m_pVrc) {
-					//printf("\t[DEBUG] VDClient(%d) work ending...(%d)\n", client->m_nPort, nRecvCount);
-                    client->m_Logger->debug("VDClient::thrdMain() - VDClient(%d) work ending...", client->m_nPort);
-					if (!item) {
-						item = new QueItem;
-						item->voiceData = NULL;
-						item->lenVoiceData = 0;
-						item->spkNo = client->m_nSpkNo;
-					}
+                if (!HAManager::getInstance() || HAManager::getInstance()->getHAStat()) {
+                    if (client->m_pVrc) {
+                        //printf("\t[DEBUG] VDClient(%d) work ending...(%d)\n", client->m_nPort, nRecvCount);
+                        client->m_Logger->debug("VDClient::thrdMain() - VDClient(%d) work ending...", client->m_nPort);
+                        if (!item) {
+                            item = new QueItem;
+                            item->voiceData = NULL;
+                            item->lenVoiceData = 0;
+                            item->spkNo = client->m_nSpkNo;
+                        }
 
-					item->flag = 0;
-					if (recv_len) {
-						if (!item->voiceData) {
-							item->voiceData = new uint8_t[VOICE_BUFF_LEN];
-							memset(item->voiceData, 0x00, VOICE_BUFF_LEN);
-						}
-						memcpy(item->voiceData + item->lenVoiceData, pos, recv_len);
-						item->lenVoiceData += recv_len;
-					}
+                        item->flag = 0;
+                        if (recv_len) {
+                            if (!item->voiceData) {
+                                item->voiceData = new uint8_t[VOICE_BUFF_LEN];
+                                memset(item->voiceData, 0x00, VOICE_BUFF_LEN);
+                            }
+                            memcpy(item->voiceData + item->lenVoiceData, pos, recv_len);
+                            item->lenVoiceData += recv_len;
+                        }
 
-					client->m_pVrc->insertQueItem(item);
-					item = NULL;
-				}
+                        client->m_pVrc->insertQueItem(item);
+                        item = NULL;
+                    }
+
+                }
 				// 작업 종료 요청 후 마지막 데이터 처리 후 상태를 대기 상태로 전환
 				client->m_sCallId = "";
 				client->m_nSpkNo = 0;
