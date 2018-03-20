@@ -186,7 +186,7 @@ int RT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
             Connection_close(con);
             return 2;
         }
-        if (end) {
+        if (!end) {
             Connection_execute(con, "UPDATE CALL_LIST SET ETIME='%04d-%02d-%02d %02d:%02d:%02d' WHERE CALL_ID='%s' AND FLAG='I'",
             resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec, callid.c_str());
         }
