@@ -189,7 +189,7 @@ void VRClient::thrdMain(VRClient* client) {
                                     for(uint32_t i=sttIdx; i<dstLen; i++) {
                                         if (dstBuff[i] < 0xa0) {
                                             if (i % 2) sttIdx--;
-                                            break;s
+                                            break;
                                         }
                                     }
                                     break;
