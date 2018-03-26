@@ -185,13 +185,7 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                             #endif
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
-                                if (!memcmp(srcBuff, dstBuff, srcLen-sttIdx)) {
-                                    for(uint32_t i=sttIdx; i<dstLen; i++) {
-                                        if (dstBuff[i] < 0xa0) {
-                                            if (i % 2) sttIdx++;
-                                            break;
-                                        }
-                                    }
+                                if ((dstBuff[sttIdx]<0xa0)  && !memcmp(srcBuff, dstBuff, srcLen-sttIdx)) {
                                     break;
                                 }
                             }
