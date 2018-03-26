@@ -174,9 +174,18 @@ void VRClient::thrdMain(VRClient* client) {
                         srcLen = strlen(srcBuff);
                         dstBuff = (const char*)value;
 
-                        if (strlen(srcBuff) <= strlen(dstBuff)) {
+                        if (srcLen <= strlen(dstBuff)) {
+                            #if 0
+                            char *endContext = strrchr(srcBuff, ' ');
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
                                 if (memcmp(srcBuff+sttIdx, dstBuff+sttIdx, sizeof(char))) {
+                                    break;
+                                }
+                            }
+                            #endif
+                            for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
+                                if (memcmp(srcBuff, dstBuff, srcLen-sttIdx)) {
+                                    sttIdx = srcLen-sttIdx;
                                     break;
                                 }
                             }
