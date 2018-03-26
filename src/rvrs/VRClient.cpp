@@ -162,27 +162,30 @@ void VRClient::thrdMain(VRClient* client) {
                             *pEndpos = 0;
                         }
                         
-                        // 문자열 비교 로직
-                        sttIdx=0;
-                        tmpSttString = tmpStt.c_str();
-                        if (tmpStt.length() < strlen(pEndpos)) {
-                            for (sttIdx=0; sttIdx<tmpStt.length(); sttIdx++) {
-                                if (memcmp(tmpSttString+sttIdx, pEndpos+sttIdx, sizeof(char))) {
-                                    break;
+                        if (pEndpos) {
+                            // 문자열 비교 로직
+                            sttIdx=0;
+                            tmpSttString = tmpStt.c_str();
+                            if (tmpStt.length() < strlen(pEndpos)) {
+                                for (sttIdx=0; sttIdx<tmpStt.length(); sttIdx++) {
+                                    if (memcmp(tmpSttString+sttIdx, pEndpos+sttIdx, sizeof(char))) {
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        pEndpos = (char *)(tmpSttString + sttIdx);
-                        tmpStt = (char *)value;
-                        
-                        // to DB
-                        if (client->m_r2d) {
-                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
-                        }
-                        //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                        // to STTDeliver(file)
-                        if (client->m_deliver) {
-                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                            pEndpos = (char *)(tmpSttString + sttIdx);
+                            tmpStt = (char *)value;
+                            
+                            // to DB
+                            if (client->m_r2d) {
+                                client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
+                            }
+                            //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            // to STTDeliver(file)
+                            if (client->m_deliver) {
+                                client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                            }
+                            
                         }
                         free(value);
                         
