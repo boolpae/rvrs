@@ -110,7 +110,7 @@ void VRClient::thrdMain(VRClient* client) {
 #if 1
         const char* srcBuff;
         const char* dstBuff;
-        uint32_t srcLen;
+        uint32_t srcLen, dstLen;
         string tmpStt[2];
         uint32_t sttIdx;
         
@@ -173,8 +173,9 @@ void VRClient::thrdMain(VRClient* client) {
                         srcBuff = tmpStt[item->spkNo-1].c_str();
                         srcLen = strlen(srcBuff);
                         dstBuff = (const char*)value;
+                        dstLen = strlen(dstBuff);
 
-                        if (srcLen <= strlen(dstBuff)) {
+                        if (srcLen <= dstLen) {
                             #if 0
                             char *endContext = strrchr(srcBuff, ' ');
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
@@ -193,7 +194,7 @@ void VRClient::thrdMain(VRClient* client) {
 
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
-                        if (!sttIdx || (sttIdx < srcLen)) {
+                        if (!sttIdx || (sttIdx < dstLen)) {
                             // to DB
                             if (client->m_r2d) {
                                 client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
