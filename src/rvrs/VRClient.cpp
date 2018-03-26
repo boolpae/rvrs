@@ -185,11 +185,16 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                             #endif
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
-                                if (!memcmp(srcBuff, dstBuff, srcLen-sttIdx) && !memcmp(srcBuff, dstBuff, srcLen-sttIdx+1)) {
+                                if (!memcmp(srcBuff, dstBuff, srcLen-sttIdx)) {
                                     break;
                                 }
                             }
                             sttIdx = srcLen-sttIdx;
+                            while(sttIdx) {
+                                if ((dstBuff[sttIdx] == ' ') || (dstBuff[sttIdx] == '\n')) break;
+                                sttIdx--;
+                            }
+                            
                         }
 
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
