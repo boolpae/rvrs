@@ -173,7 +173,7 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                         }
                         tmpStt[item->spkNo-1] = (char *)value;
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d) stt(%s)", client->m_sCallId.c_str(), sttIdx, (char *)value+sttIdx);
+                        //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d) stt(%s)", client->m_sCallId.c_str(), sttIdx, (char *)value+sttIdx);
 
                         // to DB
                         if (client->m_r2d) {
