@@ -174,7 +174,7 @@ void VRClient::thrdMain(VRClient* client) {
                         srcLen = strlen(srcBuff);
                         dstBuff = (const char*)value;
 
-                        if (strlen(srcBuff) < strlen(dstBuff)) {
+                        if (strlen(srcBuff) <= strlen(dstBuff)) {
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
                                 if (memcmp(srcBuff+sttIdx, dstBuff+sttIdx, sizeof(char))) {
                                     break;
@@ -184,14 +184,17 @@ void VRClient::thrdMain(VRClient* client) {
                         tmpStt[item->spkNo-1] = std::string((char *)value);
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
-                        // to DB
-                        if (client->m_r2d) {
-                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
-                        }
-                        //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                        // to STTDeliver(file)
-                        if (client->m_deliver) {
-                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)dstBuff+sttIdx), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                        if (sttIdx != srcLen) {
+                            // to DB
+                            if (client->m_r2d) {
+                                client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
+                            }
+                            //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            // to STTDeliver(file)
+                            if (client->m_deliver) {
+                                client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)dstBuff+sttIdx), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                            }
+                            
                         }
 #else
                         // to DB
