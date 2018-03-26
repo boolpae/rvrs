@@ -162,10 +162,10 @@ void VRClient::thrdMain(VRClient* client) {
                             *pEndpos = 0;
                         }
                         
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - before stt(%s).", pEndpos);
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - before stt(%s).", client->m_sCallId.c_str(), pEndpos);
                         if (pEndpos) {
                             // 문자열 비교 로직
-                            client->m_Logger->debug("VRClient::thrdMain(%s) - before stt(%s).", pEndpos);
+                            client->m_Logger->debug("VRClient::thrdMain(%s) - before stt(%s).", client->m_sCallId.c_str(), pEndpos);
                             sttIdx=0;
                             tmpSttString = tmpStt.c_str();
                             if (tmpStt.length() < strlen(pEndpos)) {
@@ -178,7 +178,7 @@ void VRClient::thrdMain(VRClient* client) {
                             pEndpos = (char *)(pEndpos + sttIdx);
                             tmpStt = (char *)value;
                             
-                            client->m_Logger->debug("VRClient::thrdMain(%s) - after(%lu) stt(%s).", sttIdx, pEndpos);
+                            client->m_Logger->debug("VRClient::thrdMain(%s) - after(%lu) stt(%s).", client->m_sCallId.c_str(), sttIdx, pEndpos);
                             // to DB
                             if (client->m_r2d) {
                                 client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
