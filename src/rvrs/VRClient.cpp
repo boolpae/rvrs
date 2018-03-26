@@ -186,14 +186,10 @@ void VRClient::thrdMain(VRClient* client) {
                             #endif
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
                                 if (!memcmp(srcBuff, dstBuff, srcLen-sttIdx)) {
-                                    if (sttIdx && (srcLen-sttIdx)) {
-                                        for(uint32_t i=sttIdx; i<dstLen; i++) {
-                                            if (dstBuff[i] < 0xa0) {
-                                                if ( i % 2 ) {
-                                                    sttIdx--;
-                                                }
-                                                break;
-                                            }
+                                    for(uint32_t i=sttIdx; i<dstLen; i++) {
+                                        if (dstBuff[i] < 0xa0) {
+                                            if (i % 2) sttIdx--;
+                                            break;s
                                         }
                                     }
                                     break;
@@ -202,11 +198,7 @@ void VRClient::thrdMain(VRClient* client) {
                             sttIdx = srcLen-sttIdx;
                         }
 
-                        //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nout_dst(%s)", client->m_sCallId.c_str(), sttIdx, dstBuff+sttIdx);
-                        for(uint32_t i=sttIdx; i<dstLen; i++) {
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d) (%X)", client->m_sCallId.c_str(), sttIdx, (char)dstBuff[i]);
-                        }
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                         if (!sttIdx || (sttIdx < dstLen)) {
                             // to DB
