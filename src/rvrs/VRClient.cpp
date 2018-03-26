@@ -161,8 +161,6 @@ void VRClient::thrdMain(VRClient* client) {
                             *pEndpos = 0;
                         }
 #if 1                        
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - pEndpos(%s).", client->m_sCallId.c_str(), pEndpos);
-
                         sttIdx = 0;
                         if (tmpStt.size() < strlen((char*)value)) {
                             for(sttIdx=0; sttIdx<tmpStt.size(); sttIdx++) {
@@ -172,6 +170,7 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                         }
                         tmpStt = (char *)value;
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d) stt(%s)", client->m_sCallId.c_str(), sttIdx, (char *)value+sttIdx);
 
                         // to DB
                         if (client->m_r2d) {
