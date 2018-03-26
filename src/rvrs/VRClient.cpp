@@ -106,9 +106,11 @@ void VRClient::thrdMain(VRClient* client) {
 
 	// m_cJobType에 따라 작업 형태를 달리해야 한다. 
 	if (client->m_cJobType == 'R') {
+#if 0
         string tmpStt="";
         const char* tmpSttString;
         uint32_t sttIdx;
+#endif
         uint32_t diaNumber=1;   // DB 실시간 STT 테이블에 저장될 호(Call)단위 Index 값
 		// 실시간의 경우 통화가 종료되기 전까지 Queue에서 입력 데이터를 받아 처리
 		// FILE인 경우 기존과 동일하게 filename을 전달하는 방법 이용
