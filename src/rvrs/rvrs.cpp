@@ -84,8 +84,8 @@ int main(int argc, const char** argv)
     log4cpp::Category &tracerLog = log4cpp::Category::getInstance(std::string("WorkTracer"));
     tracerLog.addAppender(appender);
     
-	logger->info("Realtime Voice Relay Server ver %d.%d.%d", RVRS_VERSION_MAJ, RVRS_VERSION_MIN, RVRS_VERSION_BLD);
-	logger->info("=========================================");
+	logger->info("Realtime Voice Relay Server ver %d.%d BUILD : %s", RVRS_VERSION_MAJ, RVRS_VERSION_MIN, __DATE__);
+	logger->info("================================================");
 	logger->info("MPI host IP      :  %s", config->getConfig("rvrs.mpihost", "127.0.0.1").c_str());
 	logger->info("MPI host Port    :  %d", config->getConfig("rvrs.mpiport", 4730));
 	logger->info("MPI host Timeout :  %d", config->getConfig("rvrs.mpitimeout", 0));
