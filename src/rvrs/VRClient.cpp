@@ -182,7 +182,7 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                         }
                         tmpStt[item->spkNo-1].clear();
-                        tmpStt[item->spkNo-1] = dstBuff;
+                        tmpStt[item->spkNo-1] = (const char*)value;
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                         if (!sttIdx || (sttIdx > srcLen)) {
