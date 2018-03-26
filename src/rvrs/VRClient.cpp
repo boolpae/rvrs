@@ -107,7 +107,7 @@ void VRClient::thrdMain(VRClient* client) {
 	// m_cJobType에 따라 작업 형태를 달리해야 한다. 
 	if (client->m_cJobType == 'R') {
         uint32_t diaNumber=1;   // DB 실시간 STT 테이블에 저장될 호(Call)단위 Index 값
-#if 0
+#if 1
         const char* srcBuff;
         const char* dstBuff;
         uint32_t srcLen;
@@ -168,7 +168,7 @@ void VRClient::thrdMain(VRClient* client) {
                             //client->m_Logger->debug("VRClient::thrdMain(%s) - start_pos(%lu), end_pos(%lu).", client->m_sCallId.c_str(), start, end);
                             *pEndpos = 0;
                         }
-#if 0            
+#if 1
                         sttIdx = 0;
                         srcBuff = tmpStt[item->spkNo-1].c_str();
                         srcLen = strlen(srcBuff);
@@ -181,10 +181,11 @@ void VRClient::thrdMain(VRClient* client) {
                                 }
                             }
                         }
-                        tmpStt[item->spkNo-1] = std::string((char *)value);
+                        tmpStt[item->spkNo-1].clear();
+                        tmpStt[item->spkNo-1] = dstBuff;
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
-                        if (sttIdx != srcLen) {
+                        if (!sttIdx || (sttIdx > srcLen)) {
                             // to DB
                             if (client->m_r2d) {
                                 client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
