@@ -164,6 +164,7 @@ void VRClient::thrdMain(VRClient* client) {
 
                         //client->m_Logger->debug("VRClient::thrdMain(%s) - pEndpos(%s).", client->m_sCallId.c_str(), pEndpos);
                         if (pEndpos && strlen(pEndpos)) {
+#if 0
                             sttIdx=0;
                             if (tmpStt.size() < strlen(pEndpos)) {
                                 tmpSttString = tmpStt.c_str();
@@ -175,6 +176,7 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                             tmpStt = (char *)pEndpos;
                             pEndpos = pEndpos + sttIdx;
+#endif
                             // to DB
                             if (client->m_r2d) {
                                 client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
