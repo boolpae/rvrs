@@ -193,8 +193,8 @@ void VRClient::thrdMain(VRClient* client) {
                         }
 
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
-                        if (sttIdx > 3) {
-                            client->m_Logger->debug("VRClient::thrdMain(%s) - (%x)(%x)(%x)(%x)", client->m_sCallId.c_str(), dstBuff[sttIdx-3], dstBuff[sttIdx-2], dstBuff[sttIdx-1], dstBuff[sttIdx]);
+                        if (sttIdx > 4) {
+                            client->m_Logger->debug("VRClient::thrdMain(%s) - (%x)(%x)(%x)(%x)(%x)(%x)", client->m_sCallId.c_str(), dstBuff[sttIdx-4], dstBuff[sttIdx-3], dstBuff[sttIdx-2], dstBuff[sttIdx-1], dstBuff[sttIdx], dstBuff[sttIdx+1]);
                         }
 
                         if (!sttIdx || (sttIdx < dstLen)) {
