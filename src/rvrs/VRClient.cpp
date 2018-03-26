@@ -181,11 +181,10 @@ void VRClient::thrdMain(VRClient* client) {
                                 }
                             }
                         }
-                        tmpStt[item->spkNo-1].clear();
-                        tmpStt[item->spkNo-1] = (const char*)value;
+
                         client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
-                        if (!sttIdx || (sttIdx > srcLen)) {
+                        if (!sttIdx || (sttIdx < srcLen)) {
                             // to DB
                             if (client->m_r2d) {
                                 client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
@@ -197,6 +196,10 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                             
                         }
+
+                        tmpStt[item->spkNo-1].clear();
+                        tmpStt[item->spkNo-1] = (const char*)value;
+
 #else
                         // to DB
                         if (client->m_r2d) {
