@@ -163,7 +163,7 @@ void VRClient::thrdMain(VRClient* client) {
                         }
 
                         //client->m_Logger->debug("VRClient::thrdMain(%s) - pEndpos(%s).", client->m_sCallId.c_str(), pEndpos);
-                        if (strlen(pEndpos)) {
+                        if (pEndpos && strlen(pEndpos)) {
                             sttIdx=0;
                             if (tmpStt.size() < strlen(pEndpos)) {
                                 tmpSttString = tmpStt.c_str();
