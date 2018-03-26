@@ -162,6 +162,7 @@ void VRClient::thrdMain(VRClient* client) {
                             *pEndpos = 0;
                         }
                         
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - before stt(%s).", pEndpos);
                         if (pEndpos) {
                             // 문자열 비교 로직
                             client->m_Logger->debug("VRClient::thrdMain(%s) - before stt(%s).", pEndpos);
