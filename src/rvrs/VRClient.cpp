@@ -107,7 +107,10 @@ void VRClient::thrdMain(VRClient* client) {
 	// m_cJobType에 따라 작업 형태를 달리해야 한다. 
 	if (client->m_cJobType == 'R') {
         uint32_t diaNumber=1;   // DB 실시간 STT 테이블에 저장될 호(Call)단위 Index 값
-#if 0
+#if 1
+        const char* srcBuff;
+        const char* dstBuff;
+        uint32_t srcLen;
         string tmpStt[2];
         uint32_t sttIdx;
         
@@ -165,26 +168,30 @@ void VRClient::thrdMain(VRClient* client) {
                             //client->m_Logger->debug("VRClient::thrdMain(%s) - start_pos(%lu), end_pos(%lu).", client->m_sCallId.c_str(), start, end);
                             *pEndpos = 0;
                         }
-#if 0             
+#if 1             
                         sttIdx = 0;
-                        if (tmpStt[item->spkNo-1].size() < strlen((char*)value)) {
-                            for(sttIdx=0; sttIdx<tmpStt[item->spkNo-1].size(); sttIdx++) {
-                                if (memcmp(tmpStt[item->spkNo-1].c_str()+sttIdx, (char *)value+sttIdx, sizeof(char))) {
+                        srcBuff = tmpStt[item->spkNo-1].c_str();
+                        srcLen = strlen(srcBuff);
+                        dstBuff = (const char*)value;
+
+                        if (strlen(srcBuff) < strlen(dstBuff)) {
+                            for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
+                                if (memcmp(srcBuff+sttIdx, dstBuff+sttIdx, sizeof(char))) {
                                     break;
                                 }
                             }
                         }
-                        tmpStt[item->spkNo-1] = (char *)value;
-                        //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d) stt(%s)", client->m_sCallId.c_str(), sttIdx, (char *)value+sttIdx);
+                        tmpStt[item->spkNo-1] = std::string((char *)value);
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                         // to DB
                         if (client->m_r2d) {
-                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value+sttIdx));
+                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
                         }
                         //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                         // to STTDeliver(file)
                         if (client->m_deliver) {
-                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value+sttIdx), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                            client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)dstBuff+sttIdx), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                         }
 #else
                         // to DB
