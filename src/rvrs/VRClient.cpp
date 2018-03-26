@@ -176,14 +176,6 @@ void VRClient::thrdMain(VRClient* client) {
                         dstLen = strlen(dstBuff);
 
                         if (srcLen <= dstLen) {
-                            #if 0
-                            char *endContext = strrchr(srcBuff, ' ');
-                            for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
-                                if (memcmp(srcBuff+sttIdx, dstBuff+sttIdx, sizeof(char))) {
-                                    break;
-                                }
-                            }
-                            #endif
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
                                 if (!memcmp(srcBuff, dstBuff, srcLen-sttIdx)) {
                                     break;
@@ -191,15 +183,18 @@ void VRClient::thrdMain(VRClient* client) {
                             }
                             sttIdx = srcLen-sttIdx;
                             while(sttIdx) {
-                                if ((dstBuff[sttIdx] == ' ') || (dstBuff[sttIdx] == '\n')) break;
+                                if ((dstBuff[sttIdx] == ' ') || (dstBuff[sttIdx] == '\n')) {
+                                    sttIdx++;
+                                    break;
+                                }
                                 sttIdx--;
                             }
                             
                         }
 
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
+                        //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
-                        if (!sttIdx || (sttIdx < dstLen)) {
+                        if ((!sttIdx || (sttIdx < dstLen)) && strlen(dstBuff+sttIdx)) {
                             // to DB
                             if (client->m_r2d) {
                                 client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
