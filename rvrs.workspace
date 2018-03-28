@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CodeLite_Workspace Name="rvrs" Database="" Version="10.0.0">
-  <Project Name="rvrs" Path="rvrs.project" Active="Yes"/>
+  <Project Name="stas" Path="rvrs.project" Active="Yes"/>
   <BuildMatrix>
     <WorkspaceConfiguration Name="Debug" Selected="yes">
       <Environment/>
-      <Project Name="rvrs" ConfigName="Debug"/>
+      <Project Name="stas" ConfigName="Debug"/>
     </WorkspaceConfiguration>
     <WorkspaceConfiguration Name="Release" Selected="no">
       <Environment/>
-      <Project Name="rvrs" ConfigName="Release"/>
+      <Project Name="stas" ConfigName="Release"/>
     </WorkspaceConfiguration>
   </BuildMatrix>
 </CodeLite_Workspace>

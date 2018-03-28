@@ -1,4 +1,4 @@
-// rvrs.cpp: 콘솔 응용 프로그램의 진입점을 정의합니다.
+// stas.cpp: 콘솔 응용 프로그램의 진입점을 정의합니다.
 //
 
 
@@ -8,7 +8,7 @@
 #include "WorkTracer.h"
 #include "STTDeliver.h"
 #include "configuration.h"
-#include "rvrs.h"
+#include "stas.h"
 #include "RT2DB.h"
 #include "HAManager.h"
 
@@ -27,6 +27,8 @@
 #include <chrono>
 #include <csignal>
 
+#include <string.h>
+
 using namespace std;
 using namespace itfact::common;
 
@@ -41,17 +43,29 @@ void term_handle(int sig)
 
 int main(int argc, const char** argv)
 {
+#if 0
 	string input;
-    
+#endif
     log4cpp::Category *logger;
     RT2DB* rt2db=nullptr;
     CallReceiver* rcv=nullptr;
     STTDeliver* deliver = nullptr;
     HAManager* ham = nullptr;
+
+    int max_size = -1, max_backup = 0;
+    std::string traceName;
+    std::string log_max;
     
     std::signal(SIGINT, term_handle);
     std::signal(SIGTERM, term_handle);
     //std::signal(SIGABRT, term_handle);
+    
+    for(int i=1; i<argc; i++) {
+        if(!strncmp(argv[i], "-v", 2)) {
+            printf(" %s : Version (%d.%d), Build Date(%s)\n", argv[0], STAS_VERSION_MAJ, STAS_VERSION_MIN, __DATE__);
+            return 0;
+        }
+    }
     
     try {
         config = new Configuration(argc, argv);
@@ -62,12 +76,9 @@ int main(int argc, const char** argv)
     
     logger = config->getLogger();
     
-    int max_size = -1, max_backup = 0;
-    std::string traceName;
-    std::string log_max;
-    traceName = config->getConfig("rvrs.trace_name", "worktrace.trc");
-    log_max = config->getConfig("rvrs.trace_max", "1MiB");
-    max_backup = config->getConfig("rvrs.trace_backup", 5);
+    traceName = config->getConfig("stas.trace_name", "worktrace.trc");
+    log_max = config->getConfig("stas.trace_max", "1MiB");
+    max_backup = config->getConfig("stas.trace_backup", 5);
     max_size = std::stoul(log_max.c_str()) * itfact::common::convertUnit(log_max);
     log4cpp::Appender *appender = new log4cpp::RollingFileAppender("default", traceName, max_size, max_backup);
 	log4cpp::Layout *layout = new log4cpp::PatternLayout();
@@ -84,16 +95,16 @@ int main(int argc, const char** argv)
     log4cpp::Category &tracerLog = log4cpp::Category::getInstance(std::string("WorkTracer"));
     tracerLog.addAppender(appender);
     
-	logger->info("Realtime Voice Relay Server ver %d.%d BUILD : %s", RVRS_VERSION_MAJ, RVRS_VERSION_MIN, __DATE__);
+	logger->info("Realtime Voice Relay Server ver %d.%d BUILD : %s", STAS_VERSION_MAJ, STAS_VERSION_MIN, __DATE__);
 	logger->info("================================================");
-	logger->info("MPI host IP      :  %s", config->getConfig("rvrs.mpihost", "127.0.0.1").c_str());
-	logger->info("MPI host Port    :  %d", config->getConfig("rvrs.mpiport", 4730));
-	logger->info("MPI host Timeout :  %d", config->getConfig("rvrs.mpitimeout", 0));
-	logger->info("Call Signal Port :  %d", config->getConfig("rvrs.callport", 7000));
-	logger->info("Call Channel Cnt :  %d", config->getConfig("rvrs.channel_count", 200));
-	logger->info("Voice Playtime   :  %d", config->getConfig("rvrs.playtime", 3));
-	logger->info("Voice Begin Port :  %d", config->getConfig("rvrs.udp_bport", 10000));
-	logger->info("Voice END Port   :  %d", config->getConfig("rvrs.udp_eport", 11000));
+	logger->info("MPI host IP      :  %s", config->getConfig("stas.mpihost", "127.0.0.1").c_str());
+	logger->info("MPI host Port    :  %d", config->getConfig("stas.mpiport", 4730));
+	logger->info("MPI host Timeout :  %d", config->getConfig("stas.mpitimeout", 0));
+	logger->info("Call Signal Port :  %d", config->getConfig("stas.callport", 7000));
+	logger->info("Call Channel Cnt :  %d", config->getConfig("stas.channel_count", 200));
+	logger->info("Voice Playtime   :  %d", config->getConfig("stas.playtime", 3));
+	logger->info("Voice Begin Port :  %d", config->getConfig("stas.udp_bport", 10000));
+	logger->info("Voice END Port   :  %d", config->getConfig("stas.udp_eport", 11000));
 
     logger->info("Database USE     :  %s", config->getConfig("database.use", "false").c_str());
     if (!config->getConfig("database.use", "false").compare("true")) {
@@ -132,8 +143,8 @@ int main(int argc, const char** argv)
         deliver = STTDeliver::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
     }
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("rvrs.mpihost", "127.0.0.1"), config->getConfig("rvrs.mpiport", 4730), config->getConfig("rvrs.mpitimeout", 0), deliver, logger, rt2db);
-	VDCManager* vdcm = VDCManager::instance(config->getConfig("rvrs.channel_count", 200), config->getConfig("rvrs.udp_bport", 10000), config->getConfig("rvrs.udp_eport", 11000), config->getConfig("rvrs.playtime", 3), vrcm, logger);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, logger, rt2db);
+	VDCManager* vdcm = VDCManager::instance(config->getConfig("stas.channel_count", 200), config->getConfig("stas.udp_bport", 10000), config->getConfig("stas.udp_eport", 11000), config->getConfig("stas.playtime", 3), vrcm, logger);
     
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
@@ -158,9 +169,9 @@ int main(int argc, const char** argv)
     }
     
 	rcv = CallReceiver::instance(vdcm, vrcm, logger, rt2db, ham);
-    rcv->setNumOfExecutor(config->getConfig("rvrs.callexe_count", 5));
+    rcv->setNumOfExecutor(config->getConfig("stas.callexe_count", 5));
 
-	if (!rcv->init(config->getConfig("rvrs.callport", 7000))) {
+	if (!rcv->init(config->getConfig("stas.callport", 7000))) {
         goto FINISH;
 	}
 

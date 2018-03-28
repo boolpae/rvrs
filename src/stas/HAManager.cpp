@@ -143,7 +143,7 @@ void HAManager::thrdStandby(HAManager *mgr, int standbysock)
     std::string sRecvString;
 
     memset(buff, 0, sizeof(buff));
-    memcpy(buff, "RVRS", 4);
+    memcpy(buff, "STAS", 4);
     nBodyLen = htons(4);
     memcpy(buff+4, &nBodyLen, sizeof(uint16_t));
     memcpy(buff+4+sizeof(uint16_t), "INIT", 4);
@@ -171,7 +171,7 @@ void HAManager::thrdStandby(HAManager *mgr, int standbysock)
             }
 
             // 1. Standby 상태이며 Active로부터 실시간 CallSignal 수신 및 처리
-            if ( memcmp(buff, "RVRS", 4) ) {
+            if ( memcmp(buff, "STAS", 4) ) {
                 while( sizeof(buff) > (size_t)read(standbysock, buff, sizeof(buff)));
             }
             else {
@@ -370,7 +370,7 @@ void HAManager::thrdActive(HAManager *mgr)
                     break;
                 }
                 memcpy(&nBodyLen, buff+4, sizeof(uint16_t));
-                if (memcmp(buff, "RVRS", 4)) {
+                if (memcmp(buff, "STAS", 4)) {
                     close(client_fd);
                     printf("Server: Invalid packet from Standby.\n");
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -397,7 +397,7 @@ void HAManager::thrdActive(HAManager *mgr)
                 SyncItem *syncItem;
 
                 memset(buff, 0, sizeof(buff));
-                memcpy(buff, "RVRS", 4);
+                memcpy(buff, "STAS", 4);
                 nBodyLen = htons(mgr->m_mSyncTable.size() * 75);
                 memcpy(buff+4, &nBodyLen, sizeof(uint16_t));
 
@@ -488,7 +488,7 @@ void HAManager::thrdSender(HAManager *mgr, int sockfd)
             delete g;
 
             memset(buff, 0, sizeof(buff));
-            memcpy(buff, "RVRS", 4);
+            memcpy(buff, "STAS", 4);
             nLen = htons(75);
             memcpy(buff+4, &nLen, sizeof(uint16_t));
             sprintf(buff+6, "%c%-32s%-32s%-5hd%-5hd", (item->m_bSignalType?'A':'R'), item->m_sCallId.c_str(), item->m_sFuncName.c_str(), item->m_n1port, item->m_n2port);

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<CodeLite_Project Name="rvrs" Version="10.0.0" InternalType="Console">
+<CodeLite_Project Name="stas" Version="10.0.0" InternalType="Console">
   <Plugins>
     <Plugin Name="qmake">
       <![CDATA[00010001N0005Debug000000000000]]>
@@ -9,19 +9,19 @@
     <VirtualDirectory Name="common">
       <File Name="src/common/configuration.cpp"/>
     </VirtualDirectory>
-    <VirtualDirectory Name="rvrs">
-      <File Name="src/rvrs/rvrs.cpp"/>
-      <File Name="src/rvrs/VRCManager.cpp"/>
-      <File Name="src/rvrs/CallReceiver.cpp"/>
-      <File Name="src/rvrs/VRClient.cpp"/>
-      <File Name="src/rvrs/CallExecutor.cpp"/>
-      <File Name="src/rvrs/CallSignal.cpp"/>
-      <File Name="src/rvrs/VDClient.cpp"/>
-      <File Name="src/rvrs/WorkTracer.cpp"/>
-      <File Name="src/rvrs/STTDeliver.cpp"/>
-      <File Name="src/rvrs/VDCManager.cpp"/>
-      <File Name="src/rvrs/HAManager.cpp"/>
-      <File Name="src/rvrs/RT2DB.cpp"/>
+    <VirtualDirectory Name="stas">
+      <File Name="src/stas/CallExecutor.cpp"/>
+      <File Name="src/stas/CallReceiver.cpp"/>
+      <File Name="src/stas/CallSignal.cpp"/>
+      <File Name="src/stas/HAManager.cpp"/>
+      <File Name="src/stas/RT2DB.cpp"/>
+      <File Name="src/stas/stas.cpp"/>
+      <File Name="src/stas/STTDeliver.cpp"/>
+      <File Name="src/stas/VDClient.cpp"/>
+      <File Name="src/stas/VDCManager.cpp"/>
+      <File Name="src/stas/VRClient.cpp"/>
+      <File Name="src/stas/VRCManager.cpp"/>
+      <File Name="src/stas/WorkTracer.cpp"/>
     </VirtualDirectory>
   </VirtualDirectory>
   <Description/>
@@ -37,9 +37,9 @@
     <File Name="include/configuration.h"/>
     <File Name="include/CallSignal.h"/>
     <File Name="include/VRClient.h"/>
-    <File Name="include/rvrs.h"/>
     <File Name="include/HAManager.h"/>
     <File Name="include/RT2DB.h"/>
+    <File Name="include/stas.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
@@ -68,7 +68,6 @@
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
       <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Debug" Command="./$(ProjectName)" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
-      <BuildSystem Name="Default"/>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
       </Environment>
@@ -116,7 +115,6 @@
       </Linker>
       <ResourceCompiler Options="" Required="no"/>
       <General OutputFile="$(IntermediateDirectory)/$(ProjectName)" IntermediateDirectory="./Release" Command="./$(ProjectName)" CommandArguments="" UseSeparateDebugArgs="no" DebugArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes" IsGUIProgram="no" IsEnabled="yes"/>
-      <BuildSystem Name="Default"/>
       <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;">
         <![CDATA[]]>
       </Environment>
