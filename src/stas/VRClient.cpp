@@ -193,7 +193,7 @@ void VRClient::thrdMain(VRClient* client) {
                             
                         }
 
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
+                        //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                         if ((!sttIdx || (sttIdx < dstLen)) && strlen(dstBuff+sttIdx)) {
                             // to DB
