@@ -244,7 +244,7 @@ VDClient::~VDClient()
 	if (m_nSockfd) closesocket(m_nSockfd);
 
 	//printf("\t[DEBUG] VDClinet Destructed.(%d)\n", m_nPort);
-    m_Logger->debug("VDClinet Destructed.(%d)", m_nPort);
+    //m_Logger->debug("VDClinet Destructed.(%d)", m_nPort);
 }
 
 void VDClient::startWork(std::string& callid, uint8_t spkno)
