@@ -136,12 +136,15 @@ STTDeliver* STTDeliver::instance(std::string path, log4cpp::Category *logger)
 
 void STTDeliver::release()
 {
-	ms_instance->m_bLiveFlag = false;
+    if (ms_instance) {
+        ms_instance->m_bLiveFlag = false;
 
-	ms_instance->m_thrd.join();
+        ms_instance->m_thrd.join();
 
-	delete ms_instance;
-	ms_instance = NULL;
+        delete ms_instance;
+        ms_instance = NULL;
+        
+    }
 }
 
 STTQueItem::STTQueItem(std::string callid, uint8_t jobtype, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)
