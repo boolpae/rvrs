@@ -174,6 +174,7 @@ void VRClient::thrdMain(VRClient* client) {
                         srcLen = strlen(srcBuff);
                         dstBuff = (const char*)value;
                         dstLen = strlen(dstBuff);
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                         if (srcLen <= dstLen) {
                             for(sttIdx=0; sttIdx<srcLen; sttIdx++) {
