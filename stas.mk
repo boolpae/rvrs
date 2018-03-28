@@ -61,7 +61,7 @@ AS       := /usr/bin/as
 ##
 CodeLiteDir:=/usr/share/codelite
 Objects0=$(IntermediateDirectory)/common_configuration.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_CallExecutor.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_CallReceiver.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_CallSignal.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_HAManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_stas.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_VDClient.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_VDCManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_VRClient.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_VRCManager.cpp$(ObjectSuffix) \
-	$(IntermediateDirectory)/stas_WorkTracer.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_STT2DB.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_STT2File.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_SCHD4DB.cpp$(ObjectSuffix) 
+	$(IntermediateDirectory)/stas_WorkTracer.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_STT2DB.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_STT2File.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_VFCManager.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_Schd4DB.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_VFClient.cpp$(ObjectSuffix) $(IntermediateDirectory)/stas_Notifier.cpp$(ObjectSuffix) 
 
 
 
@@ -196,13 +196,37 @@ $(IntermediateDirectory)/stas_STT2File.cpp$(DependSuffix): src/stas/STT2File.cpp
 $(IntermediateDirectory)/stas_STT2File.cpp$(PreprocessSuffix): src/stas/STT2File.cpp
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/stas_STT2File.cpp$(PreprocessSuffix) "src/stas/STT2File.cpp"
 
-$(IntermediateDirectory)/stas_SCHD4DB.cpp$(ObjectSuffix): src/stas/SCHD4DB.cpp $(IntermediateDirectory)/stas_SCHD4DB.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/stas/src/stas/SCHD4DB.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/stas_SCHD4DB.cpp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/stas_SCHD4DB.cpp$(DependSuffix): src/stas/SCHD4DB.cpp
-	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/stas_SCHD4DB.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/stas_SCHD4DB.cpp$(DependSuffix) -MM "src/stas/SCHD4DB.cpp"
+$(IntermediateDirectory)/stas_VFCManager.cpp$(ObjectSuffix): src/stas/VFCManager.cpp $(IntermediateDirectory)/stas_VFCManager.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/stas/src/stas/VFCManager.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/stas_VFCManager.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/stas_VFCManager.cpp$(DependSuffix): src/stas/VFCManager.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/stas_VFCManager.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/stas_VFCManager.cpp$(DependSuffix) -MM "src/stas/VFCManager.cpp"
 
-$(IntermediateDirectory)/stas_SCHD4DB.cpp$(PreprocessSuffix): src/stas/SCHD4DB.cpp
-	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/stas_SCHD4DB.cpp$(PreprocessSuffix) "src/stas/SCHD4DB.cpp"
+$(IntermediateDirectory)/stas_VFCManager.cpp$(PreprocessSuffix): src/stas/VFCManager.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/stas_VFCManager.cpp$(PreprocessSuffix) "src/stas/VFCManager.cpp"
+
+$(IntermediateDirectory)/stas_Schd4DB.cpp$(ObjectSuffix): src/stas/Schd4DB.cpp $(IntermediateDirectory)/stas_Schd4DB.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/stas/src/stas/Schd4DB.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/stas_Schd4DB.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/stas_Schd4DB.cpp$(DependSuffix): src/stas/Schd4DB.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/stas_Schd4DB.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/stas_Schd4DB.cpp$(DependSuffix) -MM "src/stas/Schd4DB.cpp"
+
+$(IntermediateDirectory)/stas_Schd4DB.cpp$(PreprocessSuffix): src/stas/Schd4DB.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/stas_Schd4DB.cpp$(PreprocessSuffix) "src/stas/Schd4DB.cpp"
+
+$(IntermediateDirectory)/stas_VFClient.cpp$(ObjectSuffix): src/stas/VFClient.cpp $(IntermediateDirectory)/stas_VFClient.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/stas/src/stas/VFClient.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/stas_VFClient.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/stas_VFClient.cpp$(DependSuffix): src/stas/VFClient.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/stas_VFClient.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/stas_VFClient.cpp$(DependSuffix) -MM "src/stas/VFClient.cpp"
+
+$(IntermediateDirectory)/stas_VFClient.cpp$(PreprocessSuffix): src/stas/VFClient.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/stas_VFClient.cpp$(PreprocessSuffix) "src/stas/VFClient.cpp"
+
+$(IntermediateDirectory)/stas_Notifier.cpp$(ObjectSuffix): src/stas/Notifier.cpp $(IntermediateDirectory)/stas_Notifier.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/boolpae/Dev/stas/src/stas/Notifier.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/stas_Notifier.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/stas_Notifier.cpp$(DependSuffix): src/stas/Notifier.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/stas_Notifier.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/stas_Notifier.cpp$(DependSuffix) -MM "src/stas/Notifier.cpp"
+
+$(IntermediateDirectory)/stas_Notifier.cpp$(PreprocessSuffix): src/stas/Notifier.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/stas_Notifier.cpp$(PreprocessSuffix) "src/stas/Notifier.cpp"
 
 
 -include $(IntermediateDirectory)/*$(DependSuffix)

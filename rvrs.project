@@ -24,6 +24,8 @@
       <File Name="src/stas/STT2File.cpp"/>
       <File Name="src/stas/VFCManager.cpp"/>
       <File Name="src/stas/Schd4DB.cpp"/>
+      <File Name="src/stas/VFClient.cpp"/>
+      <File Name="src/stas/Notifier.cpp"/>
     </VirtualDirectory>
   </VirtualDirectory>
   <Description/>
@@ -44,6 +46,8 @@
     <File Name="include/STT2File.h"/>
     <File Name="include/VFCManager.h"/>
     <File Name="include/Schd4DB.h"/>
+    <File Name="include/VFClient.h"/>
+    <File Name="include/Notifier.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
