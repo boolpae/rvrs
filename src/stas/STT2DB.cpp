@@ -1,30 +1,30 @@
 
-#include "RT2DB.h"
+#include "STT2DB.h"
 
 #include <iconv.h>
 
 #include <string.h>
 
-RT2DB* RT2DB::m_instance = nullptr;
+STT2DB* STT2DB::m_instance = nullptr;
 
 
-RT2DB::RT2DB(log4cpp::Category *logger)
+STT2DB::STT2DB(log4cpp::Category *logger)
 : m_bLiveFlag(true), m_Logger(logger)
 {
-	m_Logger->debug("RT2DB Constructed.");
+	m_Logger->debug("STT2DB Constructed.");
 }
 
-RT2DB::~RT2DB()
+STT2DB::~STT2DB()
 {
     ConnectionPool_stop(m_pool);
     ConnectionPool_free(&m_pool);
     URL_free(&m_url);
     m_thrd.join();
         
-	m_Logger->debug("RT2DB Destructed.");
+	m_Logger->debug("STT2DB Destructed.");
 }
 
-void RT2DB::thrdMain(RT2DB * r2d)
+void STT2DB::thrdMain(STT2DB * s2d)
 {
 	std::lock_guard<std::mutex> *g;// (m_mxQue);
 	RTSTTQueItem* item;
@@ -37,14 +37,14 @@ void RT2DB::thrdMain(RT2DB * r2d)
     char *output_buf_ptr = NULL;
 
     Connection_T con;
-    con = ConnectionPool_getConnection(r2d->m_pool);
+    con = ConnectionPool_getConnection(s2d->m_pool);
     
 
-	while (r2d->m_bLiveFlag) {
-		while (!r2d->m_qRtSttQue.empty()) {
-			g = new std::lock_guard<std::mutex>(r2d->m_mxQue);
-			item = r2d->m_qRtSttQue.front();
-			r2d->m_qRtSttQue.pop();
+	while (s2d->m_bLiveFlag) {
+		while (!s2d->m_qRtSttQue.empty()) {
+			g = new std::lock_guard<std::mutex>(s2d->m_mxQue);
+			item = s2d->m_qRtSttQue.front();
+			s2d->m_qRtSttQue.pop();
 			delete g;
 
             in_size = item->getSTTValue().size();
@@ -77,9 +77,9 @@ void RT2DB::thrdMain(RT2DB * r2d)
             }
             CATCH(SQLException)
             {
-                r2d->m_Logger->error("RT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
+                s2d->m_Logger->error("STT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
                 Connection_close(con);
-                con = ConnectionPool_getConnection(r2d->m_pool);
+                con = ConnectionPool_getConnection(s2d->m_pool);
             }
             END_TRY;
 
@@ -91,11 +91,11 @@ void RT2DB::thrdMain(RT2DB * r2d)
     Connection_close(con);
 }
 
-RT2DB* RT2DB::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger)
+STT2DB* STT2DB::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger)
 {
     if (m_instance) return m_instance;
     
-    m_instance = new RT2DB(logger);
+    m_instance = new STT2DB(logger);
     
     std::string sUrl = dbtype + "://" + dbuser + ":" + dbpw + "@" + dbhost + ":" + dbport + "/" + dbname + "?charset=" + charset;
     m_instance->m_url = URL_new(sUrl.c_str());
@@ -108,7 +108,7 @@ RT2DB* RT2DB::instance(std::string dbtype, std::string dbhost, std::string dbpor
     }
     CATCH(SQLException)
     {
-        logger->error("RT2DB::instance - SQLException -- %s", Exception_frame.message);
+        logger->error("STT2DB::instance - SQLException -- %s", Exception_frame.message);
         
         ConnectionPool_free(&m_instance->m_pool);
         URL_free(&m_instance->m_url);
@@ -118,12 +118,12 @@ RT2DB* RT2DB::instance(std::string dbtype, std::string dbhost, std::string dbpor
     }
     END_TRY;
     
-    m_instance->m_thrd = std::thread(RT2DB::thrdMain, m_instance);
+    m_instance->m_thrd = std::thread(STT2DB::thrdMain, m_instance);
 
     return m_instance;
 }
 
-void RT2DB::release()
+void STT2DB::release()
 {
     if (m_instance) {
         m_instance->m_bLiveFlag = false;
@@ -133,7 +133,7 @@ void RT2DB::release()
     }
 }
 
-int RT2DB::insertCallInfo(std::string callid, time_t stime)
+int STT2DB::insertCallInfo(std::string callid, time_t stime)
 {
     Connection_T con;
     struct tm resultT;
@@ -144,11 +144,11 @@ int RT2DB::insertCallInfo(std::string callid, time_t stime)
     {
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
-            m_Logger->error("RT2DB::insertCallInfo - can't get connection from pool");
+            m_Logger->error("STT2DB::insertCallInfo - can't get connection from pool");
             return 1;
         }
         else if ( !Connection_ping(con) ) {
-            m_Logger->error("RT2DB::insertCallInfo - inactive connection from pool");
+            m_Logger->error("STT2DB::insertCallInfo - inactive connection from pool");
             Connection_close(con);
             return 2;
         }
@@ -157,7 +157,7 @@ int RT2DB::insertCallInfo(std::string callid, time_t stime)
     }
     CATCH(SQLException)
     {
-        m_Logger->error("RT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
+        m_Logger->error("STT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
     }
     FINALLY
     {
@@ -167,7 +167,7 @@ int RT2DB::insertCallInfo(std::string callid, time_t stime)
     return 0;
 }
 
-int RT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
+int STT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
 {
     Connection_T con;
     struct tm resultT;
@@ -178,11 +178,11 @@ int RT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
     {
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
-            m_Logger->error("RT2DB::updateCallInfo - can't get connection from pool");
+            m_Logger->error("STT2DB::updateCallInfo - can't get connection from pool");
             return 1;
         }
         else if ( !Connection_ping(con) ) {
-            m_Logger->error("RT2DB::updateCallInfo - inactive connection from pool");
+            m_Logger->error("STT2DB::updateCallInfo - inactive connection from pool");
             Connection_close(con);
             return 2;
         }
@@ -197,7 +197,7 @@ int RT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
     }
     CATCH(SQLException)
     {
-        m_Logger->error("RT2DB::updateCallInfo - SQLException -- %s", Exception_frame.message);
+        m_Logger->error("STT2DB::updateCallInfo - SQLException -- %s", Exception_frame.message);
     }
     FINALLY
     {
@@ -207,7 +207,7 @@ int RT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
     return 0;
 }
 #if 0
-int RT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt)
+int STT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt)
 {
     Connection_T con;
 
@@ -215,11 +215,11 @@ int RT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint
     {
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
-            printf("RT2DB::insertRtSTTData - can't get connection from pool\n");
+            printf("STT2DB::insertRtSTTData - can't get connection from pool\n");
             return 1;
         }
         else if ( !Connection_ping(con) ) {
-            printf("RT2DB::insertRtSTTData - inactive connection from pool\n");
+            printf("STT2DB::insertRtSTTData - inactive connection from pool\n");
             Connection_close(con);
             return 2;
         }
@@ -228,7 +228,7 @@ int RT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint
     }
     CATCH(SQLException)
     {
-        printf("RT2DB::insertRtSTTData - SQLException -- %s\n", Exception_frame.message);
+        printf("STT2DB::insertRtSTTData - SQLException -- %s\n", Exception_frame.message);
     }
     FINALLY
     {
@@ -238,12 +238,12 @@ int RT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint
     return 0;
 }
 #endif
-void RT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt)
+void STT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt)
 {
 	insertRtSTTData(new RTSTTQueItem(idx, callid, spkno, stt, spos, epos));
 }
 
-void RT2DB::insertRtSTTData(RTSTTQueItem * item)
+void STT2DB::insertRtSTTData(RTSTTQueItem * item)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
 	m_qRtSttQue.push(item);

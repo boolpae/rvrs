@@ -4,7 +4,7 @@
 #include "VRCManager.h"
 #include "VDCManager.h"
 #include "WorkTracer.h"
-#include "RT2DB.h"
+#include "STT2DB.h"
 #include "HAManager.h"
 #include "VRClient.h"
 
@@ -39,8 +39,8 @@ QueueItem::~QueueItem()
 	printf("\t\t[%d] QueueItem Destroyed!\n", m_nNum);
 }
 
-CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham)
-	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_rt2db(rt2db), m_ham(ham)
+CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, STT2DB* st2db, HAManager *ham)
+	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_st2db(st2db), m_ham(ham)
 {
 	//printf("\t[%d] CallExecutor Created!\n", m_nNum);
     m_Logger->debug("[%d] CallExecutor Created!", m_nNum);
@@ -119,8 +119,8 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 						else {
 							// SUCCESS
                             // to DB
-                            if (exe->m_rt2db) {
-                                exe->m_rt2db->insertCallInfo(sCallId, item->m_time);
+                            if (exe->m_st2db) {
+                                exe->m_st2db->insertCallInfo(sCallId, item->m_time);
                             }
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 1);
 							cs->makePacket(item->m_packet, item->m_packetSize, vPorts);
@@ -133,8 +133,8 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 				}
 				else if (cs->getPacketFlag() == 'E') {
                     // to DB
-                    if (exe->m_rt2db) {
-                        exe->m_rt2db->updateCallInfo(sCallId, item->m_time);
+                    if (exe->m_st2db) {
+                        exe->m_st2db->updateCallInfo(sCallId, item->m_time);
                     }
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_END_PROC);
                     exe->m_vdcm->removeVDC(sCallId);

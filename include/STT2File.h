@@ -33,9 +33,9 @@ public:
     uint64_t getEpos() { return m_nEpos; }
 };
 
-class STTDeliver
+class STT2File
 {
-	static STTDeliver* ms_instance;
+	static STT2File* ms_instance;
 	
 	bool m_bLiveFlag;
 
@@ -48,17 +48,17 @@ class STTDeliver
     log4cpp::Category *m_Logger;
     
 public:
-	static STTDeliver* instance(std::string path, log4cpp::Category *logger);
+	static STT2File* instance(std::string path, log4cpp::Category *logger);
 	static void release();
 
 	void insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
 
 private:
-	STTDeliver(std::string path, log4cpp::Category *logger);
-	virtual ~STTDeliver();
+	STT2File(std::string path, log4cpp::Category *logger);
+	virtual ~STT2File();
 
-	static void thrdMain(STTDeliver* dlv);
+	static void thrdMain(STT2File* dlv);
 
 	void insertSTT(STTQueItem* item);
 };

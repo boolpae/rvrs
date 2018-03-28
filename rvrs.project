@@ -14,14 +14,16 @@
       <File Name="src/stas/CallReceiver.cpp"/>
       <File Name="src/stas/CallSignal.cpp"/>
       <File Name="src/stas/HAManager.cpp"/>
-      <File Name="src/stas/RT2DB.cpp"/>
       <File Name="src/stas/stas.cpp"/>
-      <File Name="src/stas/STTDeliver.cpp"/>
       <File Name="src/stas/VDClient.cpp"/>
       <File Name="src/stas/VDCManager.cpp"/>
       <File Name="src/stas/VRClient.cpp"/>
       <File Name="src/stas/VRCManager.cpp"/>
       <File Name="src/stas/WorkTracer.cpp"/>
+      <File Name="src/stas/STT2DB.cpp"/>
+      <File Name="src/stas/STT2File.cpp"/>
+      <File Name="src/stas/VFCManager.cpp"/>
+      <File Name="src/stas/Schd4DB.cpp"/>
     </VirtualDirectory>
   </VirtualDirectory>
   <Description/>
@@ -33,13 +35,15 @@
     <File Name="include/VRCManager.h"/>
     <File Name="include/VDCManager.h"/>
     <File Name="include/CallReceiver.h"/>
-    <File Name="include/STTDeliver.h"/>
     <File Name="include/configuration.h"/>
     <File Name="include/CallSignal.h"/>
     <File Name="include/VRClient.h"/>
     <File Name="include/HAManager.h"/>
-    <File Name="include/RT2DB.h"/>
     <File Name="include/stas.h"/>
+    <File Name="include/STT2DB.h"/>
+    <File Name="include/STT2File.h"/>
+    <File Name="include/VFCManager.h"/>
+    <File Name="include/Schd4DB.h"/>
   </VirtualDirectory>
   <Settings Type="Executable">
     <GlobalSettings>
@@ -53,7 +57,6 @@
     </GlobalSettings>
     <Configuration Name="Debug" CompilerType="GCC" DebuggerType="GNU gdb debugger" Type="Executable" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
       <Compiler Options="-g;-O0;-std=c++11;-Wall" C_Options="-g;-O0;-Wall" Assembler="" Required="yes" PreCompiledHeader="" PCHInCommandLine="no" PCHFlags="" PCHFlagsPolicy="0">
-        <IncludePath Value="."/>
         <IncludePath Value="include"/>
         <IncludePath Value="/usr/include/zdb"/>
       </Compiler>

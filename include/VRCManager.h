@@ -21,8 +21,8 @@
 using namespace std;
 
 class VRClient;
-class STTDeliver;
-class RT2DB;
+class STT2File;
+class STT2DB;
 
 class VRCManager
 {
@@ -38,15 +38,15 @@ class VRCManager
 
 	mutable std::mutex m_mxMap;
     
-    STTDeliver *m_deliver;
+    STT2File *m_deliver;
     
     log4cpp::Category *m_Logger;
-    RT2DB* m_r2d;
+    STT2DB* m_s2d;
 
 	mutable std::mutex m_mxQue;
 
 public:
-	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d);
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
@@ -64,7 +64,7 @@ public:
     int addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc);
 
 private:
-	VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);
+	VRCManager(int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d);
 	virtual ~VRCManager();
 
 	bool connectGearman();

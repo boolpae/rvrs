@@ -1,6 +1,6 @@
 
 
-#include "STTDeliver.h"
+#include "STT2File.h"
 
 #include <thread>
 #include <iostream>
@@ -10,21 +10,21 @@
 #include <string.h>
 #include <unistd.h>
 
-STTDeliver* STTDeliver::ms_instance = NULL;
+STT2File* STT2File::ms_instance = NULL;
 
-STTDeliver::STTDeliver(std::string path, log4cpp::Category *logger)
+STT2File::STT2File(std::string path, log4cpp::Category *logger)
 	: m_bLiveFlag(true), m_sResultPath(path), m_Logger(logger)
 {
-	m_Logger->debug("STTDeliver Constructed.");
+	m_Logger->debug("STT2File Constructed.");
 }
 
 
-STTDeliver::~STTDeliver()
+STT2File::~STT2File()
 {
-	m_Logger->debug("STTDeliver Destructed.");
+	m_Logger->debug("STT2File Destructed.");
 }
 
-void STTDeliver::thrdMain(STTDeliver * dlv)
+void STT2File::thrdMain(STT2File * dlv)
 {
 	std::lock_guard<std::mutex> *g;// (m_mxQue);
 	STTQueItem* item;
@@ -96,23 +96,23 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
 
 // desc:	spkNo의 값이 0인 경우 실시간 STT 결과값이 아님(이 경우 jobtype의 값도 'F' 이어야 함)
 //			실시간 STT 결과인 경우 jobtype : 'R' 이며 spkNo의 값도 1 이상의 값이어야 함
-void STTDeliver::insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos)
+void STT2File::insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos)
 {
 	insertSTT(new STTQueItem(callid, uint8_t('R'), spkNo, stt, bpos, epos));
 }
 
-void STTDeliver::insertSTT(std::string callid, std::string& stt, std::string filename)
+void STT2File::insertSTT(std::string callid, std::string& stt, std::string filename)
 {
 	insertSTT(new STTQueItem(callid, uint8_t('F'), filename, stt));
 }
 
-void STTDeliver::insertSTT(STTQueItem * item)
+void STT2File::insertSTT(STTQueItem * item)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
 	m_qSttQue.push(item);
 }
 
-STTDeliver* STTDeliver::instance(std::string path, log4cpp::Category *logger)
+STT2File* STT2File::instance(std::string path, log4cpp::Category *logger)
 {
 	if (ms_instance) return ms_instance;
     
@@ -122,19 +122,19 @@ STTDeliver* STTDeliver::instance(std::string path, log4cpp::Category *logger)
         std::system(cmd.c_str());
         
         if ( ::access(path.c_str(), 0) ) {
-            logger->error("STTDeliver::instance - failed create path : %s", path.c_str());
+            logger->error("STT2File::instance - failed create path : %s", path.c_str());
             return nullptr;
         }
     }
 
-	ms_instance = new STTDeliver(path, logger);
+	ms_instance = new STT2File(path, logger);
 
-	ms_instance->m_thrd = std::thread(STTDeliver::thrdMain, ms_instance);
+	ms_instance->m_thrd = std::thread(STT2File::thrdMain, ms_instance);
 
 	return ms_instance;
 }
 
-void STTDeliver::release()
+void STT2File::release()
 {
 	ms_instance->m_bLiveFlag = false;
 

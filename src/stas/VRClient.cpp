@@ -2,8 +2,8 @@
 #include "VRClient.h"
 #include "VRCManager.h"
 #include "WorkTracer.h"
-#include "STTDeliver.h"
-#include "RT2DB.h"
+#include "STT2File.h"
+#include "STT2DB.h"
 #include "HAManager.h"
 
 #include <thread>
@@ -16,8 +16,8 @@
 // For Gearman
 #include <libgearman/gearman.h>
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_r2d(r2d)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_s2d(s2d)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -196,11 +196,11 @@ void VRClient::thrdMain(VRClient* client) {
 
                         if ((!sttIdx || (sttIdx < dstLen)) && strlen(dstBuff+sttIdx)) {
                             // to DB
-                            if (client->m_r2d) {
-                                client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
+                            if (client->m_s2d) {
+                                client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
                             }
-                            //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                            // to STTDeliver(file)
+                            //STT2File::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            // to STT2File(file)
                             if (client->m_deliver) {
                                 client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)dstBuff+sttIdx), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                             }
@@ -212,11 +212,11 @@ void VRClient::thrdMain(VRClient* client) {
 
 #else
                         // to DB
-                        if (client->m_r2d) {
-                            client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
+                        if (client->m_s2d) {
+                            client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
                         }
-                        //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                        // to STTDeliver(file)
+                        //STT2File::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                        // to STT2File(file)
                         if (client->m_deliver) {
                             client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                         }
@@ -240,8 +240,8 @@ void VRClient::thrdMain(VRClient* client) {
 						if ( item->voiceData != NULL ) delete[] item->voiceData;
 						delete item;
 
-                        if (client->m_r2d) {
-                            client->m_r2d->updateCallInfo(client->m_sCallId, time(NULL), true);
+                        if (client->m_s2d) {
+                            client->m_s2d->updateCallInfo(client->m_sCallId, time(NULL), true);
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);

@@ -33,9 +33,9 @@ public:
     uint64_t getEpos() { return m_nEpos; }
 };
 
-class RT2DB {
+class STT2DB {
 private:
-    static RT2DB* m_instance;
+    static STT2DB* m_instance;
     
 	bool m_bLiveFlag;
 
@@ -49,14 +49,14 @@ private:
     log4cpp::Category *m_Logger;
     
 private:
-    RT2DB(log4cpp::Category *logger);
-	static void thrdMain(RT2DB* r2d);
+    STT2DB(log4cpp::Category *logger);
+	static void thrdMain(STT2DB* s2d);
 	void insertRtSTTData(RTSTTQueItem* item);
     
 public:
-    virtual ~RT2DB();
+    virtual ~STT2DB();
     
-    static RT2DB* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger);
+    static STT2DB* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger);
     static void release();
     
     void setLogger(log4cpp::Category *logger) { m_Logger = logger; }

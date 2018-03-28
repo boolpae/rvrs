@@ -20,7 +20,7 @@
 
 using namespace std;
 
-class RT2DB;
+class STT2DB;
 
 class QueueItem {
 	uint16_t m_nNum;
@@ -52,11 +52,11 @@ class CallExecutor
     
     log4cpp::Category *m_Logger;
     
-    RT2DB* m_rt2db;
+    STT2DB* m_st2db;
     HAManager *m_ham;
 
 public:
-	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, RT2DB* rt2db, HAManager *ham=nullptr);
+	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, STT2DB* st2db, HAManager *ham=nullptr);
 	virtual ~CallExecutor();
 
 	static void thrdMain(CallExecutor* exe);

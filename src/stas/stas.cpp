@@ -6,10 +6,10 @@
 #include "VRCManager.h"
 #include "VDCManager.h"
 #include "WorkTracer.h"
-#include "STTDeliver.h"
+#include "STT2File.h"
 #include "configuration.h"
 #include "stas.h"
-#include "RT2DB.h"
+#include "STT2DB.h"
 #include "HAManager.h"
 
 #include <log4cpp/Category.hh>
@@ -47,9 +47,9 @@ int main(int argc, const char** argv)
 	string input;
 #endif
     log4cpp::Category *logger;
-    RT2DB* rt2db=nullptr;
+    STT2DB* st2db=nullptr;
     CallReceiver* rcv=nullptr;
-    STTDeliver* deliver = nullptr;
+    STT2File* deliver = nullptr;
     HAManager* ham = nullptr;
 
     int max_size = -1, max_backup = 0;
@@ -115,7 +115,7 @@ int main(int argc, const char** argv)
         logger->info("Database Name    :  %s", config->getConfig("database.name", "rt_stt").c_str());
         logger->info("Database CharSet :  %s", config->getConfig("database.chset", "utf8").c_str());
         
-        rt2db = RT2DB::instance(config->getConfig("database.type", "mysql"),
+        st2db = STT2DB::instance(config->getConfig("database.type", "mysql"),
                                 config->getConfig("database.addr", "localhost"),
                                 config->getConfig("database.port", "3306"),
                                 config->getConfig("database.id", "stt"),
@@ -123,8 +123,8 @@ int main(int argc, const char** argv)
                                 config->getConfig("database.name", "rt_stt"),
                                 config->getConfig("database.chset", "utf8"),
                                 logger);
-        if (!rt2db) {
-            logger->error("MAIN - ERROR (Failed to get RT2DB instance)");
+        if (!st2db) {
+            logger->error("MAIN - ERROR (Failed to get STT2DB instance)");
             delete config;
             return -1;
         }
@@ -140,16 +140,16 @@ int main(int argc, const char** argv)
     WorkTracer::instance()->setLogger(&tracerLog);
     
     if (!config->getConfig("stt_result.use", "false").compare("true")) {
-        deliver = STTDeliver::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
+        deliver = STT2File::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
     }
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, logger, rt2db);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, logger, st2db);
 	VDCManager* vdcm = VDCManager::instance(config->getConfig("stas.channel_count", 200), config->getConfig("stas.udp_bport", 10000), config->getConfig("stas.udp_eport", 11000), config->getConfig("stas.playtime", 3), vrcm, logger);
     
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
         VDCManager::release();
-        STTDeliver::release();
+        STT2File::release();
         WorkTracer::release();
         delete config;
         return -1;
@@ -160,7 +160,7 @@ int main(int argc, const char** argv)
         if (ham->init(config->getConfig("ha.addr", "192.168.0.1"), config->getConfig("ha.port", 7777)) < 0) {
             logger->error("MAIN - ERROR (Failed to get HAManager instance)");
             VDCManager::release();
-            STTDeliver::release();
+            STT2File::release();
             WorkTracer::release();
             HAManager::release();
             delete config;
@@ -168,7 +168,7 @@ int main(int argc, const char** argv)
         }
     }
     
-	rcv = CallReceiver::instance(vdcm, vrcm, logger, rt2db, ham);
+	rcv = CallReceiver::instance(vdcm, vrcm, logger, st2db, ham);
     rcv->setNumOfExecutor(config->getConfig("stas.callexe_count", 5));
 
 	if (!rcv->init(config->getConfig("stas.callport", 7000))) {
@@ -208,9 +208,9 @@ FINISH:
 	vrcm->release();
 	rcv->release();
 
-    STTDeliver::release();
+    STT2File::release();
 	WorkTracer::release();
-    RT2DB::release();
+    STT2DB::release();
     delete config;
 
     return 0;
