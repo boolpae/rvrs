@@ -154,12 +154,13 @@ void VRClient::thrdMain(VRClient* client) {
                 memcpy(buf+nHeadLen, (const void*)tmpBuf, tmpBufLen);
                 memcpy(buf+nHeadLen+tmpBufLen, (const void*)item->voiceData, item->lenVoiceData);
                 
+                value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
+                                                (const void*)buf, (nHeadLen + item->lenVoiceData + tmpBufLen),
+                                                &result_size, &rc);
+
                 memcpy(tmpBuf, (const void*)item->voiceData, item->lenVoiceData);
                 tmpBufLen = item->lenVoiceData;
                 
-                value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
-                                                (const void*)buf, (nHeadLen + item->lenVoiceData),
-                                                &result_size, &rc);
 #if 0 // for DEBUG
 				if (pcmFile.is_open()) {
 					pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
