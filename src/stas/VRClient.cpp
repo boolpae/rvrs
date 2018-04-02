@@ -71,6 +71,8 @@ void VRClient::thrdMain(VRClient* client) {
 
     
     char buf[BUFLEN];
+    char tmpBuf[BUFLEN];
+    std::size_t tmpBufLen=0;
     uint16_t nHeadLen=0;
     
     for (int i=0; i<client->m_nNumofChannel; i++) {
@@ -128,6 +130,7 @@ void VRClient::thrdMain(VRClient* client) {
 		std::ofstream pcmFile;
 		pcmFile.open(filename, ios::out | ios::app | ios::binary);
 #endif
+        memset(tmpBuf, 0, BUFLEN);
 		while (client->m_nLiveFlag)
 		{
 			while (!client->m_qRTQue.empty()) {
@@ -147,7 +150,12 @@ void VRClient::thrdMain(VRClient* client) {
                     sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "NOLA");
                 }
                 nHeadLen = strlen(buf);
-                memcpy(buf+nHeadLen, (const void*)item->voiceData, item->lenVoiceData);
+                
+                memcpy(buf+nHeadLen, (const void*)tmpBuf, tmpBufLen);
+                memcpy(buf+nHeadLen+tmpBufLen, (const void*)item->voiceData, item->lenVoiceData);
+                
+                memcpy(tmpBuf, (const void*)item->voiceData, item->lenVoiceData);
+                tmpBufLen = item->lenVoiceData;
                 
                 value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
                                                 (const void*)buf, (nHeadLen + item->lenVoiceData),
