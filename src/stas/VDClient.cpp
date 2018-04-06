@@ -147,7 +147,14 @@ void VDClient::thrdMain(VDClient * client)
 				if (!item) {
 					item = new QueItem;
 					item->voiceData = new uint8_t[VOICE_BUFF_LEN];
-					item->flag = 1;
+                    // 시작 패킷 표시
+                    if (client->m_nWorkStat == 3) {
+                        item->flag = 2;
+                        client->m_nWorkStat = 1;
+                    }
+                    else {
+                        item->flag = 1;
+                    }
 					item->spkNo = client->m_nSpkNo;
 					item->lenVoiceData = 0;
 					memset(item->voiceData, 0x00, VOICE_BUFF_LEN);
@@ -252,7 +259,7 @@ void VDClient::startWork(std::string& callid, uint8_t spkno)
 	m_sCallId = callid;
 	m_nSpkNo = spkno;
 	m_tTimeout = time(NULL);
-	m_nWorkStat = uint8_t(1);
+	m_nWorkStat = uint8_t(3);
 
     m_pVrc = m_vrcm->getVRClient(callid);
 
