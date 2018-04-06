@@ -41,11 +41,14 @@ class VRClient
     STTDeliver *m_deliver;
     log4cpp::Category *m_Logger;
     RT2DB* m_r2d;
+    
+    bool m_is_save_pcm;
+    string m_pcm_path;
 
 public:
 
 public:
-	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d, bool is_save_pcm, string pcm_path);
 	void finish();
 
 	string& getFname() { return m_sFname; }
