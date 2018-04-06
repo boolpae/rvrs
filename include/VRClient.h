@@ -15,7 +15,7 @@ class STT2File;
 class STT2DB;
 
 typedef struct _queItem {
-	uint8_t flag;	// 통화 시작과 통화 중: 1, 마지막 데이터 또는 통화 종료: 0
+	uint8_t flag;	// 통화 시작: 2, 과 통화 중: 1, 마지막 데이터 또는 통화 종료: 0
 	uint8_t spkNo;	// 통화자 번호(송신자 0, 수신자 1)
 	uint32_t lenVoiceData;	// voiceData 길이
 	uint8_t* voiceData;	// 디코딩된 3초 분량의 음성 데이터

@@ -143,6 +143,9 @@ void VRClient::thrdMain(VRClient* client) {
                 if (!item->flag) {
                     sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "LAST");
                 }
+                else if (item->flag == 2) {
+                    sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
+                }
                 else {
                     sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "NOLA");
                 }
