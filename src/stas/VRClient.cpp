@@ -123,7 +123,7 @@ void VRClient::thrdMain(VRClient* client) {
             gearman_client_set_timeout(gearClient, client->m_nGearTimeout);
         }
         
-#if 1 // for DEBUG
+#if 0 // for DEBUG
 		std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + std::to_string(client->m_nNumofChannel) + std::string(".pcm");
 		std::ofstream pcmFile;
         if (client->m_is_save_pcm)
@@ -157,9 +157,23 @@ void VRClient::thrdMain(VRClient* client) {
                                                 (const void*)buf, (nHeadLen + item->lenVoiceData),
                                                 &result_size, &rc);
 #if 1 // for DEBUG
+                if (client->m_is_save_pcm) {
+                    std::string spker = (item->spkNo == 1)?std::string("r"):std::string("l");
+                    std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".pcm");
+                    std::ofstream pcmFile;
+
+                    pcmFile.open(filename, ios::out | ios::app | ios::binary);
+                    if (client->m_is_save_pcm && pcmFile.is_open()) {
+                        pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
+                        pcmFile.close();
+                    }
+                }
+#if 0
 				if (client->m_is_save_pcm && pcmFile.is_open()) {
 					pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
+					pcmFile.close();
 				}
+#endif
 #endif
                 if (gearman_success(rc))
                 {
@@ -266,7 +280,7 @@ void VRClient::thrdMain(VRClient* client) {
 			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(5));
 		}
-#if 1 // for DEBUG
+#if 0 // for DEBUG
 		if (client->m_is_save_pcm && pcmFile.is_open()) pcmFile.close();
 #endif
 	}
