@@ -163,7 +163,7 @@ void VRClient::thrdMain(VRClient* client) {
                     std::ofstream pcmFile;
 
                     pcmFile.open(filename, ios::out | ios::app | ios::binary);
-                    if (client->m_is_save_pcm && pcmFile.is_open()) {
+                    if (pcmFile.is_open()) {
                         pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
                         pcmFile.close();
                     }
