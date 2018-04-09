@@ -22,8 +22,8 @@ using namespace std;
 
 VRCManager* VRCManager::ms_instance = NULL;
 
-VRCManager::VRCManager(int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d)
-	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger), m_s2d(s2d)
+VRCManager::VRCManager(int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path)
+	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger), m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path)
 {
 	//printf("\t[DEBUG] VRCManager Constructed.\n");
     m_Logger->debug("VRCManager Constructed.");
@@ -180,11 +180,11 @@ void VRCManager::getFnamesFromString(std::string & gearResult, std::vector<std::
 
 }
 
-VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d)
+VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path)
 {
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new VRCManager(geartimeout, deliver, logger, s2d);
+	ms_instance = new VRCManager(geartimeout, deliver, logger, s2d, is_save_pcm, pcm_path);
 
 	// for DEV
 	ms_instance->setGearHost(gearHostIp);//);("192.168.229.135")
@@ -244,7 +244,7 @@ int16_t VRCManager::requestVRC(string& callid, uint8_t jobType, uint8_t noc = 1)
 	}
 
 	if (iter != vFnames.end()) {
-		client = new VRClient(ms_instance, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, *iter, callid, jobType, noc, m_deliver, m_Logger, m_s2d); // or VRClient(this);
+		client = new VRClient(ms_instance, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, *iter, callid, jobType, noc, m_deliver, m_Logger, m_s2d, m_is_save_pcm, m_pcm_path); // or VRClient(this);
 
 		if (client) {
 			std::lock_guard<std::mutex> g(m_mxMap);
@@ -331,7 +331,7 @@ int VRCManager::addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc
 	int16_t res = 0;
 	VRClient* client;
 
-    client = new VRClient(this, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, fname, callid, jobtype, noc, m_deliver, m_Logger, m_s2d); // or VRClient(this);
+    client = new VRClient(this, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, fname, callid, jobtype, noc, m_deliver, m_Logger, m_s2d, m_is_save_pcm, m_pcm_path); // or VRClient(this);
 
     if (client) {
         std::lock_guard<std::mutex> g(m_mxMap);

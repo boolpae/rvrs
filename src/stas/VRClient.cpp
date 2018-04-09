@@ -16,8 +16,8 @@
 // For Gearman
 #include <libgearman/gearman.h>
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_s2d(s2d)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -124,9 +124,10 @@ void VRClient::thrdMain(VRClient* client) {
         }
         
 #if 0 // for DEBUG
-		std::string filename = client->m_sCallId + std::string("_") + std::to_string(client->m_nNumofChannel) + std::string(".pcm");
+		std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + std::to_string(client->m_nNumofChannel) + std::string(".pcm");
 		std::ofstream pcmFile;
-		pcmFile.open(filename, ios::out | ios::app | ios::binary);
+        if (client->m_is_save_pcm)
+            pcmFile.open(filename, ios::out | ios::app | ios::binary);
 #endif
 		while (client->m_nLiveFlag)
 		{
@@ -155,10 +156,24 @@ void VRClient::thrdMain(VRClient* client) {
                 value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
                                                 (const void*)buf, (nHeadLen + item->lenVoiceData),
                                                 &result_size, &rc);
-#if 0 // for DEBUG
-				if (pcmFile.is_open()) {
+#if 1 // for DEBUG
+                if (client->m_is_save_pcm) {
+                    std::string spker = (item->spkNo == 1)?std::string("r"):std::string("l");
+                    std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".pcm");
+                    std::ofstream pcmFile;
+
+                    pcmFile.open(filename, ios::out | ios::app | ios::binary);
+                    if (client->m_is_save_pcm && pcmFile.is_open()) {
+                        pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
+                        pcmFile.close();
+                    }
+                }
+#if 0
+				if (client->m_is_save_pcm && pcmFile.is_open()) {
 					pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
+					pcmFile.close();
 				}
+#endif
 #endif
                 if (gearman_success(rc))
                 {
@@ -265,7 +280,7 @@ void VRClient::thrdMain(VRClient* client) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(5));
 		}
 #if 0 // for DEBUG
-		if (pcmFile.is_open()) pcmFile.close();
+		if (client->m_is_save_pcm && pcmFile.is_open()) pcmFile.close();
 #endif
 	}
 	// 파일(배치)를 위한 작업 수행 시
