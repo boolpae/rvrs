@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include <boost/algorithm/string/replace.hpp>
 
 // For Gearman
 #include <libgearman/gearman.h>
@@ -153,9 +154,6 @@ void VRClient::thrdMain(VRClient* client) {
                 nHeadLen = strlen(buf);
                 memcpy(buf+nHeadLen, (const void*)item->voiceData, item->lenVoiceData);
                 
-                value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
-                                                (const void*)buf, (nHeadLen + item->lenVoiceData),
-                                                &result_size, &rc);
 #if 1 // for DEBUG
                 if (client->m_is_save_pcm) {
                     std::string spker = (item->spkNo == 1)?std::string("r"):std::string("l");
@@ -175,6 +173,10 @@ void VRClient::thrdMain(VRClient* client) {
 				}
 #endif
 #endif
+
+                value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
+                                                (const void*)buf, (nHeadLen + item->lenVoiceData),
+                                                &result_size, &rc);
                 if (gearman_success(rc))
                 {
                     // Make use of value
@@ -215,12 +217,12 @@ void VRClient::thrdMain(VRClient* client) {
                         if ((!sttIdx || (sttIdx < dstLen)) && strlen(dstBuff+sttIdx)) {
                             // to DB
                             if (client->m_s2d) {
-                                client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)dstBuff+sttIdx));
+                                client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " "));
                             }
                             //STT2File::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                             // to STT2File(file)
                             if (client->m_deliver) {
-                                client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)dstBuff+sttIdx), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                                client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " "), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                             }
                             
                         }
