@@ -35,6 +35,8 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
     char buf[256];
     int buflen=0;
+    
+    std::string line;
 
     gearClient = gearman_client_create(NULL);
     if (!gearClient) {
@@ -66,7 +68,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
     }
 
     while(client->m_LiveFlag) {
-        if(mgr->popItem()) {
+        if(mgr->popItem(line)) {
             memset(buf, 0, sizeof(buf));
             buflen = 0;
             value= gearman_client_do(gearClient, "vr_stt", NULL, 

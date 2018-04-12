@@ -10,8 +10,7 @@
 #include <sys/time.h>
 
 #include "VFClient.h"
-
-#define CONN_GEARMAN_PER_CALL
+#include "stas.h"
 
 using namespace std;
 
@@ -210,49 +209,38 @@ void VFCManager::outputVFCStat()
 {
 #if 0
 	//VRClient* client = NULL;
-	map< string, VRClient* >::iterator iter;
+	map< string, VFClient* >::iterator iter;
 
 	for (iter = m_mWorkerTable.begin(); iter != m_mWorkerTable.end(); iter++) {
 		//client = (VRClient*)iter->second;
 		//printf("\t[DEBUG] VFCManager::outputVRCStat() - VRClient(%s)\n", iter->first.c_str());
-        m_Logger->debug("VFCManager::outputVRCStat() - VRClient(%s, %s)", iter->first.c_str(), iter->second->getCallId().c_str());
+        m_Logger->debug("VFCManager::outputVRCStat() - VFClient(%s, %s)", iter->first.c_str(), iter->second->getCallId().c_str());
 	}
-    
+#endif
     if ( m_mWorkerTable.size() )
-        m_Logger->info("VFCManager::outputVRCStat() - Current working VRClient count(%d)", m_mWorkerTable.size());
-#endif
+        m_Logger->info("VFCManager::outputVRCStat() - Current working VFClient count(%d)", m_mWorkerTable.size());
+
 }
 
-// for HA
-int VFCManager::addVFC(string callid, string fname, uint8_t jobtype, uint8_t noc)
-{
-	int16_t res = 0;
-#if 0
-	VRClient* client;
-
-    client = new VRClient(this, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, fname, callid, jobtype, noc, m_deliver, m_Logger, m_s2d, m_is_save_pcm, m_pcm_path); // or VRClient(this);
-
-    if (client) {
-        std::lock_guard<std::mutex> g(m_mxMap);
-        m_mWorkerTable[fname] = client;
-    }
-    else {
-        res = 1;	// 실시간 STT 처리를 위한 VRClient 인스턴스 생성에 실패
-    }
-#endif
-    return res;
-}
-
-int VFCManager::pushItem()
+int VFCManager::pushItem(std::string line)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
-    return 0;
+    
+    m_qVFQue.push(line);
+    
+    return m_qVFQue.size();
 }
 
-int VFCManager::popItem()
+int VFCManager::popItem(std::string& line)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
-    return 0;
+    
+    if (!m_qVFQue.size()) return 0;
+    
+    line = m_qVFQue.front();
+    m_qVFQue.pop();
+    
+    return m_qVFQue.size();
 }
 
 void VFCManager::thrdFuncVFCManager(VFCManager* mgr)

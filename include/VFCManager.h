@@ -17,13 +17,6 @@ using namespace std;
 
 class VFClient;
 
-typedef struct _vfQueItem {
-	uint8_t flag;	// 통화 시작: 2, 과 통화 중: 1, 마지막 데이터 또는 통화 종료: 0
-	uint8_t spkNo;	// 통화자 번호(송신자 0, 수신자 1)
-	uint32_t lenVoiceData;	// voiceData 길이
-	uint8_t* voiceData;	// 디코딩된 3초 분량의 음성 데이터
-} VFQueItem;
-
 class VFCManager
 {
 private:
@@ -38,7 +31,7 @@ private:
     log4cpp::Category *m_Logger;
 
 	map< string, VFClient* > m_mWorkerTable;
-	queue< VFQueItem* > m_qVFQue;
+	queue< string > m_qVFQue;
 
 	mutable std::mutex m_mxMap;
 	mutable std::mutex m_mxQue;
@@ -52,10 +45,8 @@ public:
 	string& getGearHost() { return m_sGearHost; }
 	uint16_t getGearPort() { return m_nGearPort; }
     
-    int addVFC(string callid, string fname, uint8_t jobtype, uint8_t noc);
-    
-    int pushItem();
-    int popItem();
+    int pushItem(std::string line);
+    int popItem(std::string& line);
 
 private:
 	VFCManager(int geartimeout, log4cpp::Category *logger);

@@ -7,7 +7,6 @@
 #include "VDCManager.h"
 #include "WorkTracer.h"
 #include "STT2File.h"
-#include "configuration.h"
 #include "stas.h"
 #include "STT2DB.h"
 #include "HAManager.h"
@@ -30,7 +29,6 @@
 #include <string.h>
 
 using namespace std;
-using namespace itfact::common;
 
 Configuration *config;
 
