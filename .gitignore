@@ -3,5 +3,6 @@
 ~*
 Debug/
 logs/
+input/
 *.stt
 core

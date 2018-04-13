@@ -21,7 +21,7 @@ private:
     
 private:
     static Notifier* m_instance;
-    std::thread m_thrdNot;
+    std::thread m_thrdNoti;
     
     VFCManager *m_vfcm;
     bool m_LiveFlag;

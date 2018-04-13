@@ -10,6 +10,8 @@
 #include "stas.h"
 #include "STT2DB.h"
 #include "HAManager.h"
+#include "VFCManager.h"
+#include "Notifier.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
@@ -153,6 +155,13 @@ int main(int argc, const char** argv)
         return -1;
     }
 
+	VFCManager* vfcm = VFCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), logger);
+    Notifier *noti = nullptr;
+    if(vfcm) {
+        noti = Notifier::instance(vfcm);
+        noti->startWork();
+    }
+
     if (!config->getConfig("ha.use", "false").compare("true")) {
         ham = HAManager::instance(vrcm, vdcm, logger);
         if (ham->init(config->getConfig("ha.addr", "192.168.0.1"), config->getConfig("ha.port", 7777)) < 0) {
@@ -202,6 +211,13 @@ FINISH:
     if (!config->getConfig("ha.use", "false").compare("true")) {
         HAManager::release();
     }
+    
+    if (noti) {
+        noti->stopWork();
+        delete noti;
+    }
+    
+    vfcm->release();
 	vdcm->release();
 	vrcm->release();
 	rcv->release();

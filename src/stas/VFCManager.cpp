@@ -264,6 +264,8 @@ void VFCManager::syncWorkerVFClient()
     char szKey[20];
     size_t workerCnt = getWorkerCount();
     
+    m_Logger->debug("VFCManager::syncWorkerVFClient() - worker_count(%d), table_size(%d)", workerCnt, m_mWorkerTable.size());
+    
     // worker의 갯수와 map에 등록된 VFClient의 갯수를 비교
     if (workerCnt > m_mWorkerTable.size()) {
         struct timeval tv;

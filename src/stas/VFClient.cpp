@@ -1,4 +1,5 @@
 
+#include "stas.h"
 #include "VFClient.h"
 #include "VFCManager.h"
 
@@ -37,7 +38,10 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
     int buflen=0;
     
     std::string line;
+    
+    log4cpp::Category *logger = config->getLogger();
 
+#if 0
     gearClient = gearman_client_create(NULL);
     if (!gearClient) {
         //printf("\t[DEBUG] VRClient::thrdMain() - ERROR (Failed gearman_client_create - %s)\n", client->m_sCallId.c_str());
@@ -66,11 +70,15 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
     if (client->m_nGearTimeout) {
         gearman_client_set_timeout(gearClient, client->m_nGearTimeout);
     }
+#endif
 
     while(client->m_LiveFlag) {
         if(mgr->popItem(line)) {
             memset(buf, 0, sizeof(buf));
             buflen = 0;
+            
+            logger->debug("line(%s)", line.c_str());
+#if 0
             value= gearman_client_do(gearClient, "vr_stt", NULL, 
                                             (const void*)buf, buflen,
                                             &result_size, &rc);
@@ -82,12 +90,13 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
             else if (gearman_failed(rc)) {
                 //client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos, client->m_nGearTimeout);
             }
-            
+#endif
         }
         else {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         
         }
+        logger->debug("VFClient::thrdFunc() working...");
     }
 
     gearman_client_free(gearClient);
