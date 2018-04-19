@@ -42,6 +42,7 @@ private:
 	std::queue< RTSTTQueItem* > m_qRtSttQue;
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
+	mutable std::mutex m_mxDb;
     
     URL_T m_url;
     ConnectionPool_T m_pool;
@@ -65,4 +66,9 @@ public:
     int insertCallInfo(std::string callid, time_t stime);
     int updateCallInfo(std::string callid, time_t stime, bool end=false);
     void insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt);
+    
+    // for batch
+    void insertBatchTask();
+    int getBatchTask();
+    void deleteBatchTask();
 };

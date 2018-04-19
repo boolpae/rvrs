@@ -67,8 +67,10 @@ void STT2File::thrdMain(STT2File * dlv)
 			// item으로 로직 수행
 			if (item->getJobType() == 'R') {
 				sttFilename = dlv->m_sResultPath + "/" + item->getCallId();
+                /*
 				sttFilename += "_";
 				sttFilename += std::to_string(item->getSpkNo());
+                 */
 				sttFilename += ".stt";
 			}
 			else {
@@ -78,12 +80,21 @@ void STT2File::thrdMain(STT2File * dlv)
 			std::ofstream sttresult(sttFilename, std::ios::out | std::ios::app);
 			if (sttresult.is_open()) {
                 if (item->getJobType() == 'R') {
-                    sttresult << std::to_string(item->getBpos()) << std::endl;
+                    if (item->getSpkNo() == 1) {
+                        sttresult << "<< Counselor >> : ";
+                    }
+                    else {
+                        sttresult << "<< Customer >> : ";
+                    }
+                    sttresult << std::to_string(item->getBpos()) << " - " << std::to_string(item->getEpos()) << std::endl;
                 }
 				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf);//item->getSTTValue();
+                /*
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getEpos()) << std::endl;
                 }
+                 */
+                sttresult << std::endl;
                 sttresult << std::endl;
 				sttresult.close();
 			}

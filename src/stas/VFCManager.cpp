@@ -228,6 +228,8 @@ int VFCManager::pushItem(std::string line)
     
     m_qVFQue.push(line);
     
+    m_Logger->debug("VFCManager::pushItem() - Item Count(%d)", m_qVFQue.size());
+    
     return m_qVFQue.size();
 }
 
@@ -240,7 +242,9 @@ int VFCManager::popItem(std::string& line)
     line = m_qVFQue.front();
     m_qVFQue.pop();
     
-    return m_qVFQue.size();
+    m_Logger->debug("VFCManager::popItem() - Item Content(%s), Count(%d)", line.c_str(), m_qVFQue.size());
+
+    return m_qVFQue.size()+1;
 }
 
 void VFCManager::thrdFuncVFCManager(VFCManager* mgr)

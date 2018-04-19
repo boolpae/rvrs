@@ -249,6 +249,25 @@ void STT2DB::insertRtSTTData(RTSTTQueItem * item)
 	m_qRtSttQue.push(item);
 }
 
+void STT2DB::insertBatchTask()
+{
+    // insert
+}
+
+int STT2DB::getBatchTask()
+{
+	std::lock_guard<std::mutex> g(m_mxDb);
+    
+    // select, update
+    
+    return 0;
+}
+
+void STT2DB::deleteBatchTask()
+{
+    // delete
+}
+
 RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)
 	:m_nDiaIdx(idx), m_sCallId(callid), m_nSpkNo(spkno), m_sSTTValue(sttvalue), m_nBpos(bpos), m_nEpos(epos)
 {
