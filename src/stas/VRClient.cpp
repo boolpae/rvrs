@@ -17,6 +17,67 @@
 // For Gearman
 #include <libgearman/gearman.h>
 
+#ifdef FAD_FUNC
+
+#define WAVE_FORMAT_UNKNOWN      0X0000;
+#define WAVE_FORMAT_PCM          0X0001;
+#define WAVE_FORMAT_MS_ADPCM     0X0002;
+#define WAVE_FORMAT_IEEE_FLOAT   0X0003;
+#define WAVE_FORMAT_ALAW         0X0006;
+#define WAVE_FORMAT_MULAW        0X0007;
+#define WAVE_FORMAT_IMA_ADPCM    0X0011;
+#define WAVE_FORMAT_YAMAHA_ADPCM 0X0016;
+#define WAVE_FORMAT_GSM          0X0031;
+#define WAVE_FORMAT_ITU_ADPCM    0X0040;
+#define WAVE_FORMAT_MPEG         0X0050;
+#define WAVE_FORMAT_EXTENSIBLE   0XFFFE;
+
+
+
+typedef struct
+{
+	unsigned char ChunkID[4];    // Contains the letters "RIFF" in ASCII form
+	unsigned int ChunkSize;      // This is the size of the rest of the chunk following this number
+	unsigned char Format[4];     // Contains the letters "WAVE" in ASCII form
+} RIFF;
+
+//-------------------------------------------
+// [Channel]
+// - streo     : [left][right]
+// - 3 channel : [left][right][center]
+// - quad      : [front left][front right][rear left][reat right]
+// - 4 channel : [left][center][right][surround]
+// - 6 channel : [left center][left][center][right center][right][surround]
+//-------------------------------------------
+typedef struct
+{
+	unsigned char  ChunkID[4];    // Contains the letters "fmt " in ASCII form
+	unsigned int   ChunkSize;     // 16 for PCM.  This is the size of the rest of the Subchunk which follows this number.
+	unsigned short AudioFormat;   // PCM = 1
+	unsigned short NumChannels;   // Mono = 1, Stereo = 2, etc.
+	unsigned int   SampleRate;    // 8000, 44100, etc.
+	unsigned int   AvgByteRate;   // SampleRate * NumChannels * BitsPerSample/8
+	unsigned short BlockAlign;    // NumChannels * BitsPerSample/8
+	unsigned short BitPerSample;  // 8 bits = 8, 16 bits = 16, etc
+} FMT;
+
+
+typedef struct
+{
+	char          ChunkID[4];    // Contains the letters "data" in ASCII form
+	unsigned int  ChunkSize;     // NumSamples * NumChannels * BitsPerSample/8
+} DATA;
+
+
+typedef struct
+{
+	RIFF Riff;
+	FMT	 Fmt;
+	DATA Data;
+} WAVE_HEADER;
+
+#endif // FAD_FUNC
+
 VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d, bool is_save_pcm, string pcm_path)
 	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_r2d(r2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path)
 {
@@ -74,6 +135,17 @@ void VRClient::thrdMain(VRClient* client) {
     char buf[BUFLEN];
     uint16_t nHeadLen=0;
     
+#ifdef FAD_FUNC
+    std::vector<uint8_t> vBuff[2];
+    size_t sframe[2];
+    size_t eframe[2];
+
+    WAVE_HEADER wh;
+
+    vBuff[0].reserve(16044);
+    vBuff[1].reserve(16044);
+#endif // FAD_FUNC
+    
     for (int i=0; i<client->m_nNumofChannel; i++) {
         stPos.bpos = 0;
         stPos.epos = 0;
@@ -108,7 +180,6 @@ void VRClient::thrdMain(VRClient* client) {
 	// m_cJobType에 따라 작업 형태를 달리해야 한다. 
 	if (client->m_cJobType == 'R') {
         uint32_t diaNumber=1;   // DB 실시간 STT 테이블에 저장될 호(Call)단위 Index 값
-#if 1
         const char* srcBuff;
         const char* dstBuff;
         uint32_t srcLen, dstLen;
@@ -117,7 +188,25 @@ void VRClient::thrdMain(VRClient* client) {
         
         tmpStt[0] = "";
         tmpStt[1] = "";
-#endif
+
+#ifdef FAD_FUNC
+        memset(&wh, 0, sizeof(WAVE_HEADER));
+        memcpy(wh.Riff.ChunkID, "RIFF", 4);
+        memcpy(wh.Riff.Format, "WAVE", 4);
+
+        memcpy(wh.Fmt.ChunkID, "fmt ", 4);
+        wh.Fmt.ChunkSize = 16;
+        wh.Fmt.AudioFormat = 1;
+        wh.Fmt.NumChannels = 1;
+        wh.Fmt.SampleRate = 8000;
+        wh.Fmt.AvgByteRate = 8000 * 1 * 2;//unsigned int   AvgByteRate;   // SampleRate * NumChannels * BitsPerSample/8
+        wh.Fmt.BlockAlign = 1 * 2;//unsigned short BlockAlign;    // NumChannels * BitsPerSample/8
+        wh.Fmt.BitPerSample = 16;//unsigned short BitPerSample;  // 8 bits = 8, 16 bits = 16, etc
+
+        memcpy(wh.Data.ChunkID, "data", 4);// char          ChunkID[4];    // Contains the letters "data" in ASCII form
+        wh.Data.ChunkSize = 8000 * 1 * 2;//unsigned int  ChunkSize;     // NumSamples * NumChannels * BitsPerSample/8
+#endif // FAD_FUNC
+
 		// 실시간의 경우 통화가 종료되기 전까지 Queue에서 입력 데이터를 받아 처리
 		// FILE인 경우 기존과 동일하게 filename을 전달하는 방법 이용
         if (client->m_nGearTimeout) {
@@ -130,6 +219,18 @@ void VRClient::thrdMain(VRClient* client) {
         if (client->m_is_save_pcm)
             pcmFile.open(filename, ios::out | ios::app | ios::binary);
 #endif
+
+#ifdef FAD_FUNC
+        // open file(mmap);
+        // write wav heaer to file(mmap);
+        vBuff[0].clear();
+        vBuff[1].clear();
+        sframe[0] = 0;
+        sframe[1] = 0;
+        eframe[0] = 0;
+        eframe[1] = 0;
+#endif
+            
 		while (client->m_nLiveFlag)
 		{
 			while (!client->m_qRTQue.empty()) {
@@ -152,9 +253,19 @@ void VRClient::thrdMain(VRClient* client) {
                     sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "NOLA");
                 }
                 nHeadLen = strlen(buf);
+
+#ifdef FAD_FUNC                
+                if (vBuff[item->spkNo -1].size() == 0) {
+                    for(int i=0; i<nHeadLen; i++) {
+                        vBuff[item->spkNo-1].push_back(buf[i]);
+                    }
+                }
+                
+                // write pcm data to opened file(mmap);
+#endif // FAD_FUNC
+                
                 memcpy(buf+nHeadLen, (const void*)item->voiceData, item->lenVoiceData);
                 
-#if 1 // for DEBUG
                 if (client->m_is_save_pcm) {
                     std::string spker = (item->spkNo == 1)?std::string("r"):std::string("l");
                     std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".pcm");
@@ -166,13 +277,13 @@ void VRClient::thrdMain(VRClient* client) {
                         pcmFile.close();
                     }
                 }
-#if 0
-				if (client->m_is_save_pcm && pcmFile.is_open()) {
-					pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
-					pcmFile.close();
-				}
-#endif
-#endif
+                
+#ifdef FAD_FUNC
+                // check vad!, by loop()
+                // if finish check vad and vBuff is no empty, send buff to VR by gearman
+                // vadres == 1 vBuff[item->spkNo-1].push_back();
+                // vadres == 0 and vBuff[item->spkNo-1].size() > 0 then send buff to gearman
+#endif // FAD_FUNC
 
                 value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
                                                 (const void*)buf, (nHeadLen + item->lenVoiceData),
@@ -290,9 +401,14 @@ void VRClient::thrdMain(VRClient* client) {
 	else {
 		client->m_Mgr->removeVRC(client->m_sCallId);
 	}
-    
+
+#ifdef FAD_FUNC    
+    std::vector<uint8_t>().swap(vBuff[0]);
+    std::vector<uint8_t>().swap(vBuff[1]);
+#endif // FAD_FUNC
+
     gearman_client_free(gearClient);
-    vPos.clear();
+    std::vector< PosPair >().swap(vPos);
 
 	WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
 

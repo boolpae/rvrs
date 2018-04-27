@@ -63,7 +63,7 @@ public:
 	void stopWork() { m_nWorkStat = uint8_t(2); }
 
 	void setVRClient(VRClient* vrc) { m_pVrc = vrc; }
-    void setPlaytime(uint32_t pt) { m_nPlaytime = pt * 16000; }
+    void setPlaytime(uint32_t pt) { m_nPlaytime = pt * 16000; m_nPlaytime = 19200; }    // 16 * 1200 : 1.2 sec ( 20 and 30 frames )
 
 private:
 	static void thrdMain(VDClient* client);
