@@ -95,8 +95,8 @@ typedef struct
 
 #endif // FAD_FUNC
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d, bool is_save_pcm, string pcm_path, size_t framelen)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_r2d(r2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d, bool is_save_pcm, string pcm_path, size_t framelen, string shm_path)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_r2d(r2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8), m_shmpath(shm_path)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -240,7 +240,7 @@ void VRClient::thrdMain(VRClient* client) {
         memcpy(wh.Data.ChunkID, "data", 4);// char          ChunkID[4];    // Contains the letters "data" in ASCII form
         wh.Data.ChunkSize = 8000 * 1 * 2;//unsigned int  ChunkSize;     // NumSamples * NumChannels * BitsPerSample/8
         
-        sprintf(buf, "/dev/shm/%s.mm", client->m_sCallId.c_str());
+        sprintf(buf, "%s/%s.mm", client->m_shmpath.c_str(), client->m_sCallId.c_str());
 
         mmfd = open(buf, O_RDWR|O_CREAT, 0666);
         if (mmfd < 0) {
@@ -614,7 +614,7 @@ void VRClient::thrdMain(VRClient* client) {
         munmap(pmmap, MM_SIZE);
         if (mmfd>0) close(mmfd);
 
-        sprintf(buf, "/dev/shm/%s.mm", client->m_sCallId.c_str());
+        sprintf(buf, "%s/%s.mm", client->m_shmpath.c_str(), client->m_sCallId.c_str());
         unlink(buf);
 
         std::vector<uint8_t>().swap(vBuff[0]);
