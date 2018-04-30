@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=SEUNG-HOON LEE
-Date                   :=27/04/18
+Date                   :=30/04/18
 CodeLitePath           :="/home/boolpae/.codelite"
 LinkerName             :=/usr/bin/g++
 SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
@@ -36,11 +36,11 @@ ObjectsFileList        :="stas.txt"
 PCHCompileFlags        :=
 MakeDirCommand         :=mkdir -p
 LinkOptions            :=  
-IncludePath            :=  $(IncludeSwitch). $(IncludeSwitch). $(IncludeSwitch)include $(IncludeSwitch)/usr/include/zdb 
+IncludePath            :=  $(IncludeSwitch). $(IncludeSwitch). $(IncludeSwitch)include $(IncludeSwitch)/usr/include/zdb $(IncludeSwitch)/usr/local/include 
 IncludePCH             := 
 RcIncludePath          := 
-Libs                   := $(LibrarySwitch)pthread $(LibrarySwitch)gearman $(LibrarySwitch)log4cpp $(LibrarySwitch)boost_program_options $(LibrarySwitch)boost_filesystem $(LibrarySwitch)boost_system $(LibrarySwitch)zdb 
-ArLibs                 :=  "pthread" "gearman" "log4cpp" "boost_program_options" "boost_filesystem" "boost_system" "zdb" 
+Libs                   := $(LibrarySwitch)pthread $(LibrarySwitch)gearman $(LibrarySwitch)log4cpp $(LibrarySwitch)boost_program_options $(LibrarySwitch)boost_filesystem $(LibrarySwitch)boost_system $(LibrarySwitch)zdb $(LibrarySwitch)fvad $(LibrarySwitch)sndfile 
+ArLibs                 :=  "pthread" "gearman" "log4cpp" "boost_program_options" "boost_filesystem" "boost_system" "zdb" "fvad" "sndfile" 
 LibPath                := $(LibraryPathSwitch). 
 
 ##

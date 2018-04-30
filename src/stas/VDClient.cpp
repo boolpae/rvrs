@@ -205,7 +205,7 @@ void VDClient::thrdMain(VDClient * client)
 
 			}
 		}
-		else if ((selVal == 0) && (client->m_nWorkStat == 1)) {	// 이 로직은 수정해야할 필요가 있다. 현재는 30초동안 데이터가 안들어 올 경우 호를 종료
+		else if ((selVal == 0) && ((client->m_nWorkStat == 3) || (client->m_nWorkStat == 1))) {	// 이 로직은 수정해야할 필요가 있다. 현재는 30초동안 데이터가 안들어 올 경우 호를 종료
             if (HAManager::getInstance() && !HAManager::getInstance()->getHAStat()) {
                 continue;
             }
