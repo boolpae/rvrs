@@ -160,7 +160,6 @@ void VRClient::thrdMain(VRClient* client) {
     
 #ifdef FAD_FUNC
     uint8_t *vpBuf = NULL;
-    int16_t *cpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff[2];
     size_t sframe[2];
@@ -278,10 +277,8 @@ void VRClient::thrdMain(VRClient* client) {
                 nHeadLen = strlen(buf);
 
 #ifdef FAD_FUNC                
-                if (vBuff[item->spkNo -1].size() == 0) {
-                    for(int i=0; i<nHeadLen; i++) {
-                        vBuff[item->spkNo-1].push_back(buf[i]);
-                    }
+                for(int i=0; i<nHeadLen; i++) {
+                    vBuff[item->spkNo-1][i] = buf[i];
                 }
                 
 #endif // FAD_FUNC
@@ -306,12 +303,11 @@ void VRClient::thrdMain(VRClient* client) {
                 // vadres == 1 vBuff[item->spkNo-1].push_back();
                 // vadres == 0 and vBuff[item->spkNo-1].size() > 0 then send buff to gearman
                 posBuf = 0;
-                while ((item->lenVoiceData >= client->m_framelen*2) && (item->lenVoiceData > posBuf)) {
-                    cpBuf = (int16_t *)(item->voiceData+posBuf);
+                while ((item->lenVoiceData >= client->m_framelen*2) && ((item->lenVoiceData - posBuf) >= client->m_framelen*2)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
                     eframe[item->spkNo-1] += 20;
                     // Convert the read samples to int16
-                    vadres = fvad_process(vad, cpBuf, client->m_framelen);
+                    vadres = fvad_process(vad, (const int16_t *)vpBuf, client->m_framelen);
                     if (vadres < 0) {
                         continue;
                     }
@@ -364,7 +360,7 @@ void VRClient::thrdMain(VRClient* client) {
                         vBuff[item->spkNo-1].clear();
 
                         for(size_t i=0; i<nHeadLen; i++) {
-                            vBuff[item->spkNo-1].push_back(buf[i]);
+                            vBuff[item->spkNo-1][i] = buf[i];
                         }
                     }
                     
