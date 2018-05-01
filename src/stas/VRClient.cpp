@@ -17,6 +17,9 @@
 // For Gearman
 #include <libgearman/gearman.h>
 
+
+#define FAD_FUNC
+
 #ifdef FAD_FUNC
 
 #include <stdio.h>
@@ -24,7 +27,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sndfile.h>
 
 #include <unistd.h>
 #include <sys/mman.h>
@@ -95,8 +97,8 @@ typedef struct
 
 #endif // FAD_FUNC
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d, bool is_save_pcm, string pcm_path, size_t framelen, string shm_path)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_r2d(r2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8), m_shmpath(shm_path)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STTDeliver *deliver, log4cpp::Category *logger, RT2DB* r2d, bool is_save_pcm, string pcm_path, size_t framelen)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_r2d(r2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -157,16 +159,15 @@ void VRClient::thrdMain(VRClient* client) {
     uint16_t nHeadLen=0;
     
 #ifdef FAD_FUNC
-    uint8_t *cpBuf = NULL;
+    uint8_t *vpBuf = NULL;
+    int16_t *cpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff[2];
     size_t sframe[2];
     size_t eframe[2];
 
-    WAVE_HEADER wh;
-
-    vBuff[0].reserve(16044);
-    vBuff[1].reserve(16044);
+    vBuff[0].reserve(MM_SIZE);
+    vBuff[1].reserve(MM_SIZE);
 #endif // FAD_FUNC
     
     for (int i=0; i<client->m_nNumofChannel; i++) {
@@ -215,83 +216,14 @@ void VRClient::thrdMain(VRClient* client) {
         tmpStt[0] = "";
         tmpStt[1] = "";
 #else
-        int mmfd=0;
-        uint8_t *pmmap;
-        SF_INFO in_info = {0};
-        SNDFILE *in_sf = NULL;
         Fvad *vad = NULL;
         int vadres;
-        double *buf0 = NULL;
-        int16_t *buf1 = NULL;
-        
-        memset(&wh, 0, sizeof(WAVE_HEADER));
-        memcpy(wh.Riff.ChunkID, "RIFF", 4);
-        memcpy(wh.Riff.Format, "WAVE", 4);
-
-        memcpy(wh.Fmt.ChunkID, "fmt ", 4);
-        wh.Fmt.ChunkSize = 16;
-        wh.Fmt.AudioFormat = 1;
-        wh.Fmt.NumChannels = 1;
-        wh.Fmt.SampleRate = 8000;
-        wh.Fmt.AvgByteRate = 8000 * 1 * 2;//unsigned int   AvgByteRate;   // SampleRate * NumChannels * BitsPerSample/8
-        wh.Fmt.BlockAlign = 1 * 2;//unsigned short BlockAlign;    // NumChannels * BitsPerSample/8
-        wh.Fmt.BitPerSample = 16;//unsigned short BitPerSample;  // 8 bits = 8, 16 bits = 16, etc
-
-        memcpy(wh.Data.ChunkID, "data", 4);// char          ChunkID[4];    // Contains the letters "data" in ASCII form
-        wh.Data.ChunkSize = 8000 * 1 * 2;//unsigned int  ChunkSize;     // NumSamples * NumChannels * BitsPerSample/8
-        
-        sprintf(buf, "%s/%s.mm", client->m_shmpath.c_str(), client->m_sCallId.c_str());
-
-        mmfd = open(buf, O_RDWR|O_CREAT, 0666);
-        if (mmfd < 0) {
-            //printf("\t[DEBUG] VRClient::thrdMain() - ERROR (Failed gearman_client_add_server - %s)\n", client->m_sCallId.c_str());
-            client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed open(%s))", buf);
-
-            WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
-
-            client->m_thrd.detach();
-            delete client;
-            return;
-        }
-        ftruncate(mmfd, MM_SIZE);
-
-        pmmap = (uint8_t *)mmap(0, MM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmfd, 0);
-        if(pmmap == (void *)-1)
-        {
-            client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed mmap(%d))", mmfd);
-
-            WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
-
-            client->m_thrd.detach();
-            delete client;
-            return;
-        }
-
-        memcpy(pmmap, &wh, sizeof(WAVE_HEADER));
-
-        in_sf = sf_open_fd(mmfd, SFM_READ, &in_info, true);
-        if (!in_sf) {
-            client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed sf_open_fd(%d))", mmfd);
-
-            WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
-
-            munmap(pmmap, MM_SIZE);
-            if (mmfd>0) close(mmfd);
-
-            client->m_thrd.detach();
-            delete client;
-            return;
-        }
 
         vad = fvad_new();
-        if (!vad || (fvad_set_sample_rate(vad, in_info.samplerate) < 0)) {
-            client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed fvad_new, fvad_set_sample_rate(%s))", buf);
+        if (!vad) {//} || (fvad_set_sample_rate(vad, in_info.samplerate) < 0)) {
+            client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed fvad_new(%s))", client->m_sCallId.c_str());
 
             WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
-
-            munmap(pmmap, MM_SIZE);
-            if (mmfd>0) close(mmfd);
-
             client->m_thrd.detach();
             delete client;
             return;
@@ -313,7 +245,6 @@ void VRClient::thrdMain(VRClient* client) {
 #endif
 
 #ifdef FAD_FUNC
-        // open file(mmap);
         // write wav heaer to file(mmap);
         vBuff[0].clear();
         vBuff[1].clear();
@@ -321,9 +252,6 @@ void VRClient::thrdMain(VRClient* client) {
         sframe[1] = 0;
         eframe[0] = 0;
         eframe[1] = 0;
-
-        buf0 = (double *)malloc(client->m_framelen * sizeof *buf0);
-        buf1 = (int16_t *)malloc(client->m_framelen * sizeof *buf1);
 #endif
             
 		while (client->m_nLiveFlag)
@@ -356,9 +284,6 @@ void VRClient::thrdMain(VRClient* client) {
                     }
                 }
                 
-                // write pcm data to opened file(mmap);
-                memset(pmmap+WAV_HEADER_SIZE, 0, WAV_BUFF_SIZE);
-                memcpy(pmmap+WAV_HEADER_SIZE, (const void*)item->voiceData, item->lenVoiceData);
 #endif // FAD_FUNC
                 
                 memcpy(buf+nHeadLen, (const void*)item->voiceData, item->lenVoiceData);
@@ -376,27 +301,24 @@ void VRClient::thrdMain(VRClient* client) {
                 }
                 
 #ifdef FAD_FUNC
-                cpBuf = (uint8_t *)item->voiceData;
-                posBuf = 0;
                 // check vad!, by loop()
                 // if finish check vad and vBuff is no empty, send buff to VR by gearman
                 // vadres == 1 vBuff[item->spkNo-1].push_back();
                 // vadres == 0 and vBuff[item->spkNo-1].size() > 0 then send buff to gearman
-                while ((item->lenVoiceData > client->m_framelen*2) && (sf_read_double(in_sf, buf0, client->m_framelen) == (ssize_t)client->m_framelen)) {
-
+                posBuf = 0;
+                while ((item->lenVoiceData >= client->m_framelen*2) && (item->lenVoiceData > posBuf)) {
+                    cpBuf = (int16_t *)(item->voiceData+posBuf);
+                    vpBuf = (uint8_t *)(item->voiceData+posBuf);
                     eframe[item->spkNo-1] += 20;
                     // Convert the read samples to int16
-                    for (size_t i = 0; i < client->m_framelen; i++)
-                        buf1[i] = buf0[i] * INT16_MAX;
-
-                    vadres = fvad_process(vad, buf1, client->m_framelen);
+                    vadres = fvad_process(vad, cpBuf, client->m_framelen);
                     if (vadres < 0) {
                         continue;
                     }
 
                     if (vadres > 0) {
                         for(size_t i=0; i<(client->m_framelen*2); i++) {
-                            vBuff[item->spkNo-1].push_back(cpBuf[i]);
+                            vBuff[item->spkNo-1].push_back(vpBuf[i]);
                             
                         }
                     }
@@ -447,12 +369,8 @@ void VRClient::thrdMain(VRClient* client) {
                     }
                     
                     posBuf += (client->m_framelen*2);
-                    item->lenVoiceData = item->lenVoiceData - posBuf;
-                    cpBuf = (uint8_t *)(item->voiceData + posBuf);
-
                 }
 
-                sf_seek(in_sf, 0L, SEEK_SET);
 #else // FAD_FUNC
 
                 value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
@@ -606,16 +524,7 @@ void VRClient::thrdMain(VRClient* client) {
 		}
         
 #ifdef FAD_FUNC
-        if (buf0) free(buf0);
-        if (buf1) free(buf1);
-        
         fvad_free(vad);
-
-        munmap(pmmap, MM_SIZE);
-        if (mmfd>0) close(mmfd);
-
-        sprintf(buf, "%s/%s.mm", client->m_shmpath.c_str(), client->m_sCallId.c_str());
-        unlink(buf);
 
         std::vector<uint8_t>().swap(vBuff[0]);
         std::vector<uint8_t>().swap(vBuff[1]);
