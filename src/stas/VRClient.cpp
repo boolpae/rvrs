@@ -306,6 +306,7 @@ void VRClient::thrdMain(VRClient* client) {
                 // vadres == 1 vBuff[item->spkNo-1].push_back();
                 // vadres == 0 and vBuff[item->spkNo-1].size() > 0 then send buff to gearman
                 posBuf = 0;
+
                 while ((item->lenVoiceData >= framelen) && ((item->lenVoiceData - posBuf) >= framelen)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
                     eframe[item->spkNo-1] += 20;
