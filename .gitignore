@@ -4,4 +4,5 @@
 Debug/
 logs/
 *.stt
+*.trc
 core
