@@ -18,8 +18,6 @@
 #include <libgearman/gearman.h>
 
 
-#define FAD_FUNC
-
 #ifdef FAD_FUNC
 
 #include <stdio.h>
@@ -220,6 +218,7 @@ void VRClient::thrdMain(VRClient* client) {
 #else
         Fvad *vad = NULL;
         int vadres;
+        int aDianum[2];
 
         vad = fvad_new();
         if (!vad) {//} || (fvad_set_sample_rate(vad, in_info.samplerate) < 0)) {
@@ -254,6 +253,9 @@ void VRClient::thrdMain(VRClient* client) {
         sframe[1] = 0;
         eframe[0] = 0;
         eframe[1] = 0;
+        
+        aDianum[0] = 0;
+        aDianum[1] = 0;
 #endif
             
 		while (client->m_nLiveFlag)
@@ -279,15 +281,24 @@ void VRClient::thrdMain(VRClient* client) {
                 }
                 nHeadLen = strlen(buf);
 
-#ifdef FAD_FUNC                
-                for(int i=0; i<nHeadLen; i++) {
-                    vBuff[item->spkNo-1][i] = buf[i];
+#ifdef FAD_FUNC     
+                if (vBuff[item->spkNo-1].size()>0) {
+                    for(int i=0; i<nHeadLen; i++) {
+                        vBuff[item->spkNo-1][i] = buf[i];
+                    }
+                }
+                else {
+                    for(int i=0; i<nHeadLen; i++) {
+                        vBuff[item->spkNo-1].push_back(buf[i]);
+                    }
                 }
                 
-#endif // FAD_FUNC
+#else
                 
                 memcpy(buf+nHeadLen, (const void*)item->voiceData, item->lenVoiceData);
                 
+#endif // FAD_FUNC
+
                 if (client->m_is_save_pcm) {
                     std::string spker = (item->spkNo == 1)?std::string("r"):std::string("l");
                     std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".pcm");
@@ -295,7 +306,7 @@ void VRClient::thrdMain(VRClient* client) {
 
                     pcmFile.open(filename, ios::out | ios::app | ios::binary);
                     if (pcmFile.is_open()) {
-                        pcmFile.write((const char*)buf+nHeadLen, item->lenVoiceData);
+                        pcmFile.write((const char*)item->voiceData, item->lenVoiceData);
                         pcmFile.close();
                     }
                 }
@@ -330,10 +341,22 @@ void VRClient::thrdMain(VRClient* client) {
 
                     if (!vadres && (vBuff[item->spkNo-1].size()>nHeadLen)) {
                         // send buff to gearman
-                        client->m_Logger->debug("VRClient::thrdMain(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
+                        if (aDianum[item->spkNo-1] == 0) {
+                            sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
+                        }
+                        else {
+                            sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "NOLA");
+                        }
+                        for(size_t i=0; i<strlen(buf); i++) {
+                            vBuff[item->spkNo-1][i] = buf[i];
+                        }
+                        client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
                         value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
                                                         (const void*)&vBuff[item->spkNo-1][0], vBuff[item->spkNo-1].size(),
                                                         &result_size, &rc);
+                                                        
+                        aDianum[item->spkNo-1]++;
+                        
                         if (gearman_success(rc))
                         {
                             // Make use of value
@@ -364,7 +387,9 @@ void VRClient::thrdMain(VRClient* client) {
                         vBuff[item->spkNo-1].clear();
 
                         for(size_t i=0; i<nHeadLen; i++) {
-                            vBuff[item->spkNo-1][i] = buf[i];
+                            //vBuff[item->spkNo-1][i] = buf[i];
+                            vBuff[item->spkNo-1].push_back(buf[i]);
+
                         }
                     }
                     
@@ -459,41 +484,49 @@ void VRClient::thrdMain(VRClient* client) {
                     client->m_Logger->debug("VRClient::thrdMain(%s, %d) - final item delivered.", client->m_sCallId.c_str(), item->spkNo);
 
 #ifdef FAD_FUNC
-                    // last vBuff
-                    if (vBuff[item->spkNo-1].size()) {
-                        // send buff to gearman
-                        value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
-                                                        (const void*)&vBuff[item->spkNo-1][0], vBuff[item->spkNo-1].size(),
-                                                        &result_size, &rc);
-                        if (gearman_success(rc))
-                        {
-                            // Make use of value
-                            if (value) {
-                                // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
-                                //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
-
-                                if (client->m_r2d) {
-                                    client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], boost::replace_all_copy(std::string((const char*)value), "\n", " "));
-                                }
-                                //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                                // to STTDeliver(file)
-                                if (client->m_deliver) {
-                                    client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)value), "\n", " "), item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
-                                }
-
-                                free(value);
-                                
-                                diaNumber++;
-                            }
+                    // send buff to gearman
+                    sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "LAST");
+                    if (vBuff[item->spkNo-1].size() > 0) {
+                        for(size_t i=0; i<strlen(buf); i++) {
+                            vBuff[item->spkNo-1][i] = buf[i];
                         }
-                        else if (gearman_failed(rc)){
-                            client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
-                        }
-
-                        // and clear buff, set msg header
-                        vBuff[item->spkNo-1].clear();
-
                     }
+                    else {
+                        for(size_t i=0; i<strlen(buf); i++) {
+                            vBuff[item->spkNo-1].push_back(buf[i]);
+                        }
+                    }
+                    value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
+                                                    (const void*)&vBuff[item->spkNo-1][0], vBuff[item->spkNo-1].size(),
+                                                    &result_size, &rc);
+                    if (gearman_success(rc))
+                    {
+                        // Make use of value
+                        if (value) {
+                            // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
+                            //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
+
+                            if (client->m_r2d) {
+                                client->m_r2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], boost::replace_all_copy(std::string((const char*)value), "\n", " "));
+                            }
+                            //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            // to STTDeliver(file)
+                            if (client->m_deliver) {
+                                client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)value), "\n", " "), item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
+                            }
+
+                            free(value);
+                            
+                            diaNumber++;
+                        }
+                    }
+                    else if (gearman_failed(rc)){
+                        client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+                    }
+
+                    // and clear buff, set msg header
+                    vBuff[item->spkNo-1].clear();
+
 #endif
 
 					if (!(--client->m_nNumofChannel)) {

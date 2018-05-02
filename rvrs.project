@@ -57,6 +57,7 @@
         <IncludePath Value="include"/>
         <IncludePath Value="/usr/include/zdb"/>
         <IncludePath Value="/usr/local/include"/>
+        <Preprocessor Value="FAD_FUNC"/>
       </Compiler>
       <Linker Options="" Required="yes">
         <Library Value="pthread"/>
