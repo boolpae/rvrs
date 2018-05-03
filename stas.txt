@@ -1,1 +1,0 @@
-./Debug/common_configuration.cpp.o ./Debug/stas_CallExecutor.cpp.o ./Debug/stas_CallReceiver.cpp.o ./Debug/stas_CallSignal.cpp.o ./Debug/stas_HAManager.cpp.o ./Debug/stas_RT2DB.cpp.o ./Debug/stas_stas.cpp.o ./Debug/stas_STTDeliver.cpp.o ./Debug/stas_VDClient.cpp.o ./Debug/stas_VDCManager.cpp.o ./Debug/stas_VRClient.cpp.o ./Debug/stas_VRCManager.cpp.o ./Debug/stas_WorkTracer.cpp.o
