@@ -350,7 +350,7 @@ void VRClient::thrdMain(VRClient* client) {
                             for(size_t i=0; i<strlen(buf); i++) {
                                 vBuff[item->spkNo-1][i] = buf[i];
                             }
-                            client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
+                            //client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
                             value= gearman_client_do(gearClient, client->m_sFname.c_str(), NULL, 
                                                             (const void*)&vBuff[item->spkNo-1][0], vBuff[item->spkNo-1].size(),
                                                             &result_size, &rc);
@@ -382,15 +382,15 @@ void VRClient::thrdMain(VRClient* client) {
                             else if (gearman_failed(rc)){
                                 client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%lu : %lu], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
                             }
+                        }
 
-                            // and clear buff, set msg header
-                            vBuff[item->spkNo-1].clear();
+                        // and clear buff, set msg header
+                        vBuff[item->spkNo-1].clear();
 
-                            for(size_t i=0; i<nHeadLen; i++) {
-                                //vBuff[item->spkNo-1][i] = buf[i];
-                                vBuff[item->spkNo-1].push_back(buf[i]);
+                        for(size_t i=0; i<nHeadLen; i++) {
+                            //vBuff[item->spkNo-1][i] = buf[i];
+                            vBuff[item->spkNo-1].push_back(buf[i]);
 
-                            }
                         }
                         sframe[item->spkNo-1] = eframe[item->spkNo-1];
                     }
