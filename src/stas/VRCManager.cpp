@@ -28,7 +28,8 @@ VRCManager::VRCManager(int geartimeout, STTDeliver *deliver, log4cpp::Category *
 	//printf("\t[DEBUG] VRCManager Constructed.\n");
     m_Logger->debug("VRCManager Constructed.");
     
-    if (framelen == 20) m_framelen = framelen;
+    if (framelen == 10) m_framelen = framelen;
+    else if (framelen == 20) m_framelen = framelen;
     else if (framelen == 30) m_framelen = framelen;
     else m_framelen = 20;
 }
