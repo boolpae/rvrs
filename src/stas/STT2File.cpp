@@ -95,7 +95,6 @@ void STT2File::thrdMain(STT2File * dlv)
                 }
                  */
                 sttresult << std::endl;
-                sttresult << std::endl;
 				sttresult.close();
 			}
             if (utf_buf) free(utf_buf);
