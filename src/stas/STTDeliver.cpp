@@ -78,12 +78,14 @@ void STTDeliver::thrdMain(STTDeliver * dlv)
 			std::ofstream sttresult(sttFilename, std::ios::out | std::ios::app);
 			if (sttresult.is_open()) {
                 if (item->getJobType() == 'R') {
-                    sttresult << std::to_string(item->getBpos()) << std::endl;
+                    sttresult << std::to_string(item->getBpos()) << " - " << std::to_string(item->getEpos()) << std::endl;
                 }
 				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf);//item->getSTTValue();
+#if 0
                 if (item->getJobType() == 'R') {
                     sttresult << std::to_string(item->getEpos()) << std::endl;
                 }
+#endif
                 sttresult << std::endl;
 				sttresult.close();
 			}
