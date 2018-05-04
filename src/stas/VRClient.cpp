@@ -520,14 +520,14 @@ void VRClient::thrdMain(VRClient* client) {
                                 
                                 diaNumber++;
                         }
-                        else if (gearman_failed(rc)){
-                            client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
-                        }
-
-                        // and clear buff, set msg header
-                        vBuff[item->spkNo-1].clear();
-
                     }
+                    else if (gearman_failed(rc)){
+                        client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+                    }
+
+                    // and clear buff, set msg header
+                    vBuff[item->spkNo-1].clear();
+
 #endif
 
 					if (!(--client->m_nNumofChannel)) {
