@@ -12,6 +12,7 @@
 #include "HAManager.h"
 #include "VFCManager.h"
 #include "Notifier.h"
+#include "Schd4DB.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
@@ -162,6 +163,11 @@ int main(int argc, const char** argv)
         noti->startWork();
     }
 
+    Schd4DB *schd = nullptr;
+    if (st2db && vfcm) {
+        schd = Schd4DB::instance(st2db, vfcm);
+    }
+
     if (!config->getConfig("ha.use", "false").compare("true")) {
         ham = HAManager::instance(vrcm, vdcm, logger);
         if (ham->init(config->getConfig("ha.addr", "192.168.0.1"), config->getConfig("ha.port", 7777)) < 0) {
@@ -193,6 +199,7 @@ int main(int argc, const char** argv)
     {
         vdcm->outputVDCStat();
         vrcm->outputVRCStat();
+        if (vfcm) vfcm->outputVFCStat();
         if (!config->getConfig("ha.use", "false").compare("true")) {
             ham->outputSignals();
         }
@@ -210,6 +217,11 @@ FINISH:
 
     if (!config->getConfig("ha.use", "false").compare("true")) {
         HAManager::release();
+    }
+
+    if (schd) {
+        schd->release();
+        schd = nullptr;
     }
     
     if (noti) {

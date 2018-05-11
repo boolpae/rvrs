@@ -268,6 +268,28 @@ void STT2DB::deleteBatchTask()
     // delete
 }
 
+// VFCLient모듈에서 사용되는 api로서 해당 task를 작업하기 직전 DB에 task 정보를 등록할 때 사용
+// args: call_id, counselor_code etc
+void STT2DB::insertTaskInfo()
+{
+
+}
+
+// VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
+// args: call_id, counselor_code, task_stat etc
+void STT2DB::updateTaskInfo()
+{
+
+}
+
+// VFClient모듈에서 사용되는 api로서 해당 task에 대해 이전에 작업한 내용인지 아닌지 확인하기 위해 사용
+// args: call_id, counselor_code etc
+void STT2DB::searchTaskInfo()
+{
+
+}
+
+
 RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)
 	:m_nDiaIdx(idx), m_sCallId(callid), m_nSpkNo(spkno), m_sSTTValue(sttvalue), m_nBpos(bpos), m_nEpos(epos)
 {

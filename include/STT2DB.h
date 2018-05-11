@@ -63,12 +63,23 @@ public:
     void setLogger(log4cpp::Category *logger) { m_Logger = logger; }
     
     // for Realtime Call Siganl
+    // VRClient에서 사용되는 api이며 실시간 통화 시작 및 종료 시 사용된다.
     int insertCallInfo(std::string callid, time_t stime);
     int updateCallInfo(std::string callid, time_t stime, bool end=false);
     void insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt);
     
     // for batch
+    // Schd4DB 모듈에서 사용되는 api
+    // 처리할 task가 등록되었는지 확인(search)하고
+    // 신규 task에 대해 VFClient가 처리할 수 있도록 전달(get) 후 처리된 task에 대해서는 삭제(delete)한다.
     void insertBatchTask();
     int getBatchTask();
     void deleteBatchTask();
+
+    // for Task working
+    // VFClient에서 사용되는 api로서 작업 시작 전,
+    // 작업 완료 후 아래의 api를 이용하여 해당 task에 대한 정보를 handling한다.
+    void insertTaskInfo();
+    void updateTaskInfo();
+    void searchTaskInfo();
 };
