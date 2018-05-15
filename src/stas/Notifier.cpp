@@ -138,8 +138,11 @@ void Notifier::thrdFunc(Notifier *noti)
                     if (filename->at(0) != '.' && file_ext.find(watch_ext) == 0 &&
                         (file_ext.size() == watch_ext.size() || file_ext.at(watch_ext.size()) == '\0' )) {
                         try {
+
+                            // check file and call_id from DB(JOB_LIST)
                             
                             // option값에 따라 동작이 바뀌어야 한다.
+                            // pushItem() 시 protocol 추가해야한다. - FILE, MOUNT, HTTP, HTTPS, FTP, FTPS, SFTP, SCP, SSH
                             if (config->getConfig("notify.index_type").compare("filename") == 0) {
                                 noti->m_vfcm->pushItem(*path.get()+"/"+*filename.get());
                                 logger->debug("Line (%s)", std::string(*path.get()+"/"+*filename.get()).c_str());
