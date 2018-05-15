@@ -270,9 +270,35 @@ void STT2DB::deleteBatchTask()
 
 // VFCLient모듈에서 사용되는 api로서 해당 task를 작업하기 직전 DB에 task 정보를 등록할 때 사용
 // args: call_id, counselor_code etc
-void STT2DB::insertTaskInfo()
+int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::string callId)
 {
+    Connection_T con;
 
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("STT2DB::insertTaskInfo - can't get connection from pool");
+            return 1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("STT2DB::insertTaskInfo - inactive connection from pool");
+            Connection_close(con);
+            return 2;
+        }
+        Connection_execute(con, "INSERT INTO JOB_INFO (call_id, pathname, filename, reg_dttm) VALUES ('%s', '%s', '%s', now())",
+        callId.c_str(), downloadPath.c_str(), filename.c_str());
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("STT2DB::insertTaskInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        Connection_close(con);
+    }
+    END_TRY;
+    return 0;
 }
 
 // VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
@@ -284,9 +310,38 @@ void STT2DB::updateTaskInfo()
 
 // VFClient모듈에서 사용되는 api로서 해당 task에 대해 이전에 작업한 내용인지 아닌지 확인하기 위해 사용
 // args: call_id, counselor_code etc
-void STT2DB::searchTaskInfo()
+int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::string callId)
 {
+    Connection_T con;
+    int ret=0;
 
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("STT2DB::searchTaskInfo - can't get connection from pool");
+            return -1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("STT2DB::searchTaskInfo - inactive connection from pool");
+            Connection_close(con);
+            return -2;
+        }
+        ResultSet_T r = Connection_executeQuery(con, "SELECT COUNT(*) FROM JOB_INFO WHERE call_id = '%s' and filename = '%s' and state != 'Y'",
+        callId.c_str(), filename.c_str());
+
+        ret = ResultSet_next(r);
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("STT2DB::searchTaskInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        Connection_close(con);
+    }
+    END_TRY;
+    return ret;
 }
 
 

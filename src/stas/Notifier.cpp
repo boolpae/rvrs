@@ -2,6 +2,7 @@
 #include "stas.h"
 #include "Notifier.h"
 #include "VFCManager.h"
+#include "STT2DB.h"
 
 #include <sys/inotify.h>
 #include <unistd.h>
@@ -23,8 +24,8 @@ Notifier* Notifier::m_instance = nullptr;
 
 
 
-Notifier::Notifier(VFCManager *vfcm)
-: m_vfcm(vfcm), m_LiveFlag(true)
+Notifier::Notifier(VFCManager *vfcm, STT2DB *stt2db)
+: m_vfcm(vfcm), m_stt2db(stt2db), m_LiveFlag(true)
 {
     
 }
@@ -34,10 +35,10 @@ Notifier::~Notifier()
     if (m_thrdNoti.joinable()) m_thrdNoti.join();
 }
 
-Notifier* Notifier::instance(VFCManager *vfcm)
+Notifier* Notifier::instance(VFCManager *vfcm, STT2DB *stt2db)
 {
     if (!m_instance) {
-        m_instance = new Notifier(vfcm);
+        m_instance = new Notifier(vfcm, stt2db);
     }
     
     return m_instance;
@@ -138,12 +139,14 @@ void Notifier::thrdFunc(Notifier *noti)
                     if (filename->at(0) != '.' && file_ext.find(watch_ext) == 0 &&
                         (file_ext.size() == watch_ext.size() || file_ext.at(watch_ext.size()) == '\0' )) {
                         try {
-
-                            // check file and call_id from DB(JOB_LIST)
-                            
                             // option값에 따라 동작이 바뀌어야 한다.
                             // pushItem() 시 protocol 추가해야한다. - FILE, MOUNT, HTTP, HTTPS, FTP, FTPS, SFTP, SCP, SSH
                             if (config->getConfig("notify.index_type").compare("filename") == 0) {
+
+                                // download path, uri, filename, call_id에 대한 좀 더 명확한 정의가 필요하다.
+                                if (noti->m_stt2db->searchTaskInfo(*path.get(), *filename.get(), std::string(""))) continue;
+                                noti->m_stt2db->insertTaskInfo(*path.get(), *filename.get(), std::string(""));
+
                                 noti->m_vfcm->pushItem(*path.get()+"/"+*filename.get());
                                 logger->debug("Line (%s)", std::string(*path.get()+"/"+*filename.get()).c_str());
                             }
@@ -154,6 +157,10 @@ void Notifier::thrdFunc(Notifier *noti)
                                     for (std::string line; std::getline(index_file, line); ) {
                                         if (line.empty() || line.size() < 5)
                                             continue;
+
+                                        if (noti->m_stt2db->searchTaskInfo(*path.get(), *filename.get(), std::string(""))) continue;
+                                        noti->m_stt2db->insertTaskInfo(*path.get(), *filename.get(), std::string(""));
+
                                         noti->m_vfcm->pushItem(line);
                                         logger->debug("Line (%s)", line.c_str());
                                     }

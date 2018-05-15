@@ -7,16 +7,17 @@
 
 
 class VFCManager;
+class STT2DB;
 
 class Notifier {
 public:
-    static Notifier* instance(VFCManager *vfcm);
+    static Notifier* instance(VFCManager *vfcm, STT2DB *stt2db);
     ~Notifier();
     int startWork();
     void stopWork() { m_LiveFlag = false; }
     
 private:
-    Notifier(VFCManager *vfcm);
+    Notifier(VFCManager *vfcm, STT2DB *stt2db);
     static void thrdFunc(Notifier *noti);
     
 private:
@@ -24,6 +25,7 @@ private:
     std::thread m_thrdNoti;
     
     VFCManager *m_vfcm;
+    STT2DB *m_stt2db;
     bool m_LiveFlag;
 };
 

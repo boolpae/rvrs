@@ -79,7 +79,7 @@ public:
     // for Task working
     // VFClient에서 사용되는 api로서 작업 시작 전,
     // 작업 완료 후 아래의 api를 이용하여 해당 task에 대한 정보를 handling한다.
-    void insertTaskInfo();
+    int insertTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     void updateTaskInfo();
-    void searchTaskInfo();
+    int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
 };

@@ -159,7 +159,7 @@ int main(int argc, const char** argv)
 	VFCManager* vfcm = VFCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), logger);
     Notifier *noti = nullptr;
     if(vfcm) {
-        noti = Notifier::instance(vfcm);
+        noti = Notifier::instance(vfcm, st2db);
         noti->startWork();
     }
 
