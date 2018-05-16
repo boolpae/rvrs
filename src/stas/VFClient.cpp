@@ -96,7 +96,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
             std::this_thread::sleep_for(std::chrono::seconds(1));
         
         }
-        logger->debug("VFClient::thrdFunc() working...");
+        //logger->debug("VFClient::thrdFunc() working...");
     }
 
     gearman_client_free(gearClient);

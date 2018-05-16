@@ -536,7 +536,7 @@ void VRClient::thrdMain(VRClient* client) {
 						delete item;
 
                         if (client->m_s2d) {
-                            client->m_s2d->updateCallInfo(client->m_sCallId, time(NULL), true);
+                            client->m_s2d->updateCallInfo(client->m_sCallId, true);
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);

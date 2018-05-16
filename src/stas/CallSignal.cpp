@@ -66,6 +66,15 @@ uint16_t Protocol::CallSignal::parsePacket(uint8_t * packet)
 
 	// 4. Check Call-ID
 	pos += sizeof(uint8_t);
+	memcpy(this->pacCounselorCode, pos, sizeof(this->pacCounselorCode)-1);
+	this->pacCounselorCode[sizeof(this->pacCounselorCode)-1] = 0;
+    for (int i=::strlen((const char*)this->pacCounselorCode); i>0; i--) {
+        if (::isspace(this->pacCounselorCode[i])) {
+            this->pacCounselorCode[i] = 0;
+        }
+    }
+
+	pos += (sizeof(this->pacCounselorCode) - 1);
 	memcpy(this->pacCallId, pos, sizeof(this->pacCallId)-1);
 	this->pacCallId[sizeof(this->pacCallId)-1] = 0;
     for (int i=::strlen((const char*)this->pacCallId); i>0; i--) {
@@ -142,6 +151,10 @@ int16_t Protocol::CallSignal::makePacket(uint8_t flag)
 	memcpy(pos, &flag, 1);
 	
     pos += sizeof(uint8_t);
+	memcpy(pos, pacCounselorCode, ::strlen((const char*)pacCounselorCode));
+	
+    pos += (sizeof(pacCounselorCode) - 1);
+
 	memcpy(pos, pacCallId, ::strlen((const char*)pacCallId));
 	
     pos += (sizeof(pacCallId) - 1);
@@ -226,6 +239,15 @@ int16_t Protocol::CallSignal::makePacket(uint8_t* packet, uint16_t packetlen, st
 	return int16_t(0);
 }
 
+void Protocol::CallSignal::setPacCounselorCode(uint8_t * counselorcode, uint16_t len)
+{
+	memset(pacCounselorCode, 0x00, sizeof(pacCounselorCode));
+	if (len > 32) len = 32;
+	memcpy(pacCounselorCode, counselorcode, len);
+	//printf("\t[DEBUG] CallSignal::pacCounselorCode() - Call-ID(%s : %s), Len(%d)\n", counselorcode, pacCounselorCode, len);
+    m_Logger->debug("CallSignal::pacCounselorCode() - Call-ID(%s : %s), Len(%d)", counselorcode, pacCounselorCode, len);
+}
+
 void Protocol::CallSignal::setPacCallId(uint8_t * callid, uint16_t len)
 {
 	memset(pacCallId, 0x00, sizeof(pacCallId));
@@ -266,12 +288,13 @@ void Protocol::CallSignal::printPacketInfo()
 	m_Logger->debug("\n  **---- Packet Info ----**\n"
 	"  Packet Size : %d\n"
 	"  Flag : %c\n"
+	"  Counselor-Code(%lu) : [%s]\n"
 	"  Call-ID(%lu) : [%s]\n"
 	"  UDP Count : %d\n"
 	"  SampleRate : %d\n"
 	"  Channel Count : %d\n"
 	"  Encoding : %d\n"
 	"  Fingerprint(%lu) : [%s]"
-    , pacSize, pacFlag, sizeof(pacCallId), pacCallId, pacUdpCnt, pacSampleRate, pacChnCnt, pacEnc, sizeof(pacFingerPrint), pacFingerPrint);
+    , pacSize, pacFlag, sizeof(pacCounselorCode), pacCounselorCode, sizeof(pacCallId), pacCallId, pacUdpCnt, pacSampleRate, pacChnCnt, pacEnc, sizeof(pacFingerPrint), pacFingerPrint);
 
 }

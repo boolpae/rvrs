@@ -72,7 +72,7 @@ void STT2DB::thrdMain(STT2DB * s2d)
             // insert rtstt to db
             TRY
             {
-                Connection_execute(con, "INSERT INTO RTSTT_DATA (IDX,CALL_ID,SPKNO,SPOS,EPOS,STT,REGTIME) VALUES (%d,'%s','%c',%lu,%lu,'%s',now())",
+                Connection_execute(con, "INSERT INTO JOB_DATA (idx,call_id,spk,pos_start,pos_end,value) VALUES (%d,'%s','%c',%lu,%lu,'%s')",
                 item->getDiaIdx(), item->getCallId().c_str(),((item->getSpkNo() == 1)?'R':'L'), item->getBpos(), item->getEpos(), ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
             }
             CATCH(SQLException)
@@ -133,12 +133,42 @@ void STT2DB::release()
     }
 }
 
-int STT2DB::insertCallInfo(std::string callid, time_t stime)
+int STT2DB::searchCallInfo(std::string counselorcode)
 {
     Connection_T con;
-    struct tm resultT;
-    
-    localtime_r(&stime, &resultT);
+    int ret=0;
+
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("STT2DB::searchCallInfo - can't get connection from pool");
+            return -1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("STT2DB::searchCallInfo - inactive connection from pool");
+            Connection_close(con);
+            return -2;
+        }
+        ResultSet_T r = Connection_executeQuery(con, "SELECT counselor_code,center_code,status FROM CS_LIST WHERE counselor_code='%s'", counselorcode.c_str());
+
+        ret = ResultSet_next(r);
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("STT2DB::searchCallInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        Connection_close(con);
+    }
+    END_TRY;
+    return ret;
+}
+
+int STT2DB::insertCallInfo(std::string counselorcode, std::string callid)
+{
+    Connection_T con;
 
     TRY
     {
@@ -152,8 +182,9 @@ int STT2DB::insertCallInfo(std::string callid, time_t stime)
             Connection_close(con);
             return 2;
         }
-        Connection_execute(con, "INSERT INTO CALL_LIST (CALL_ID, STIME, FLAG, REGTIME) VALUES ('%s', '%04d-%02d-%02d %02d:%02d:%02d', 'I', now())",
-        callid.c_str(), resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec);
+        Connection_execute(con, "INSERT INTO CS_LIST (counselor_code,call_id,status,reg_dttm) VALUES ('%s','%s','I',now())",
+        counselorcode.c_str(), callid.c_str());
+        m_Logger->debug("STT2DB::insertCallInfo - SQL[INSERT INTO CS_LIST (counselor_code,call_id,reg_dttm) VALUES ('%s','%s',now())]", counselorcode.c_str(), callid.c_str());
     }
     CATCH(SQLException)
     {
@@ -167,12 +198,9 @@ int STT2DB::insertCallInfo(std::string callid, time_t stime)
     return 0;
 }
 
-int STT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
+int STT2DB::updateCallInfo(std::string callid, bool end)
 {
     Connection_T con;
-    struct tm resultT;
-    
-    localtime_r(&stime, &resultT);
 
     TRY
     {
@@ -187,12 +215,51 @@ int STT2DB::updateCallInfo(std::string callid, time_t stime, bool end)
             return 2;
         }
         if (!end) {
-            Connection_execute(con, "UPDATE CALL_LIST SET ETIME='%04d-%02d-%02d %02d:%02d:%02d' WHERE CALL_ID='%s' AND FLAG='I'",
-            resultT.tm_year+1900, resultT.tm_mon+1, resultT.tm_mday, resultT.tm_hour, resultT.tm_min, resultT.tm_sec, callid.c_str());
+            Connection_execute(con, "UPDATE CS_LIST SET status='I' WHERE call_id='%s'",
+            callid.c_str());
         }
         else {
-            Connection_execute(con, "UPDATE CALL_LIST SET FLAG='E' WHERE CALL_ID='%s' AND FLAG='I'",
+            Connection_execute(con, "UPDATE CS_LIST SET status='E' WHERE call_id='%s'",
             callid.c_str());
+        }
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("STT2DB::updateCallInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        Connection_close(con);
+    }
+    END_TRY;
+    return 0;
+}
+
+int STT2DB::updateCallInfo(std::string counselorcode, std::string callid, bool end)
+{
+    Connection_T con;
+
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("STT2DB::updateCallInfo - can't get connection from pool");
+            return 1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("STT2DB::updateCallInfo - inactive connection from pool");
+            Connection_close(con);
+            return 2;
+        }
+        if (!end) {
+            Connection_execute(con, "UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s'",
+            callid.c_str(), counselorcode.c_str());
+            m_Logger->debug("STT2DB::updateCallInfo - SQL[UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
+        }
+        else {
+            Connection_execute(con, "UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s'",
+            callid.c_str(), counselorcode.c_str());
+            m_Logger->debug("STT2DB::updateCallInfo - SQL[UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
         }
     }
     CATCH(SQLException)
@@ -327,7 +394,7 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
             Connection_close(con);
             return -2;
         }
-        ResultSet_T r = Connection_executeQuery(con, "SELECT COUNT(*) FROM JOB_INFO WHERE call_id = '%s' and filename = '%s' and state != 'Y'",
+        ResultSet_T r = Connection_executeQuery(con, "SELECT COUNT(*) FROM JOB_INFO WHERE call_id = '%s' and filename = '%s'",
         callId.c_str(), filename.c_str());
 
         ret = ResultSet_next(r);

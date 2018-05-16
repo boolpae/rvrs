@@ -1,0 +1,8 @@
+- 2018-05-16
+1. DB 변경 작업
+    - 변경된 테이블 적용: CALL_LIST -> CS_LIST : CallExecutor에서 호출되며 CS_LIST에 등록되지 않은 상담원 코드인 경우 등록시켜준다.
+    - 이미 등록된 상담원 코드가 있을 경우 Call_ID, State 값만 변경해준다.
+    - 호(Call)가 종료되면 CS_LIST의 상담원 상태값(state)을 변경해준다.
+2. Notifier에서 발견된 파일들은 바로 처리하지 않고 DB에 등록한 후 Schd4DB 모듈에서 처리하도록 구조를 변경
+3. CallSignal 수정 - 요청 및 응답 패킷에 CounselorCode(32) 항목 추가
+4. 남은 작업 - VFClient, Schd4DB 업무 로직 설계, 코딩 및 테스트

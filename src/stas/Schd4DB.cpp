@@ -34,9 +34,9 @@ Schd4DB* Schd4DB::instance(STT2DB *sttdb, VFCManager *vfcmgr)
 void Schd4DB::release()
 {
 	if (m_instance) {
+        m_instance->m_thrd.detach();
         m_instance->m_bLiveFlag = false;
 		delete m_instance;
-		m_instance = nullptr;
 	}
 }
 

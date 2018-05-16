@@ -64,8 +64,10 @@ public:
     
     // for Realtime Call Siganl
     // VRClient에서 사용되는 api이며 실시간 통화 시작 및 종료 시 사용된다.
-    int insertCallInfo(std::string callid, time_t stime);
-    int updateCallInfo(std::string callid, time_t stime, bool end=false);
+    int searchCallInfo(std::string counselorcode);
+    int insertCallInfo(std::string counselorcode, std::string callid);
+    int updateCallInfo(std::string callid, bool end=false);
+    int updateCallInfo(std::string counselorcode, std::string callid, bool end=false);
     void insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt);
     
     // for batch

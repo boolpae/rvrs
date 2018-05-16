@@ -8,8 +8,8 @@
 #define PROTO_AUTH_TOKEN "RT-STT"
 #define PROTO_AUTH_TOKEN_LEN 6
 
-#define CALL_BEG_PACKET_LEN 112
-#define CALL_END_PACKET_LEN 105
+#define CALL_BEG_PACKET_LEN 144
+#define CALL_END_PACKET_LEN 137
 #define CALL_PACKET_HEADER_LEN 8
 #define CALL_BEG_PACKET_BODY_LEN (CALL_BEG_PACKET_LEN - CALL_PACKET_HEADER_LEN)
 #define CALL_END_PACKET_BODY_LEN (CALL_END_PACKET_LEN - CALL_PACKET_HEADER_LEN)
@@ -24,6 +24,7 @@ namespace Protocol {
 		// 요청 패킷의 크기 : 264 bits
 		uint16_t pacSize;		// 패킷 전체 길이 값
 		uint8_t pacFlag;		// 호 시작('B'), 호 종료('E')
+		uint8_t pacCounselorCode[33];
 		uint8_t pacCallId[33];	// unique한 값, 키로 사용되는 값이며 문자열
 		uint8_t pacUdpCnt;		// 실시간 음성 전달을 위해 요청한 채널 갯수
         int32_t pacSampleRate;
@@ -50,10 +51,12 @@ namespace Protocol {
 		uint8_t* getPacket() { return m_Packet; }
 
 		uint8_t getPacketFlag() { return pacFlag; }
+		const char* getCounselorCode() { return (const char*)pacCounselorCode; }
 		const char* getCallId() { return (const char*)pacCallId; }
 		uint8_t getUdpCnt() { return pacUdpCnt; }
 
 		void setPacFlag(uint8_t flag) { pacFlag = flag; }
+		void setPacCounselorCode(uint8_t *counselorcode, uint16_t len);
 		void setPacCallId(uint8_t *callid, uint16_t len);
 		void setPacUdpCnt(uint8_t cnt) { pacUdpCnt = cnt; }
         void setPacSampleRate(int32_t rate) { pacSampleRate = rate; }

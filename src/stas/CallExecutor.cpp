@@ -64,6 +64,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 	QueueItem* item = NULL;
 	CallSignal *cs = new CallSignal(exe->m_Logger);
 	std::vector< uint16_t > vPorts;
+	std::string sCounselorCode;
 	std::string sCallId;
 	uint16_t resReq;
 
@@ -81,6 +82,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
                 // cs->printPacketInfo();
                 exe->m_Logger->info("CallExecutor::thrdMain() - [%d] Received CallSignal from %s:%d(%s)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), cs->getCallId());
 				
+				sCounselorCode = std::string(cs->getCounselorCode());
                 sCallId = std::string(cs->getCallId());
 
 				if (cs->getPacketFlag() == 'B') {
@@ -120,7 +122,12 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 							// SUCCESS
                             // to DB
                             if (exe->m_st2db) {
-                                exe->m_st2db->insertCallInfo(sCallId, item->m_time);
+								// 조회, 존재할 경우 UPDATE, 없을 경우 INSERT
+								if (exe->m_st2db->searchCallInfo(sCounselorCode)>0)
+                                	exe->m_st2db->updateCallInfo(sCounselorCode, sCallId, false);
+								else
+									exe->m_st2db->insertCallInfo(sCounselorCode, sCallId);
+									
                             }
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 1);
 							cs->makePacket(item->m_packet, item->m_packetSize, vPorts);
@@ -132,10 +139,12 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 					}
 				}
 				else if (cs->getPacketFlag() == 'E') {
+#if 0 // 실시간 Call의 경우 VRClient에서 updateCallInfo()를 호출하기에 이 곳에서 updateCallInfo()는 생략한다.
                     // to DB
                     if (exe->m_st2db) {
-                        exe->m_st2db->updateCallInfo(sCallId, item->m_time);
+                        exe->m_st2db->updateCallInfo(sCounselorCode, sCallId, true);
                     }
+#endif
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_END_PROC);
                     exe->m_vdcm->removeVDC(sCallId);
 					cs->makePacket(item->m_packet, item->m_packetSize, 200);

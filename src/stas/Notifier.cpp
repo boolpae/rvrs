@@ -20,6 +20,9 @@
 #include <cstring>
 #include <fstream>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 Notifier* Notifier::m_instance = nullptr;
 
 
@@ -90,6 +93,15 @@ void Notifier::thrdFunc(Notifier *noti)
 	char buf[BUF_LEN] __attribute__ ((aligned(8)));
     log4cpp::Category *logger = config->getLogger();
 	std::shared_ptr<std::string> path = std::make_shared<std::string>(config->getConfig("notify.input_path"));
+    std::string downpath = "";//config->getConfig("notify.down_path");
+
+	if (!config->isSet("notify.down_path")) {
+        downpath = "file:/";
+        downpath += *path.get();
+    }
+    else {
+        downpath = config->getConfig("notify.down_path");
+    }
     
 	int inotify = inotify_init();
 	if (inotify < 0) {
@@ -144,25 +156,36 @@ void Notifier::thrdFunc(Notifier *noti)
                             if (config->getConfig("notify.index_type").compare("filename") == 0) {
 
                                 // download path, uri, filename, call_id에 대한 좀 더 명확한 정의가 필요하다.
-                                if (noti->m_stt2db->searchTaskInfo(*path.get(), *filename.get(), std::string(""))) continue;
-                                noti->m_stt2db->insertTaskInfo(*path.get(), *filename.get(), std::string(""));
-
+                                if (noti->m_stt2db->searchTaskInfo(downpath, *filename.get(), std::string(""))) continue;
+                                noti->m_stt2db->insertTaskInfo(downpath, *filename.get(), std::string(""));
+#if 0 // 임시코드
                                 noti->m_vfcm->pushItem(*path.get()+"/"+*filename.get());
                                 logger->debug("Line (%s)", std::string(*path.get()+"/"+*filename.get()).c_str());
+#endif
                             }
                             else {
                                 std::string pathfile = *path.get()+"/"+*filename.get();
                                 std::ifstream index_file(pathfile);
+                                std::vector<std::string> v;
                                 if (index_file.is_open()) {
                                     for (std::string line; std::getline(index_file, line); ) {
                                         if (line.empty() || line.size() < 5)
                                             continue;
 
-                                        if (noti->m_stt2db->searchTaskInfo(*path.get(), *filename.get(), std::string(""))) continue;
-                                        noti->m_stt2db->insertTaskInfo(*path.get(), *filename.get(), std::string(""));
+                                        boost::split(v, line, boost::is_any_of(",  \t"), boost::token_compress_on);
 
+                                        if (v.size() > 1) {
+                                            if (noti->m_stt2db->searchTaskInfo(downpath, v[0], v[1]) > 0) 
+                                                noti->m_stt2db->insertTaskInfo(downpath, v[0], v[1]);
+                                        }
+                                        else {
+                                            if (noti->m_stt2db->searchTaskInfo(downpath, v[0], v[0]) > 0) 
+                                                noti->m_stt2db->insertTaskInfo(downpath, v[0], v[0]);
+                                        }
+#if 0 // 임시코드
                                         noti->m_vfcm->pushItem(line);
                                         logger->debug("Line (%s)", line.c_str());
+#endif
                                     }
                                     index_file.close();
                                 }
