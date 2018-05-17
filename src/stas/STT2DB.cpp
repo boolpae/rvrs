@@ -16,10 +16,12 @@ STT2DB::STT2DB(log4cpp::Category *logger)
 
 STT2DB::~STT2DB()
 {
+    m_instance->m_bLiveFlag = false;
+
     ConnectionPool_stop(m_pool);
     ConnectionPool_free(&m_pool);
     URL_free(&m_url);
-    m_thrd.join();
+    if (m_thrd.joinable()) m_thrd.detach();
         
 	m_Logger->debug("STT2DB Destructed.");
 }
@@ -104,7 +106,7 @@ STT2DB* STT2DB::instance(std::string dbtype, std::string dbhost, std::string dbp
     TRY
     {
         ConnectionPool_start(m_instance->m_pool);
-        ConnectionPool_setReaper(m_instance->m_pool, 10);
+        //ConnectionPool_setReaper(m_instance->m_pool, 10);
     }
     CATCH(SQLException)
     {
@@ -126,8 +128,6 @@ STT2DB* STT2DB::instance(std::string dbtype, std::string dbhost, std::string dbp
 void STT2DB::release()
 {
     if (m_instance) {
-        m_instance->m_bLiveFlag = false;
-
         delete m_instance;
         m_instance = nullptr;
     }
@@ -143,6 +143,7 @@ int STT2DB::searchCallInfo(std::string counselorcode)
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
             m_Logger->error("STT2DB::searchCallInfo - can't get connection from pool");
+            restartConnectionPool();
             return -1;
         }
         else if ( !Connection_ping(con) ) {
@@ -160,7 +161,8 @@ int STT2DB::searchCallInfo(std::string counselorcode)
     }
     FINALLY
     {
-        Connection_close(con);
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
     }
     END_TRY;
     return ret;
@@ -175,6 +177,7 @@ int STT2DB::insertCallInfo(std::string counselorcode, std::string callid)
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
             m_Logger->error("STT2DB::insertCallInfo - can't get connection from pool");
+            restartConnectionPool();
             return 1;
         }
         else if ( !Connection_ping(con) ) {
@@ -192,7 +195,8 @@ int STT2DB::insertCallInfo(std::string counselorcode, std::string callid)
     }
     FINALLY
     {
-        Connection_close(con);
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
     }
     END_TRY;
     return 0;
@@ -207,6 +211,7 @@ int STT2DB::updateCallInfo(std::string callid, bool end)
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
             m_Logger->error("STT2DB::updateCallInfo - can't get connection from pool");
+            restartConnectionPool();
             return 1;
         }
         else if ( !Connection_ping(con) ) {
@@ -229,7 +234,8 @@ int STT2DB::updateCallInfo(std::string callid, bool end)
     }
     FINALLY
     {
-        Connection_close(con);
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
     }
     END_TRY;
     return 0;
@@ -244,6 +250,7 @@ int STT2DB::updateCallInfo(std::string counselorcode, std::string callid, bool e
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
             m_Logger->error("STT2DB::updateCallInfo - can't get connection from pool");
+            restartConnectionPool();
             return 1;
         }
         else if ( !Connection_ping(con) ) {
@@ -268,7 +275,8 @@ int STT2DB::updateCallInfo(std::string counselorcode, std::string callid, bool e
     }
     FINALLY
     {
-        Connection_close(con);
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
     }
     END_TRY;
     return 0;
@@ -346,6 +354,7 @@ int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
             m_Logger->error("STT2DB::insertTaskInfo - can't get connection from pool");
+            restartConnectionPool();
             return 1;
         }
         else if ( !Connection_ping(con) ) {
@@ -362,7 +371,8 @@ int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::
     }
     FINALLY
     {
-        Connection_close(con);
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
     }
     END_TRY;
     return 0;
@@ -370,9 +380,37 @@ int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::
 
 // VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
 // args: call_id, counselor_code, task_stat etc
-void STT2DB::updateTaskInfo()
+int STT2DB::updateTaskInfo(std::string callid, std::string counselorcode, char state)
 {
+    Connection_T con;
 
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("STT2DB::updateTaskInfo - can't get connection from pool");
+            restartConnectionPool();
+            return 1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("STT2DB::updateTaskInfo - inactive connection from pool");
+            Connection_close(con);
+            return 2;
+        }
+        Connection_execute(con, "UPDATE JOB_INFO SET STATE='%c' WHERE call_id='%s' and counselor_code='%s'",
+        state, callid.c_str(), counselorcode.c_str());
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("STT2DB::updateTaskInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
+    }
+    END_TRY;
+    return 0;
 }
 
 // VFClient모듈에서 사용되는 api로서 해당 task에 대해 이전에 작업한 내용인지 아닌지 확인하기 위해 사용
@@ -387,6 +425,7 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
         con = ConnectionPool_getConnection(m_pool);
         if ( con == NULL) {
             m_Logger->error("STT2DB::searchTaskInfo - can't get connection from pool");
+            restartConnectionPool();
             return -1;
         }
         else if ( !Connection_ping(con) ) {
@@ -394,7 +433,7 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
             Connection_close(con);
             return -2;
         }
-        ResultSet_T r = Connection_executeQuery(con, "SELECT COUNT(*) FROM JOB_INFO WHERE call_id = '%s' and filename = '%s'",
+        ResultSet_T r = Connection_executeQuery(con, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE call_id = '%s' and filename = '%s'",
         callId.c_str(), filename.c_str());
 
         ret = ResultSet_next(r);
@@ -405,12 +444,67 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
     }
     FINALLY
     {
-        Connection_close(con);
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
     }
     END_TRY;
     return ret;
 }
 
+int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v) 
+{
+    Connection_T con;
+    int ret=0;
+
+    m_Logger->debug("BEFORE STT2DB::getTaskInfo - size(%d), active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("STT2DB::getTaskInfo - can't get connection from pool");
+            restartConnectionPool();
+            return -1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("STT2DB::getTaskInfo - inactive connection from pool");
+            Connection_close(con);
+            return -2;
+        }
+        ResultSet_T r = Connection_executeQuery(con, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X'");
+
+        while (ResultSet_next(r)) 
+        {
+            std::string callid = ResultSet_getString(r, 1);
+            std::string counselorcode = ResultSet_getString(r, 2);
+            std::string path = ResultSet_getString(r, 3);
+            std::string filename = ResultSet_getString(r, 4);
+
+            JobInfoItem *item = new JobInfoItem(callid, counselorcode, path, filename);
+            v.push_back(item);
+        }
+
+        ret = v.size();
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("STT2DB::getTaskInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        Connection_close(con);
+        //ConnectionPool_returnConnection(m_pool, con);
+        m_Logger->debug("AFTER STT2DB::getTaskInfo - size(%d), active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+    }
+    END_TRY;
+    return ret;
+}
+
+void STT2DB::restartConnectionPool()
+{
+    m_Logger->debug("STT2DB::restartConnectionPool - size(%d), active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+    ConnectionPool_stop(m_pool);
+    ConnectionPool_start(m_pool);
+}
 
 RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)
 	:m_nDiaIdx(idx), m_sCallId(callid), m_nSpkNo(spkno), m_sSTTValue(sttvalue), m_nBpos(bpos), m_nEpos(epos)
@@ -419,4 +513,15 @@ RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std:
 
 RTSTTQueItem::~RTSTTQueItem()
 {
+}
+
+JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename)
+: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename)
+{
+
+}
+
+JobInfoItem::~JobInfoItem()
+{
+
 }

@@ -1,4 +1,5 @@
 
+#include "stas.h"
 #include "Schd4DB.h"
 
 #include "STT2DB.h"
@@ -42,11 +43,32 @@ void Schd4DB::release()
 
 void Schd4DB::thrdFuncSchd4DB(Schd4DB *schd)
 {
+    log4cpp::Category *logger = config->getLogger();
+    std::vector< JobInfoItem* > v;
+    JobInfoItem *item;
+
     while(schd->m_bLiveFlag) {
         // STT2DB의 api를 이용하여 새로운 task를 확인
         // 새로운 task를 VFCManager의 큐에 등록
 
+        // get items from DB
+        if (schd->m_sttdb->getTaskInfo(v) > 0) {
+            for( std::vector< JobInfoItem* >::iterator iter = v.begin(); iter != v.end(); iter++) {
+                item = *iter;
+
+                logger->debug("thrdFuncSchd4DB (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
+                // put item to VFCMgr's Queue
+                if (schd->m_vfcmgr->pushItem(item->getPath()+"/"+item->getFilename()) > 0) {
+                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'U');
+                }
+
+                delete item;
+            }
+
+            v.clear();
+        }
+
         // config에 설정된 sec 시간 간격으로 확인
-        std::this_thread::sleep_for(std::chrono::seconds(60));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 }

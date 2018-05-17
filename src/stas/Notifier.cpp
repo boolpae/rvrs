@@ -175,11 +175,11 @@ void Notifier::thrdFunc(Notifier *noti)
                                         boost::split(v, line, boost::is_any_of(",  \t"), boost::token_compress_on);
 
                                         if (v.size() > 1) {
-                                            if (noti->m_stt2db->searchTaskInfo(downpath, v[0], v[1]) > 0) 
+                                            if (!noti->m_stt2db->searchTaskInfo(downpath, v[0], v[1])) 
                                                 noti->m_stt2db->insertTaskInfo(downpath, v[0], v[1]);
                                         }
                                         else {
-                                            if (noti->m_stt2db->searchTaskInfo(downpath, v[0], v[0]) > 0) 
+                                            if (!noti->m_stt2db->searchTaskInfo(downpath, v[0], v[0])) 
                                                 noti->m_stt2db->insertTaskInfo(downpath, v[0], v[0]);
                                         }
 #if 0 // 임시코드
