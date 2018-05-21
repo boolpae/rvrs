@@ -76,6 +76,7 @@ public:
     
     static STT2DB* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger);
     static void release();
+    static STT2DB* getInstance();
     
     void setLogger(log4cpp::Category *logger) { m_Logger = logger; }
     

@@ -2,6 +2,7 @@
 #include "stas.h"
 #include "VFClient.h"
 #include "VFCManager.h"
+#include "STT2DB.h"
 
 #include <thread>
 
@@ -38,8 +39,16 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
     int buflen=0;
     
     std::string line;
+
+    JobInfoItem* item;
     
+    STT2DB *stt2db = STT2DB::getInstance();
     log4cpp::Category *logger = config->getLogger();
+
+    if (!stt2db) {
+        logger->error("VFClient::thrdFunc() - Failed to get STT2DB instanc");
+        return;
+    }
 
 #if 0
     gearClient = gearman_client_create(NULL);
@@ -73,10 +82,11 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 #endif
 
     while(client->m_LiveFlag) {
-        if(mgr->popItem(line)) {
+        if(item = mgr->popItem()) {
             memset(buf, 0, sizeof(buf));
             buflen = 0;
             
+            line = item->getPath() + "/" + item->getFilename();
             logger->debug("line(%s)", line.c_str());
 #if 0
             value= gearman_client_do(gearClient, "vr_stt", NULL, 
@@ -91,6 +101,9 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                 //client->m_Logger->error("VRClient::thrdMain(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos, client->m_nGearTimeout);
             }
 #endif
+            stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+            delete item;
+            item = nullptr;
         }
         else {
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -98,6 +111,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
         }
         //logger->debug("VFClient::thrdFunc() working...");
     }
-
+#if 0
     gearman_client_free(gearClient);
+#endif
 }

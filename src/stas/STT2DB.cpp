@@ -133,6 +133,14 @@ void STT2DB::release()
     }
 }
 
+STT2DB* STT2DB::getInstance()
+{
+    if (m_instance) {
+        return m_instance;
+    }
+    return nullptr;
+}
+
 int STT2DB::searchCallInfo(std::string counselorcode)
 {
     Connection_T con;
@@ -456,7 +464,7 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v)
     Connection_T con;
     int ret=0;
 
-    m_Logger->debug("BEFORE STT2DB::getTaskInfo - size(%d), active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+    m_Logger->debug("BEFORE STT2DB::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     TRY
     {
         con = ConnectionPool_getConnection(m_pool);
@@ -493,7 +501,7 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v)
     {
         Connection_close(con);
         //ConnectionPool_returnConnection(m_pool, con);
-        m_Logger->debug("AFTER STT2DB::getTaskInfo - size(%d), active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+        m_Logger->debug("AFTER STT2DB::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     }
     END_TRY;
     return ret;

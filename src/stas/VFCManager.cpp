@@ -11,6 +11,7 @@
 
 #include "VFClient.h"
 #include "stas.h"
+#include "STT2DB.h"
 
 using namespace std;
 
@@ -222,29 +223,30 @@ void VFCManager::outputVFCStat()
 
 }
 
-int VFCManager::pushItem(std::string line)
+int VFCManager::pushItem(JobInfoItem* item)//std::string line)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
     
-    m_qVFQue.push(line);
+    m_qVFQue.push(item);//line);
     
     m_Logger->debug("VFCManager::pushItem() - Item Count(%d)", m_qVFQue.size());
     
     return m_qVFQue.size();
 }
 
-int VFCManager::popItem(std::string& line)
+JobInfoItem* VFCManager::popItem()//std::string& line)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
+    JobInfoItem* item = nullptr;
     
-    if (!m_qVFQue.size()) return 0;
+    if (!m_qVFQue.size()) return nullptr;
     
-    line = m_qVFQue.front();
+    item = m_qVFQue.front();
     m_qVFQue.pop();
     
-    m_Logger->debug("VFCManager::popItem() - Item Content(%s), Count(%d)", line.c_str(), m_qVFQue.size());
+    m_Logger->debug("VFCManager::popItem() - Item Content(%s), Count(%d)", item->getCallId().c_str()/*line.c_str()*/, m_qVFQue.size());
 
-    return m_qVFQue.size()+1;
+    return item;//m_qVFQue.size()+1;
 }
 
 void VFCManager::thrdFuncVFCManager(VFCManager* mgr)

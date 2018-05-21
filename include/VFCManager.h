@@ -16,6 +16,7 @@
 using namespace std;
 
 class VFClient;
+class JobInfoItem;
 
 class VFCManager
 {
@@ -31,7 +32,7 @@ private:
     log4cpp::Category *m_Logger;
 
 	map< string, VFClient* > m_mWorkerTable;
-	queue< string > m_qVFQue;
+	queue< JobInfoItem* > m_qVFQue;
 
 	mutable std::mutex m_mxMap;
 	mutable std::mutex m_mxQue;
@@ -45,8 +46,8 @@ public:
 	string& getGearHost() { return m_sGearHost; }
 	uint16_t getGearPort() { return m_nGearPort; }
     
-    int pushItem(std::string line);
-    int popItem(std::string& line);
+    int pushItem(JobInfoItem* item);//std::string line);
+    JobInfoItem* popItem();//std::string& line);
 
 private:
 	VFCManager(int geartimeout, log4cpp::Category *logger);

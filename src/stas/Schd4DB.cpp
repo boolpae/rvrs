@@ -58,11 +58,9 @@ void Schd4DB::thrdFuncSchd4DB(Schd4DB *schd)
 
                 logger->debug("thrdFuncSchd4DB (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
                 // put item to VFCMgr's Queue
-                if (schd->m_vfcmgr->pushItem(item->getPath()+"/"+item->getFilename()) > 0) {
+                if (schd->m_vfcmgr->pushItem(item/*item->getPath()+"/"+item->getFilename()*/) > 0) {
                     schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'U');
                 }
-
-                delete item;
             }
 
             v.clear();
