@@ -96,7 +96,7 @@ void Notifier::thrdFunc(Notifier *noti)
     std::string downpath = "";//config->getConfig("notify.down_path");
 
 	if (!config->isSet("notify.down_path")) {
-        downpath = "file:/";
+        downpath = "file://";
         downpath += *path.get();
     }
     else {

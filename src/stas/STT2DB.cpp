@@ -74,8 +74,21 @@ void STT2DB::thrdMain(STT2DB * s2d)
             // insert rtstt to db
             TRY
             {
+                char cSpk='N';
+
+                switch(item->getSpkNo()) {
+                    case 1:
+                        cSpk = 'R';
+                        break;
+                    case 2:
+                        cSpk = 'L';
+                        break;
+                    default:
+                        cSpk = 'N';
+                }
+
                 Connection_execute(con, "INSERT INTO JOB_DATA (idx,call_id,spk,pos_start,pos_end,value) VALUES (%d,'%s','%c',%lu,%lu,'%s')",
-                item->getDiaIdx(), item->getCallId().c_str(),((item->getSpkNo() == 1)?'R':'L'), item->getBpos(), item->getEpos(), ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
+                item->getDiaIdx(), item->getCallId().c_str(), cSpk, item->getBpos(), item->getEpos(), ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
             }
             CATCH(SQLException)
             {
