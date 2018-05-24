@@ -74,7 +74,7 @@ void STT2File::thrdMain(STT2File * dlv)
 				sttFilename += ".stt";
 			}
 			else {
-				sttFilename = item->getCallId();
+				sttFilename = dlv->m_sResultPath + "/" + item->getFilename();// dlv->m_sResultPath + "/" + item->getCallId();
 				sttFilename += ".stt";
 			}
 			std::ofstream sttresult(sttFilename, std::ios::out | std::ios::app);
@@ -83,9 +83,14 @@ void STT2File::thrdMain(STT2File * dlv)
                     if (item->getSpkNo() == 1) {
                         sttresult << "<< Counselor >> : ";
                     }
-                    else {
+                    else if (item->getSpkNo() == 2) {
                         sttresult << "<< Customer >> : ";
                     }
+                    /*
+                    else {
+                        sttresult << "<< BATCH >> : ";
+                    }
+                    */
                     sttresult << std::to_string(item->getBpos()) << " - " << std::to_string(item->getEpos()) << std::endl;
                 }
 				sttresult << ((ret == -1) ? item->getSTTValue() : utf_buf);//item->getSTTValue();
@@ -142,6 +147,12 @@ STT2File* STT2File::instance(std::string path, log4cpp::Category *logger)
 	ms_instance->m_thrd = std::thread(STT2File::thrdMain, ms_instance);
 
 	return ms_instance;
+}
+
+STT2File* STT2File::getInstance()
+{
+    if(ms_instance) return ms_instance;
+    return nullptr;
 }
 
 void STT2File::release()

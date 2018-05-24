@@ -3,6 +3,7 @@
 #include "VFClient.h"
 #include "VFCManager.h"
 #include "STT2DB.h"
+#include "STT2File.h"
 
 #include <thread>
 
@@ -46,6 +47,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
     JobInfoItem* item;
     
     STT2DB *stt2db = STT2DB::getInstance();
+    STT2File *stt2file = STT2File::getInstance();
     log4cpp::Category *logger = config->getLogger();
 
     if (!stt2db) {
@@ -108,25 +110,25 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                         if (value) {
                             uint32_t diaNumber=0;
                             std::string strValue((const char*)value);
-                            std::string line;
                             std::istringstream iss(strValue);
                             std::vector<std::string> strs;
 
                             //std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
                             while(std::getline(iss, line)) {
                                 boost::split(strs, line, boost::is_any_of(","));
-                                std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+                                //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
 
                                 // to DB
                                 if (stt2db) {
                                     diaNumber++;
                                     stt2db->insertRtSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
                                 }
-                                //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+
                                 // to STTDeliver(file)
-                                //if (client->m_deliver) {
-                                //    client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)value), "\n", " "), item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
-                                //}
+                                if (stt2file) {
+                                    //stt2file->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                    stt2file->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                }
                             }
                         }
                         stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');

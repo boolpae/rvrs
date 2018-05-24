@@ -50,6 +50,7 @@ class STT2File
 public:
 	static STT2File* instance(std::string path, log4cpp::Category *logger);
 	static void release();
+	static STT2File* getInstance();
 
 	void insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
