@@ -103,7 +103,8 @@ void STT2DB::thrdMain(STT2DB * s2d)
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
-    Connection_close(con);
+    if (STT2DB::getInstance())
+        Connection_close(con);
 }
 
 STT2DB* STT2DB::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger)

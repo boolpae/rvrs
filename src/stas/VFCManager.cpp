@@ -16,7 +16,7 @@
 using namespace std;
 
 VFCManager* VFCManager::m_instance = nullptr;
-uint64_t m_nVFCs=0;
+uint64_t VFCManager::m_nVFCs=0;
 
 VFCManager::VFCManager(int geartimeout, log4cpp::Category *logger)
 	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_Logger(logger)
