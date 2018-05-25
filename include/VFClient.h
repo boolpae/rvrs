@@ -9,7 +9,7 @@ class VFCManager;
 
 class VFClient {
 public:
-    VFClient(VFCManager* mgr, std::string gearHost, uint16_t gearPort, int gearTimeout);
+    VFClient(VFCManager* mgr, std::string gearHost, uint16_t gearPort, int gearTimeout, uint64_t numId);
     virtual ~VFClient();
     
     void startWork();
@@ -27,6 +27,7 @@ private:
 	std::string m_sGearHost;
 	uint16_t m_nGearPort;
     int m_nGearTimeout;
+    uint64_t m_nNumId;
 };
 
 

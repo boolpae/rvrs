@@ -16,6 +16,7 @@
 using namespace std;
 
 VFCManager* VFCManager::m_instance = nullptr;
+uint64_t m_nVFCs=0;
 
 VFCManager::VFCManager(int geartimeout, log4cpp::Category *logger)
 	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_Logger(logger)
@@ -280,7 +281,7 @@ void VFCManager::syncWorkerVFClient()
         while(workerCnt - m_mWorkerTable.size()) {
             gettimeofday(&tv, NULL);
             sprintf(szKey, "%ld.%ld", tv.tv_sec, tv.tv_usec);
-            clt = new VFClient(this, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout);
+            clt = new VFClient(this, this->m_sGearHost, this->m_nGearPort, this->m_GearTimeout, m_nVFCs++);
             m_mWorkerTable[szKey] = clt;
             clt->startWork();
         }
@@ -291,6 +292,7 @@ void VFCManager::syncWorkerVFClient()
         while(m_mWorkerTable.size() - workerCnt) {
             iter = m_mWorkerTable.begin();
             ((VFClient*)iter->second)->stopWork();
+            m_nVFCs--;
             m_mWorkerTable.erase(iter);
         }
     }

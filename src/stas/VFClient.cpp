@@ -15,8 +15,8 @@
 #include <boost/algorithm/string.hpp>
 #include <sstream>
 
-VFClient::VFClient(VFCManager* mgr, std::string gearHost, uint16_t gearPort, int gearTimeout)
-: m_LiveFlag(true), m_mgr(mgr), m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout)
+VFClient::VFClient(VFCManager* mgr, std::string gearHost, uint16_t gearPort, int gearTimeout, uint64_t numId)
+: m_LiveFlag(true), m_mgr(mgr), m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_nNumId(numId)
 {
     
 }
@@ -51,7 +51,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
     log4cpp::Category *logger = config->getLogger();
 
     if (!stt2db) {
-        logger->error("VFClient::thrdFunc() - Failed to get STT2DB instance");
+        logger->error("VFClient::thrdFunc(%ld) - Failed to get STT2DB instance", client->m_nNumId);
         return;
     }
 
@@ -92,7 +92,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
             buflen = 0;
             
             line = item->getPath() + "/" + item->getFilename();
-            logger->debug("line(%s)", line.c_str());
+            logger->debug("VFClient::thrdFunc(%ld) - line(%s)", client->m_nNumId, line.c_str());
 #if 1
             value= gearman_client_do(gearClient, "vr_stt", NULL, 
                                             (const void*)line.c_str(), line.size(),
@@ -134,18 +134,18 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                         stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
                     }
                     else if (gearman_failed(rc)) {
-                        logger->error("VFClient::thrdFunc() - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
                         stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
                     }
 
                 }
                 else {
-                    logger->info("VFClient::thrdFunc() - Success to get gearman(vr_stt) but empty result.  [%s : %s]", item->getCallId().c_str(), item->getFilename().c_str());
+                    logger->info("VFClient::thrdFunc(%ld) - Success to get gearman(vr_stt) but empty result.  [%s : %s]", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str());
                     stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
                 }
             }
             else if (gearman_failed(rc)) {
-                logger->error("VFClient::thrdFunc() - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d)", item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
                 stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
             }
 #endif

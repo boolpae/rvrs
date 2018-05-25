@@ -3,6 +3,7 @@
 #include "Notifier.h"
 #include "VFCManager.h"
 #include "STT2DB.h"
+#include "HAManager.h"
 
 #include <sys/inotify.h>
 #include <unistd.h>
@@ -92,6 +93,7 @@ void Notifier::thrdFunc(Notifier *noti)
     int selVal;
 	char buf[BUF_LEN] __attribute__ ((aligned(8)));
     log4cpp::Category *logger = config->getLogger();
+    HAManager *ham = HAManager::getInstance();
 	std::shared_ptr<std::string> path = std::make_shared<std::string>(config->getConfig("notify.input_path"));
     std::string downpath = "";//config->getConfig("notify.down_path");
 
@@ -118,6 +120,11 @@ void Notifier::thrdFunc(Notifier *noti)
 	}
 
 	std::string watch_ext = config->getConfig("notify.watch", "txt");
+
+    if (ham && !ham->getHAStat()) {
+        logger->debug("Notifier::thrdFunc() - Waiting... for Standby Mode");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
     while(noti->m_LiveFlag) {
 		tv.tv_sec = 0;	// for debug

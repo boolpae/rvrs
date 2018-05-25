@@ -4,6 +4,7 @@
 
 #include "STT2DB.h"
 #include "VFCManager.h"
+#include "HAManager.h"
 
 #include <chrono>
 
@@ -44,8 +45,14 @@ void Schd4DB::release()
 void Schd4DB::thrdFuncSchd4DB(Schd4DB *schd)
 {
     log4cpp::Category *logger = config->getLogger();
+    HAManager *ham = HAManager::getInstance();
     std::vector< JobInfoItem* > v;
     JobInfoItem *item;
+
+    if (ham && !ham->getHAStat()) {
+        logger->debug("Schd4DB::thrdFuncSchd4DB() - Waiting... for Standby Mode");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
     while(schd->m_bLiveFlag) {
         // STT2DB의 api를 이용하여 새로운 task를 확인
