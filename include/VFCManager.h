@@ -37,6 +37,7 @@ private:
 	mutable std::mutex m_mxMap;
 	mutable std::mutex m_mxQue;
     
+	static uint64_t m_nVFCs;
 public:
 	static VFCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, log4cpp::Category *logger);
 	static void release();
