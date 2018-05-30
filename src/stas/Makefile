@@ -22,7 +22,8 @@ SOURCE			:= CallExecutor.cpp \
 				HAManager.cpp \
 				STT2File.cpp \
 				VFCManager.cpp \
-				WorkTracer.cpp
+				WorkTracer.cpp \
+				VASDivSpeaker.cpp
 #SOURCE			+= v1/restapi_v1.cc v1/servers.cc v1/waves.cc
 #INCLUDE_PATH	:= $(PRJ_HOME)/include/dnn
 INCLUDE_PATH	:= /usr/local/include

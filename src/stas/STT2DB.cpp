@@ -9,7 +9,7 @@ STT2DB* STT2DB::m_instance = nullptr;
 
 
 STT2DB::STT2DB(log4cpp::Category *logger)
-: m_bLiveFlag(true), m_Logger(logger)
+: m_bLiveFlag(true), m_Logger(logger), m_bExDbUse(false)
 {
 	m_Logger->debug("STT2DB Constructed.");
 }
@@ -22,6 +22,12 @@ STT2DB::~STT2DB()
     ConnectionPool_free(&m_pool);
     URL_free(&m_url);
     if (m_thrd.joinable()) m_thrd.detach();
+
+    if (m_bExDbUse) {
+        ConnectionPool_stop(m_ExPool);
+        ConnectionPool_free(&m_ExPool);
+        URL_free(&m_ExUrl);
+    }
         
 	m_Logger->debug("STT2DB Destructed.");
 }
@@ -526,6 +532,43 @@ void STT2DB::restartConnectionPool()
     m_Logger->debug("STT2DB::restartConnectionPool - size(%d), active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     ConnectionPool_stop(m_pool);
     ConnectionPool_start(m_pool);
+}
+
+void STT2DB::setExDbEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset)
+{
+    std::string sUrl = dbtype + "://" + dbuser + ":" + dbpw + "@" + dbhost + ":" + dbport + "/" + dbname + "?charset=" + charset;
+    
+    if (m_bExDbUse) return;
+    
+    m_ExUrl = URL_new(sUrl.c_str());
+    m_ExPool = ConnectionPool_new(m_ExUrl);
+    
+    TRY
+    {
+        ConnectionPool_start(m_ExPool);
+        //ConnectionPool_setReaper(m_instance->m_pool, 10);
+        m_bExDbUse = true;
+    }
+    CATCH(SQLException)
+    {
+        //logger->error("STT2DB::instance - SQLException -- %s", Exception_frame.message);
+        
+        ConnectionPool_free(&m_ExPool);
+        URL_free(&m_ExUrl);
+        
+    }
+    END_TRY;
+
+}
+
+void STT2DB::setExDbDisable()
+{
+    if (m_bExDbUse) {
+        ConnectionPool_stop(m_ExPool);
+        ConnectionPool_free(&m_ExPool);
+        URL_free(&m_ExUrl);
+        m_bExDbUse = false;
+    }
 }
 
 RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)

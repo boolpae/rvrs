@@ -63,8 +63,12 @@ private:
     
     URL_T m_url;
     ConnectionPool_T m_pool;
+    URL_T m_ExUrl;
+    ConnectionPool_T m_ExPool;  // 외부 인터페이스 DB Pool 정의
 
     log4cpp::Category *m_Logger;
+
+    bool m_bExDbUse;
     
 private:
     STT2DB(log4cpp::Category *logger);
@@ -105,4 +109,7 @@ public:
     int getTaskInfo(std::vector< JobInfoItem* > &v);
 
     void restartConnectionPool();
+
+    void setExDbEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset);
+    void setExDbDisable();
 };
