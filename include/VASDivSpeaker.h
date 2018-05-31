@@ -19,7 +19,7 @@ public:
     VASDivSpeaker(STT2DB *db, STT2File *file, JobInfoItem *item);
     virtual ~VASDivSpeaker();
 
-    int startWork(gearman_client_st *gearClient, std::string &unseg);
+    int startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
 };
 
 #endif // _VASDIVSPEAKER_H_
