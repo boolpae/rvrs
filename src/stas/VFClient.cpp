@@ -4,6 +4,7 @@
 #include "VFCManager.h"
 #include "STT2DB.h"
 #include "STT2File.h"
+#include "VASDivSpeaker.h"
 
 #include <thread>
 
@@ -171,6 +172,12 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                             // Unsegment 결과를 정제(parsing)하여 목적에 따라 처리한다.
 
                             // # 화자 분리
+                            if (sFuncName.size()) {
+                                VASDivSpeaker divspk(stt2db, stt2file, item);
+
+                                //startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
+                                divspk.startWork(gearClient, sFuncName, strValue);
+                            }
 
                         }
                         stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
