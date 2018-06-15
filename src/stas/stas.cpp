@@ -234,9 +234,10 @@ FINISH:
 	vrcm->release();
 	rcv->release();
 
-    if (deliver) STT2File::release();
 	WorkTracer::release();
     STT2DB::release();
+    if (deliver) STT2File::release();
+
     delete config;
 
     return 0;
