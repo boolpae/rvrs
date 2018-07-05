@@ -68,12 +68,14 @@ private:
 
     log4cpp::Category *m_Logger;
 
-    bool m_bExDbUse;
+    bool m_bInterDBUse;
     
 private:
     STT2DB(log4cpp::Category *logger);
 	static void thrdMain(STT2DB* s2d);
 	void insertRtSTTData(RTSTTQueItem* item);
+
+    void restartConnectionPool();
     
 public:
     virtual ~STT2DB();
@@ -108,8 +110,6 @@ public:
     int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     int getTaskInfo(std::vector< JobInfoItem* > &v);
 
-    void restartConnectionPool();
-
-    void setExDbEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset);
-    void setExDbDisable();
+    void setInterDBEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset);
+    void setInterDBDisable();
 };

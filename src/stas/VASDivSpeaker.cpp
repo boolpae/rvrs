@@ -75,6 +75,11 @@ int VASDivSpeaker::startWork(gearman_client_st *gearClient, std::string &funcnam
 
         //"화자,시작msec,종료msec,Text"
         // 화자는 spk00, spk01 이라는 값으로 구분되며 갯수가 많은 값이 상담원이 된다. - spk00, spk01 의 갯수를 파악해야핸다.
+        res1.size();
+        res2.size();
+        
+        res1.clear();
+        res2.clear();
     }
     else if (gearman_failed(rc)) {
         logger->error("VASDivSpeaker::startWork() - failed gearman_client_do(%s). [%s : %s]", funcname.c_str(), m_jobItem->getCallId().c_str(), m_jobItem->getFilename().c_str());

@@ -9,7 +9,7 @@ STT2DB* STT2DB::m_instance = nullptr;
 
 
 STT2DB::STT2DB(log4cpp::Category *logger)
-: m_bLiveFlag(true), m_Logger(logger), m_bExDbUse(false)
+: m_bLiveFlag(true), m_Logger(logger), m_bInterDBUse(false)
 {
 	m_Logger->debug("STT2DB Constructed.");
 }
@@ -23,7 +23,7 @@ STT2DB::~STT2DB()
     URL_free(&m_url);
     if (m_thrd.joinable()) m_thrd.detach();
 
-    if (m_bExDbUse) {
+    if (m_bInterDBUse) {
         ConnectionPool_stop(m_ExPool);
         ConnectionPool_free(&m_ExPool);
         URL_free(&m_ExUrl);
@@ -519,8 +519,8 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v)
     }
     FINALLY
     {
-        Connection_close(con);
-        //ConnectionPool_returnConnection(m_pool, con);
+        // Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
         m_Logger->debug("AFTER STT2DB::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     }
     END_TRY;
@@ -534,11 +534,11 @@ void STT2DB::restartConnectionPool()
     ConnectionPool_start(m_pool);
 }
 
-void STT2DB::setExDbEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset)
+void STT2DB::setInterDBEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset)
 {
     std::string sUrl = dbtype + "://" + dbuser + ":" + dbpw + "@" + dbhost + ":" + dbport + "/" + dbname + "?charset=" + charset;
     
-    if (m_bExDbUse) return;
+    if (m_bInterDBUse) return;
     
     m_ExUrl = URL_new(sUrl.c_str());
     m_ExPool = ConnectionPool_new(m_ExUrl);
@@ -547,7 +547,7 @@ void STT2DB::setExDbEnable(std::string dbtype, std::string dbhost, std::string d
     {
         ConnectionPool_start(m_ExPool);
         //ConnectionPool_setReaper(m_instance->m_pool, 10);
-        m_bExDbUse = true;
+        m_bInterDBUse = true;
     }
     CATCH(SQLException)
     {
@@ -561,13 +561,13 @@ void STT2DB::setExDbEnable(std::string dbtype, std::string dbhost, std::string d
 
 }
 
-void STT2DB::setExDbDisable()
+void STT2DB::setInterDBDisable()
 {
-    if (m_bExDbUse) {
+    if (m_bInterDBUse) {
         ConnectionPool_stop(m_ExPool);
         ConnectionPool_free(&m_ExPool);
         URL_free(&m_ExUrl);
-        m_bExDbUse = false;
+        m_bInterDBUse = false;
     }
 }
 
