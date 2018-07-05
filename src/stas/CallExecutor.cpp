@@ -4,7 +4,13 @@
 #include "VRCManager.h"
 #include "VDCManager.h"
 #include "WorkTracer.h"
+
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
+
 #include "HAManager.h"
 #include "VRClient.h"
 

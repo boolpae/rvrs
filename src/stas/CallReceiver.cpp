@@ -21,7 +21,13 @@
 #include "CallExecutor.h"
 #include "VDCManager.h"
 #include "VRCManager.h"
+
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
+
 #include "HAManager.h"
 
 #include <thread>

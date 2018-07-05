@@ -2,7 +2,13 @@
 #include "stas.h"
 #include "VFClient.h"
 #include "VFCManager.h"
+
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
+
 #include "STT2File.h"
 #include "VASDivSpeaker.h"
 

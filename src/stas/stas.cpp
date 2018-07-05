@@ -8,7 +8,13 @@
 #include "WorkTracer.h"
 #include "STT2File.h"
 #include "stas.h"
+
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
+
 #include "HAManager.h"
 #include "VFCManager.h"
 #include "Notifier.h"
@@ -116,6 +122,7 @@ int main(int argc, const char** argv)
         logger->info("Database Name    :  %s", config->getConfig("database.name", "rt_stt").c_str());
         logger->info("Database CharSet :  %s", config->getConfig("database.chset", "utf8").c_str());
         
+#ifndef USE_ODBC
         st2db = STT2DB::instance(config->getConfig("database.type", "mysql"),
                                 config->getConfig("database.addr", "localhost"),
                                 config->getConfig("database.port", "3306"),
@@ -124,6 +131,11 @@ int main(int argc, const char** argv)
                                 config->getConfig("database.name", "rt_stt"),
                                 config->getConfig("database.chset", "utf8"),
                                 logger);
+#else
+        st2db = STT2DB::instance(config->getConfig("database.dsn", "mysql"),
+                                std::stoi(config->getConfig("database.connCount", "localhost")));
+#endif
+
         if (!st2db) {
             logger->error("MAIN - ERROR (Failed to get STT2DB instance)");
             delete config;

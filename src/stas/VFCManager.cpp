@@ -11,7 +11,12 @@
 
 #include "VFClient.h"
 #include "stas.h"
+
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
 
 using namespace std;
 

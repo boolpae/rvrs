@@ -2,7 +2,12 @@
 #include "stas.h"
 #include "Schd4DB.h"
 
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
+
 #include "VFCManager.h"
 #include "HAManager.h"
 

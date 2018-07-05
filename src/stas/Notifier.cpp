@@ -2,7 +2,13 @@
 #include "stas.h"
 #include "Notifier.h"
 #include "VFCManager.h"
+
+#ifndef USE_ODBC
 #include "STT2DB.h"
+#else
+#include "STT2DB_ODBC.h"
+#endif
+
 #include "HAManager.h"
 
 #include <sys/inotify.h>
