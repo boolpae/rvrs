@@ -56,7 +56,7 @@ BUILD_DIR	:= $(shell echo $(BINS_PATH) | sed 's/\ /\\ /g')
 
 $(BUILD)_OBJS	:= $(SOURCE:%.cpp=$(OBJ_DIR)/%.o)
 $(BUILD)_LIBS	:= $(LIBRARIES:%=$(LIB_DIR)/%.a)
-BUILD_NAME		:= $(BUILD_DIR)/$(PROJECT_NAME)_$(BUILD)
+BUILD_NAME		:= $(BUILD_DIR)/$(PROJECT_NAME)_$(BUILD)_odbc
 
 $(BUILD)_all: $($(BUILD)_OBJS)
 	$(CPP) -o "$(BUILD_NAME)" $($(BUILD)_OBJS) $($(BUILD)_LIBS) $(SHARED_LIBS)

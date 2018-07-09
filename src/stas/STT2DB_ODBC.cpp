@@ -12,7 +12,7 @@
 #include <sqlext.h>
 
 
-void extract_error(const char *fn, SQLHANDLE handle, SQLSMALLINT type)
+static void extract_error(const char *fn, SQLHANDLE handle, SQLSMALLINT type)
 {
     SQLINTEGER i = 0;
     SQLINTEGER NativeError;
