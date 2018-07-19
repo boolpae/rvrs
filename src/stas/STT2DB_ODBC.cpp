@@ -583,7 +583,7 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
     return ret;
 }
 
-int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v) 
+int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount) 
 {
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     int ret=0;
@@ -599,7 +599,7 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v)
     // m_Logger->debug("BEFORE STT2DB::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     if (connSet)
     {
-        sprintf(sqlbuff, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X'");
+        sprintf(sqlbuff, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X' ORDER BY reg_dttm ASC LIMIT %d", availableCount);
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 

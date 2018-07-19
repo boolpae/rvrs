@@ -50,6 +50,8 @@ public:
     int pushItem(JobInfoItem* item);//std::string line);
     JobInfoItem* popItem();//std::string& line);
 
+	int getAvailableCount();
+
 private:
 	VFCManager(int geartimeout, log4cpp::Category *logger);
 	virtual ~VFCManager();

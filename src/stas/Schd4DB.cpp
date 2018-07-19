@@ -33,7 +33,7 @@ Schd4DB* Schd4DB::instance(STT2DB *sttdb, VFCManager *vfcmgr)
     if (!m_instance) {
         m_instance = new Schd4DB(sttdb, vfcmgr);
 
-        m_instance->m_thrd = std::thread(Schd4DB::thrdFuncSchd4DB, m_instance);
+        m_instance->m_thrd = std::thread(Schd4DB::thrdFuncSchd4DB, m_instance, vfcmgr);
     }
     return m_instance;
 }
@@ -47,7 +47,7 @@ void Schd4DB::release()
 	}
 }
 
-void Schd4DB::thrdFuncSchd4DB(Schd4DB *schd)
+void Schd4DB::thrdFuncSchd4DB(Schd4DB *schd, VFCManager *vfcm)
 {
     log4cpp::Category *logger = config->getLogger();
     HAManager *ham = HAManager::getInstance();
@@ -64,7 +64,7 @@ void Schd4DB::thrdFuncSchd4DB(Schd4DB *schd)
         // 새로운 task를 VFCManager의 큐에 등록
 
         // get items from DB
-        if (schd->m_sttdb->getTaskInfo(v) > 0) {
+        if (schd->m_sttdb->getTaskInfo(v, vfcm->getAvailableCount()) > 0) {
             for( std::vector< JobInfoItem* >::iterator iter = v.begin(); iter != v.end(); iter++) {
                 item = *iter;
 

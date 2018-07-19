@@ -302,3 +302,12 @@ void VFCManager::syncWorkerVFClient()
         }
     }
 }
+
+int VFCManager::getAvailableCount()
+{
+    int aCnt=0;
+
+    aCnt = m_mWorkerTable.size() - m_qVFQue.size();
+    
+    return aCnt;
+}

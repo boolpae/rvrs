@@ -17,7 +17,7 @@ public:
 
 private:
     Schd4DB(STT2DB *sttdb, VFCManager *vfcmgr);
-    static void thrdFuncSchd4DB(Schd4DB* schd);
+    static void thrdFuncSchd4DB(Schd4DB* schd, VFCManager *vfcmgr);
     
 private:
     static Schd4DB* m_instance;

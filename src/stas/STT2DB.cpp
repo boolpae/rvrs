@@ -479,7 +479,7 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
     return ret;
 }
 
-int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v) 
+int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount) 
 {
     Connection_T con;
     int ret=0;
@@ -498,7 +498,7 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v)
             Connection_close(con);
             return -2;
         }
-        ResultSet_T r = Connection_executeQuery(con, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X'");
+        ResultSet_T r = Connection_executeQuery(con, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X' ORDER BY reg_dttm asc LIMIT %d", availableCount);
 
         while (ResultSet_next(r)) 
         {

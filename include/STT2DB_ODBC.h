@@ -84,7 +84,7 @@ public:
     int insertTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     int updateTaskInfo(std::string callid, std::string counselorcode, char state);
     int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
-    int getTaskInfo(std::vector< JobInfoItem* > &v);
+    int getTaskInfo(std::vector< JobInfoItem* > &v, int count);
 
     // void restartConnectionPool();
 
