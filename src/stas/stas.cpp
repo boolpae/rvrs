@@ -6,19 +6,19 @@
 #include "VRCManager.h"
 #include "VDCManager.h"
 #include "WorkTracer.h"
-#include "STT2File.h"
+#include "FileHandler.h"
 #include "stas.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 #include "HAManager.h"
 #include "VFCManager.h"
 #include "Notifier.h"
-#include "Schd4DB.h"
+#include "Scheduler.h"
 
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
@@ -54,9 +54,9 @@ int main(int argc, const char** argv)
 	string input;
 #endif
     log4cpp::Category *logger;
-    STT2DB* st2db=nullptr;
+    DBHandler* st2db=nullptr;
     CallReceiver* rcv=nullptr;
-    STT2File* deliver = nullptr;
+    FileHandler* deliver = nullptr;
     HAManager* ham = nullptr;
 
     int max_size = -1, max_backup = 0;
@@ -123,7 +123,7 @@ int main(int argc, const char** argv)
         logger->info("Database CharSet :  %s", config->getConfig("database.chset", "utf8").c_str());
         
 #ifndef USE_ODBC
-        st2db = STT2DB::instance(config->getConfig("database.type", "mysql"),
+        st2db = DBHandler::instance(config->getConfig("database.type", "mysql"),
                                 config->getConfig("database.addr", "localhost"),
                                 config->getConfig("database.port", "3306"),
                                 config->getConfig("database.id", "stt"),
@@ -132,12 +132,12 @@ int main(int argc, const char** argv)
                                 config->getConfig("database.chset", "utf8"),
                                 logger);
 #else
-        st2db = STT2DB::instance(config->getConfig("database.dsn", "mysql"),
+        st2db = DBHandler::instance(config->getConfig("database.dsn", "mysql"),
                                 std::stoi(config->getConfig("database.connCount", "localhost")));
 #endif
 
         if (!st2db) {
-            logger->error("MAIN - ERROR (Failed to get STT2DB instance)");
+            logger->error("MAIN - ERROR (Failed to get DBHandler instance)");
             delete config;
             return -1;
         }
@@ -153,7 +153,7 @@ int main(int argc, const char** argv)
     WorkTracer::instance()->setLogger(&tracerLog);
     
     if (!config->getConfig("stt_result.use", "false").compare("true")) {
-        deliver = STT2File::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
+        deliver = FileHandler::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
     }
 
 	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, logger, st2db, (config->getConfig("stas.savepcm", "false").find("true")==0)?true:false, config->getConfig("stas.pcmpath", "/home/stt"), config->getConfig("stas.framelen", 20));
@@ -162,7 +162,7 @@ int main(int argc, const char** argv)
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
         VDCManager::release();
-        STT2File::release();
+        FileHandler::release();
         WorkTracer::release();
         delete config;
         return -1;
@@ -175,9 +175,9 @@ int main(int argc, const char** argv)
         noti->startWork();
     }
 
-    Schd4DB *schd = nullptr;
+    Scheduler *schd = nullptr;
     if (st2db && vfcm) {
-        schd = Schd4DB::instance(st2db, vfcm);
+        schd = Scheduler::instance(st2db, vfcm);
     }
 
     if (!config->getConfig("ha.use", "false").compare("true")) {
@@ -185,7 +185,7 @@ int main(int argc, const char** argv)
         if (ham->init(config->getConfig("ha.addr", "192.168.0.1"), config->getConfig("ha.port", 7777)) < 0) {
             logger->error("MAIN - ERROR (Failed to get HAManager instance)");
             VDCManager::release();
-            STT2File::release();
+            FileHandler::release();
             WorkTracer::release();
             HAManager::release();
             delete config;
@@ -247,8 +247,8 @@ FINISH:
 	rcv->release();
 
 	WorkTracer::release();
-    STT2DB::release();
-    if (deliver) STT2File::release();
+    DBHandler::release();
+    if (deliver) FileHandler::release();
 
     delete config;
 

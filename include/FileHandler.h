@@ -20,7 +20,7 @@ class STTQueItem {
 	uint64_t m_nEpos;
 
 public:
-	STTQueItem(std::string callid, uint8_t jobtype, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos);
+	STTQueItem(std::string callid, uint8_t jobtype, uint8_t spkno, std::string& sttvalue, uint64_t bpos, uint64_t epos);
 	STTQueItem(std::string callid, uint8_t jobtype, std::string filename, std::string& sttvalue);
 	virtual ~STTQueItem();
 
@@ -33,9 +33,9 @@ public:
     uint64_t getEpos() { return m_nEpos; }
 };
 
-class STT2File
+class FileHandler
 {
-	static STT2File* ms_instance;
+	static FileHandler* ms_instance;
 	
 	bool m_bLiveFlag;
 
@@ -48,18 +48,18 @@ class STT2File
     log4cpp::Category *m_Logger;
     
 public:
-	static STT2File* instance(std::string path, log4cpp::Category *logger);
+	static FileHandler* instance(std::string path, log4cpp::Category *logger);
 	static void release();
-	static STT2File* getInstance();
+	static FileHandler* getInstance();
 
-	void insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
+	void insertSTT(std::string callid, std::string& stt, uint8_t spkNo, uint64_t bpos, uint64_t epos);		// for Realtime
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
 
 private:
-	STT2File(std::string path, log4cpp::Category *logger);
-	virtual ~STT2File();
+	FileHandler(std::string path, log4cpp::Category *logger);
+	virtual ~FileHandler();
 
-	static void thrdMain(STT2File* dlv);
+	static void thrdMain(FileHandler* dlv);
 
 	void insertSTT(STTQueItem* item);
 };

@@ -1,32 +1,34 @@
-#pragma once
+#ifndef DBHandler_H
+#define DBHandler_H
 
 #include <stdint.h>
 
 #include <string>
-#include <queue>
 #include <thread>
 #include <mutex>
+#include <queue>
 #include <vector>
 
 #include <log4cpp/Category.hh>
 
-#include <zdb.h>
-
+class ItfOdbcPool;
 
 class JobInfoItem {
     std::string m_callid;
     std::string m_counselorcode;
     std::string m_path;
     std::string m_filename;
+    bool m_rxtx;
 
     public:
-    JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename);
+    JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, bool rxtx);
     virtual ~JobInfoItem();
 
     std::string getCallId() { return m_callid; }
     std::string getCounselorCode() { return m_counselorcode; }
     std::string getPath() { return m_path; }
     std::string getFilename() {return m_filename;}
+    bool getRxTxType() { return m_rxtx; }
 };
 
 class RTSTTQueItem {
@@ -39,7 +41,7 @@ class RTSTTQueItem {
 	uint64_t m_nEpos;
 
 public:
-	RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos);
+	RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string &sttvalue, uint64_t bpos, uint64_t epos);
 	virtual ~RTSTTQueItem();
 
 	uint32_t getDiaIdx() { return m_nDiaIdx; }
@@ -50,52 +52,29 @@ public:
     uint64_t getEpos() { return m_nEpos; }
 };
 
-class STT2DB {
-private:
-    static STT2DB* m_instance;
-    
-	bool m_bLiveFlag;
+class DBHandler {
 
-	std::queue< RTSTTQueItem* > m_qRtSttQue;
-	std::thread m_thrd;
-	mutable std::mutex m_mxQue;
-	mutable std::mutex m_mxDb;
-    
-    URL_T m_url;
-    ConnectionPool_T m_pool;
-    URL_T m_ExUrl;
-    ConnectionPool_T m_ExPool;  // 외부 인터페이스 DB Pool 정의
-
-    log4cpp::Category *m_Logger;
-
-    bool m_bInterDBUse;
-    
-private:
-    STT2DB(log4cpp::Category *logger);
-	static void thrdMain(STT2DB* s2d);
-	void insertRtSTTData(RTSTTQueItem* item);
-
-    void restartConnectionPool();
-    
 public:
-    virtual ~STT2DB();
-    
-    static STT2DB* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger);
+    static DBHandler* instance(std::string dsn, int connCount);
     static void release();
-    static STT2DB* getInstance();
-    
-    void setLogger(log4cpp::Category *logger) { m_Logger = logger; }
-    
+    static DBHandler* getInstance();
+
+    virtual ~DBHandler();
+
+    void setDsn(const std::string dsn);
+    void setConnectionCount(int cnt);
+
     // for Realtime Call Siganl
     // VRClient에서 사용되는 api이며 실시간 통화 시작 및 종료 시 사용된다.
     int searchCallInfo(std::string counselorcode);
     int insertCallInfo(std::string counselorcode, std::string callid);
     int updateCallInfo(std::string callid, bool end=false);
     int updateCallInfo(std::string counselorcode, std::string callid, bool end=false);
-    void insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt);
+    void insertSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string &stt);
     
+    int insertFullSttData(std::string callid, std::string &stt);
     // for batch
-    // Schd4DB 모듈에서 사용되는 api
+    // Scheduler 모듈에서 사용되는 api
     // 처리할 task가 등록되었는지 확인(search)하고
     // 신규 task에 대해 VFClient가 처리할 수 있도록 전달(get) 후 처리된 task에 대해서는 삭제(delete)한다.
     void insertBatchTask();
@@ -110,6 +89,36 @@ public:
     int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     int getTaskInfo(std::vector< JobInfoItem* > &v, int count);
 
-    void setInterDBEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset);
+    // void restartConnectionPool();
+
+    // API for Interface DB
+    void setInterDBEnable(std::string dsn, int conCount);
     void setInterDBDisable();
+
+private:
+    DBHandler(std::string dsn, int connCount);
+	static void thrdMain(DBHandler* s2d);
+	void insertSTTData(RTSTTQueItem* item);
+
+private:
+    std::string m_sDsn;
+    int m_nConnCount;
+
+	bool m_bLiveFlag;
+    bool m_bInterDBUse;
+
+	std::queue< RTSTTQueItem* > m_qRtSttQue;
+	std::thread m_thrd;
+	mutable std::mutex m_mxQue;
+	mutable std::mutex m_mxDb;
+    log4cpp::Category *m_Logger;
+
+    ItfOdbcPool *m_pSolDBConnPool;
+    ItfOdbcPool *m_pInterDBConnPool;
+
+    static DBHandler* m_instance;
+
 };
+
+
+#endif // DBHandler_H

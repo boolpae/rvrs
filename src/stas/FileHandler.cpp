@@ -1,6 +1,6 @@
 
 
-#include "STT2File.h"
+#include "FileHandler.h"
 
 #include <thread>
 #include <iostream>
@@ -10,21 +10,21 @@
 #include <string.h>
 #include <unistd.h>
 
-STT2File* STT2File::ms_instance = NULL;
+FileHandler* FileHandler::ms_instance = NULL;
 
-STT2File::STT2File(std::string path, log4cpp::Category *logger)
+FileHandler::FileHandler(std::string path, log4cpp::Category *logger)
 	: m_bLiveFlag(true), m_sResultPath(path), m_Logger(logger)
 {
-	m_Logger->debug("STT2File Constructed.");
+	m_Logger->debug("FileHandler Constructed.");
 }
 
 
-STT2File::~STT2File()
+FileHandler::~FileHandler()
 {
-	m_Logger->debug("STT2File Destructed.");
+	m_Logger->debug("FileHandler Destructed.");
 }
 
-void STT2File::thrdMain(STT2File * dlv)
+void FileHandler::thrdMain(FileHandler * dlv)
 {
 	std::lock_guard<std::mutex> *g;// (m_mxQue);
 	STTQueItem* item;
@@ -111,23 +111,23 @@ void STT2File::thrdMain(STT2File * dlv)
 
 // desc:	spkNo의 값이 0인 경우 실시간 STT 결과값이 아님(이 경우 jobtype의 값도 'F' 이어야 함)
 //			실시간 STT 결과인 경우 jobtype : 'R' 이며 spkNo의 값도 1 이상의 값이어야 함
-void STT2File::insertSTT(std::string callid, std::string stt, uint8_t spkNo, uint64_t bpos, uint64_t epos)
+void FileHandler::insertSTT(std::string callid, std::string& stt, uint8_t spkNo, uint64_t bpos, uint64_t epos)
 {
 	insertSTT(new STTQueItem(callid, uint8_t('R'), spkNo, stt, bpos, epos));
 }
 
-void STT2File::insertSTT(std::string callid, std::string& stt, std::string filename)
+void FileHandler::insertSTT(std::string callid, std::string& stt, std::string filename)
 {
 	insertSTT(new STTQueItem(callid, uint8_t('F'), filename, stt));
 }
 
-void STT2File::insertSTT(STTQueItem * item)
+void FileHandler::insertSTT(STTQueItem * item)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
 	m_qSttQue.push(item);
 }
 
-STT2File* STT2File::instance(std::string path, log4cpp::Category *logger)
+FileHandler* FileHandler::instance(std::string path, log4cpp::Category *logger)
 {
 	if (ms_instance) return ms_instance;
     
@@ -137,25 +137,25 @@ STT2File* STT2File::instance(std::string path, log4cpp::Category *logger)
         std::system(cmd.c_str());
         
         if ( ::access(path.c_str(), 0) ) {
-            logger->error("STT2File::instance - failed create path : %s", path.c_str());
+            logger->error("FileHandler::instance - failed create path : %s", path.c_str());
             return nullptr;
         }
     }
 
-	ms_instance = new STT2File(path, logger);
+	ms_instance = new FileHandler(path, logger);
 
-	ms_instance->m_thrd = std::thread(STT2File::thrdMain, ms_instance);
+	ms_instance->m_thrd = std::thread(FileHandler::thrdMain, ms_instance);
 
 	return ms_instance;
 }
 
-STT2File* STT2File::getInstance()
+FileHandler* FileHandler::getInstance()
 {
     if(ms_instance) return ms_instance;
     return nullptr;
 }
 
-void STT2File::release()
+void FileHandler::release()
 {
 	ms_instance->m_bLiveFlag = false;
 
@@ -165,7 +165,7 @@ void STT2File::release()
 	ms_instance = NULL;
 }
 
-STTQueItem::STTQueItem(std::string callid, uint8_t jobtype, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)
+STTQueItem::STTQueItem(std::string callid, uint8_t jobtype, uint8_t spkno, std::string& sttvalue, uint64_t bpos, uint64_t epos)
 	:m_sCallId(callid), m_cJobType(jobtype), m_nSpkNo(spkno), m_sFilename(""), m_sSTTValue(sttvalue), m_nBpos(bpos), m_nEpos(epos)
 {
 }

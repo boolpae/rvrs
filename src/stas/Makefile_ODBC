@@ -8,7 +8,7 @@ endif
 
 ###############################################################################
 SOURCE			:= CallExecutor.cpp \
-				Schd4DB.cpp \
+				Scheduler.cpp \
 				VFClient.cpp \
 				stas.cpp \
 				CallReceiver.cpp \
@@ -17,18 +17,19 @@ SOURCE			:= CallExecutor.cpp \
 				VRCManager.cpp \
 				CallSignal.cpp \
 				ItfOdbcPool.cpp \
-				STT2DB_ODBC.cpp \
+				DBHandler_ODBC.cpp \
 				VDClient.cpp \
 				VRClient.cpp \
 				HAManager.cpp \
-				STT2File.cpp \
+				FileHandler.cpp \
 				VFCManager.cpp \
 				WorkTracer.cpp \
-				VASDivSpeaker.cpp
+				VASDivSpeaker.cpp \
+				DivSpkManager.cpp
 #SOURCE			+= v1/restapi_v1.cc v1/servers.cc v1/waves.cc
 #INCLUDE_PATH	:= $(PRJ_HOME)/include/dnn
 INCLUDE_PATH	:= /usr/local/include
-INCLUDE_PATH	+= /usr/local/include/zdb
+#INCLUDE_PATH	+= /usr/local/include/zdb
 LIBRARIES		:= ${DIST}/itf_common
 #LIBRARIES		+= dnn/libsplproc dnn/libfrontend dnn/libmsearch dnn/libasearch
 #LIBRARIES		+= dnn/libbase dnn/liblsearch dnn/liblaserdnn2 dnn/libdnnapi dnn/libdnn.gpu

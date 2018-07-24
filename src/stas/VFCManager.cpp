@@ -13,9 +13,9 @@
 #include "stas.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 using namespace std;

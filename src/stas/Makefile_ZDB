@@ -8,7 +8,7 @@ endif
 
 ###############################################################################
 SOURCE			:= CallExecutor.cpp \
-				Schd4DB.cpp \
+				Scheduler.cpp \
 				VFClient.cpp \
 				stas.cpp \
 				CallReceiver.cpp \
@@ -16,11 +16,11 @@ SOURCE			:= CallExecutor.cpp \
 				VDCManager.cpp \
 				VRCManager.cpp \
 				CallSignal.cpp \
-				STT2DB.cpp \
+				DBHandler.cpp \
 				VDClient.cpp \
 				VRClient.cpp \
 				HAManager.cpp \
-				STT2File.cpp \
+				FileHandler.cpp \
 				VFCManager.cpp \
 				WorkTracer.cpp \
 				VASDivSpeaker.cpp

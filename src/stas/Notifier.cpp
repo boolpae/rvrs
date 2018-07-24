@@ -4,9 +4,9 @@
 #include "VFCManager.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 #include "HAManager.h"
@@ -34,8 +34,8 @@ Notifier* Notifier::m_instance = nullptr;
 
 
 
-Notifier::Notifier(VFCManager *vfcm, STT2DB *stt2db)
-: m_vfcm(vfcm), m_stt2db(stt2db), m_LiveFlag(true)
+Notifier::Notifier(VFCManager *vfcm, DBHandler *DBHandler)
+: m_vfcm(vfcm), m_DBHandler(DBHandler), m_LiveFlag(true)
 {
     
 }
@@ -45,10 +45,10 @@ Notifier::~Notifier()
     if (m_thrdNoti.joinable()) m_thrdNoti.join();
 }
 
-Notifier* Notifier::instance(VFCManager *vfcm, STT2DB *stt2db)
+Notifier* Notifier::instance(VFCManager *vfcm, DBHandler *DBHandler)
 {
     if (!m_instance) {
-        m_instance = new Notifier(vfcm, stt2db);
+        m_instance = new Notifier(vfcm, DBHandler);
     }
     
     return m_instance;
@@ -169,8 +169,8 @@ void Notifier::thrdFunc(Notifier *noti)
                             if (config->getConfig("notify.index_type").compare("filename") == 0) {
 
                                 // download path, uri, filename, call_id에 대한 좀 더 명확한 정의가 필요하다.
-                                if (noti->m_stt2db->searchTaskInfo(downpath, *filename.get(), std::string(""))) continue;
-                                noti->m_stt2db->insertTaskInfo(downpath, *filename.get(), std::string(""));
+                                if (noti->m_DBHandler->searchTaskInfo(downpath, *filename.get(), std::string(""))) continue;
+                                noti->m_DBHandler->insertTaskInfo(downpath, *filename.get(), std::string(""));
 #if 0 // 임시코드
                                 noti->m_vfcm->pushItem(*path.get()+"/"+*filename.get());
                                 logger->debug("Line (%s)", std::string(*path.get()+"/"+*filename.get()).c_str());
@@ -188,12 +188,12 @@ void Notifier::thrdFunc(Notifier *noti)
                                         boost::split(v, line, boost::is_any_of(",  \t"), boost::token_compress_on);
 
                                         if (v.size() > 1) {
-                                            if (!noti->m_stt2db->searchTaskInfo(downpath, v[0], v[1])) 
-                                                noti->m_stt2db->insertTaskInfo(downpath, v[0], v[1]);
+                                            if (!noti->m_DBHandler->searchTaskInfo(downpath, v[0], v[1])) 
+                                                noti->m_DBHandler->insertTaskInfo(downpath, v[0], v[1]);
                                         }
                                         else {
-                                            if (!noti->m_stt2db->searchTaskInfo(downpath, v[0], v[0])) 
-                                                noti->m_stt2db->insertTaskInfo(downpath, v[0], v[0]);
+                                            if (!noti->m_DBHandler->searchTaskInfo(downpath, v[0], v[0])) 
+                                                noti->m_DBHandler->insertTaskInfo(downpath, v[0], v[0]);
                                         }
 #if 0 // 임시코드
                                         noti->m_vfcm->pushItem(line);

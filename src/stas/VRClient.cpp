@@ -2,12 +2,12 @@
 #include "VRClient.h"
 #include "VRCManager.h"
 #include "WorkTracer.h"
-#include "STT2File.h"
+#include "FileHandler.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 #include "HAManager.h"
@@ -100,7 +100,7 @@ typedef struct
 
 #endif // FAD_FUNC
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
 	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
 {
 	m_Mgr = mgr;
@@ -367,17 +367,18 @@ void VRClient::thrdMain(VRClient* client) {
                             {
                                 // Make use of value
                                 if (value) {
+                                    std::string modValue = boost::replace_all_copy(std::string((const char*)value), "\n", " ");
                                     // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                                     //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                                     // to DB
                                     if (client->m_s2d) {
-                                        client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], boost::replace_all_copy(std::string((const char*)value), "\n", " "));
+                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
                                     }
                                     //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                                     // to STTDeliver(file)
                                     if (client->m_deliver) {
-                                        client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)value), "\n", " "), item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
+                                        client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
                                     }
 
                                     free(value);
@@ -447,14 +448,16 @@ void VRClient::thrdMain(VRClient* client) {
                         //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                         if ((!sttIdx || (sttIdx < dstLen)) && strlen(dstBuff+sttIdx)) {
+                            std::string modValue = boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " ");
+
                             // to DB
                             if (client->m_s2d) {
-                                client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " "));
+                                client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, modValue/*boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " ")*/);
                             }
-                            //STT2File::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                            // to STT2File(file)
+                            //FileHandler::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            // to FileHandler(file)
                             if (client->m_deliver) {
-                                client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " "), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
+                                client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)dstBuff+sttIdx), "\n", " ")*/, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                             }
                             
                         }
@@ -465,10 +468,10 @@ void VRClient::thrdMain(VRClient* client) {
 #else
                         // to DB
                         if (client->m_s2d) {
-                            client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
+                            client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160, std::string((const char*)value));
                         }
-                        //STT2File::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                        // to STT2File(file)
+                        //FileHandler::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                        // to FileHandler(file)
                         if (client->m_deliver) {
                             client->m_deliver->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, pEndpos ? start : vPos[item->spkNo -1].bpos/160, pEndpos ? end : vPos[item->spkNo -1].epos/160);
                         }
@@ -510,16 +513,17 @@ void VRClient::thrdMain(VRClient* client) {
                     {
                         // Make use of value
                         if (value) {
+                                std::string modValue = boost::replace_all_copy(std::string((const char*)value), "\n", " ");
                             // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                             //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                                 if (client->m_s2d) {
-                                    client->m_s2d->insertRtSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], boost::replace_all_copy(std::string((const char*)value), "\n", " "));
+                                    client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
                                 }
                                 //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                                 // to STTDeliver(file)
                                 if (client->m_deliver) {
-                                    client->m_deliver->insertSTT(client->m_sCallId, boost::replace_all_copy(std::string((const char*)value), "\n", " "), item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
+                                    client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
                                 }
 
                                 free(value);

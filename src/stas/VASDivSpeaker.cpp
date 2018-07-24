@@ -3,12 +3,12 @@
 #include "VASDivSpeaker.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
-#include "STT2File.h"
+#include "FileHandler.h"
 
 #include <vector>
 #include <boost/algorithm/string.hpp>
@@ -19,7 +19,7 @@ typedef struct _stt_result {
 	std::string text;
 } STTResult;
 
-VASDivSpeaker::VASDivSpeaker(STT2DB *db, STT2File *file, JobInfoItem *item)
+VASDivSpeaker::VASDivSpeaker(DBHandler *db, FileHandler *file, JobInfoItem *item)
 : m_hDB(db), m_hFile(file), m_jobItem(item)
 {
 

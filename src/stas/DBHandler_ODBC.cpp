@@ -1,5 +1,5 @@
 
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 
 #include "ItfOdbcPool.h"
 #include "stas.h"
@@ -35,18 +35,18 @@ static void extract_error(const char *fn, SQLHANDLE handle, SQLSMALLINT type)
     while( ret == SQL_SUCCESS );
 }
 
-STT2DB* STT2DB::m_instance = nullptr;
+DBHandler* DBHandler::m_instance = nullptr;
 
-STT2DB::STT2DB(std::string dsn,int connCount)
+DBHandler::DBHandler(std::string dsn,int connCount)
 : m_sDsn(dsn), m_nConnCount(connCount), m_bLiveFlag(true), m_bInterDBUse(false)
 {
     m_Logger = config->getLogger();
     m_pSolDBConnPool = nullptr;
     m_pInterDBConnPool = nullptr;
-	m_Logger->debug("STT2DB Constructed.\n");
+	m_Logger->debug("DBHandler Constructed.\n");
 }
 
-STT2DB::~STT2DB()
+DBHandler::~DBHandler()
 {
     m_bLiveFlag = false;
     while(!m_bLiveFlag) {
@@ -63,11 +63,11 @@ STT2DB::~STT2DB()
 
     if (m_thrd.joinable()) m_thrd.detach();
 
-    STT2DB::m_instance = nullptr;
-	m_Logger->debug("STT2DB Destructed.\n");
+    DBHandler::m_instance = nullptr;
+	m_Logger->debug("DBHandler Destructed.\n");
 }
 
-void STT2DB::thrdMain(STT2DB * s2d)
+void DBHandler::thrdMain(DBHandler * s2d)
 {
 	std::lock_guard<std::mutex> *g;
 	RTSTTQueItem* item;
@@ -217,7 +217,7 @@ void STT2DB::thrdMain(STT2DB * s2d)
 
             if (retcode < 0) {
                 extract_error("SQLExecute()", connSet->stmt, SQL_HANDLE_STMT);
-                //s2d->m_Logger->error("STT2DB::insertCallInfo - SQLException -- %s", Exception_frame.message);
+                //s2d->m_Logger->error("DBHandler::insertCallInfo - SQLException -- %s", Exception_frame.message);
                 connSet = s2d->m_pSolDBConnPool->reconnectConnection(connSet);
 
                 if (connSet) {
@@ -239,11 +239,11 @@ void STT2DB::thrdMain(STT2DB * s2d)
 
                 }
                 else {
-                    if (STT2DB::getInstance() && connSet)
+                    if (DBHandler::getInstance() && connSet)
                         s2d->m_pSolDBConnPool->restoreConnection(connSet);
 
                     s2d->m_bLiveFlag = true;
-                    logger->error("STT2DB::thrdMain() finish! - for SQLExecute ERROR\n");
+                    logger->error("DBHandler::thrdMain() finish! - for SQLExecute ERROR\n");
                     return;
                 }
             }
@@ -252,31 +252,31 @@ void STT2DB::thrdMain(STT2DB * s2d)
 			delete item;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        //printf("STT2DB::thrdMain()\n");
+        //printf("DBHandler::thrdMain()\n");
 	}
 
-    if (STT2DB::getInstance() && connSet)
+    if (DBHandler::getInstance() && connSet)
         s2d->m_pSolDBConnPool->restoreConnection(connSet);
 
     s2d->m_bLiveFlag = true;
-    logger->debug("STT2DB::thrdMain() finish!\n");
+    logger->debug("DBHandler::thrdMain() finish!\n");
 }
 
-STT2DB* STT2DB::instance(std::string dsn, int connCount=10)
+DBHandler* DBHandler::instance(std::string dsn, int connCount=10)
 {
     if (m_instance) return m_instance;
     
-    m_instance = new STT2DB(dsn, connCount);
+    m_instance = new DBHandler(dsn, connCount);
     
     m_instance->m_pSolDBConnPool = new ItfOdbcPool(dsn.c_str());
     
     if (m_instance->m_pSolDBConnPool->createConnections(connCount))
     {
-        m_instance->m_thrd = std::thread(STT2DB::thrdMain, m_instance);
+        m_instance->m_thrd = std::thread(DBHandler::thrdMain, m_instance);
     }
     else
     {
-        config->getLogger()->error("STT2DB::instance - error: cant't get connection\n");
+        config->getLogger()->error("DBHandler::instance - error: cant't get connection\n");
         
         delete m_instance;
         m_instance = nullptr;
@@ -285,14 +285,14 @@ STT2DB* STT2DB::instance(std::string dsn, int connCount=10)
     return m_instance;
 }
 
-void STT2DB::release()
+void DBHandler::release()
 {
     if (m_instance) {
         delete m_instance;
     }
 }
 
-STT2DB* STT2DB::getInstance()
+DBHandler* DBHandler::getInstance()
 {
     if (m_instance) {
         return m_instance;
@@ -300,7 +300,7 @@ STT2DB* STT2DB::getInstance()
     return nullptr;
 }
 
-int STT2DB::searchCallInfo(std::string counselorcode)
+int DBHandler::searchCallInfo(std::string counselorcode)
 {
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     int ret=0;
@@ -324,14 +324,14 @@ int STT2DB::searchCallInfo(std::string counselorcode)
     else
     {
         // error
-        m_Logger->error("STT2DB::searchCallInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::searchCallInfo - can't get connection from pool");
         ret = -1;
     }
 
     return ret;
 }
 
-int STT2DB::insertCallInfo(std::string counselorcode, std::string callid)
+int DBHandler::insertCallInfo(std::string counselorcode, std::string callid)
 {
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     char sqlbuff[512];
@@ -346,24 +346,24 @@ int STT2DB::insertCallInfo(std::string counselorcode, std::string callid)
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
         if SQL_SUCCEEDED(retcode) {
-            m_Logger->debug("STT2DB::insertCallInfo - SQL[INSERT INTO CS_LIST (counselor_code,call_id,reg_dttm) VALUES ('%s','%s',now())]", counselorcode.c_str(), callid.c_str());
+            m_Logger->debug("DBHandler::insertCallInfo - SQL[INSERT INTO CS_LIST (counselor_code,call_id,reg_dttm) VALUES ('%s','%s',now())]", counselorcode.c_str(), callid.c_str());
         }
         else {
-            extract_error("STT2DB::insertCallInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::insertCallInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = 1;
         }
         m_pSolDBConnPool->restoreConnection(connSet);
     }
     else
     {
-        m_Logger->error("STT2DB::insertCallInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::insertCallInfo - can't get connection from pool");
         ret = -1;
     }
 
     return ret;
 }
 
-int STT2DB::updateCallInfo(std::string callid, bool end)
+int DBHandler::updateCallInfo(std::string callid, bool end)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -389,7 +389,7 @@ int STT2DB::updateCallInfo(std::string callid, bool end)
                 (end)?'E':'I', callid.c_str());
         }
         else {
-            extract_error("STT2DB::updateCallInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::updateCallInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = 1;
         }
 
@@ -397,14 +397,14 @@ int STT2DB::updateCallInfo(std::string callid, bool end)
     }
     else
     {
-        m_Logger->error("STT2DB::updateCallInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::updateCallInfo - can't get connection from pool");
         ret = -1;
     }
 
     return ret;
 }
 
-int STT2DB::updateCallInfo(std::string counselorcode, std::string callid, bool end)
+int DBHandler::updateCallInfo(std::string counselorcode, std::string callid, bool end)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -417,21 +417,21 @@ int STT2DB::updateCallInfo(std::string counselorcode, std::string callid, bool e
         if (!end) {
             sprintf(sqlbuff, "UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s'",
             callid.c_str(), counselorcode.c_str());
-            //m_Logger->debug("STT2DB::updateCallInfo - SQL[UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
+            //m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
         }
         else {
             sprintf(sqlbuff, "UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s'",
             callid.c_str(), counselorcode.c_str());
-             //m_Logger->debug("STT2DB::updateCallInfo - SQL[UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
+             //m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
         if SQL_SUCCEEDED(retcode) {
-            m_Logger->debug("STT2DB::updateCallInfo - SQL[UPDATE CS_LIST SET status='%c', call_id='%s' WHERE counselor_code='%s']", (end)?'E':'I', callid.c_str(), counselorcode.c_str());
+            m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE CS_LIST SET status='%c', call_id='%s' WHERE counselor_code='%s']", (end)?'E':'I', callid.c_str(), counselorcode.c_str());
         }
         else {
-            extract_error("STT2DB::updateCallInfo(2) - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::updateCallInfo(2) - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = 1;
         }
 
@@ -439,30 +439,35 @@ int STT2DB::updateCallInfo(std::string counselorcode, std::string callid, bool e
     }
     else
     {
-        m_Logger->error("STT2DB::updateCallInfo(2) - can't get connection from pool");
+        m_Logger->error("DBHandler::updateCallInfo(2) - can't get connection from pool");
         ret = -1;
     }
 
     return ret;
 }
 
-void STT2DB::insertRtSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string stt)
+void DBHandler::insertSTTData(uint32_t idx, std::string callid, uint8_t spkno, uint64_t spos, uint64_t epos, std::string &stt)
 {
-	insertRtSTTData(new RTSTTQueItem(idx, callid, spkno, stt, spos, epos));
+	insertSTTData(new RTSTTQueItem(idx, callid, spkno, stt, spos, epos));
 }
 
-void STT2DB::insertRtSTTData(RTSTTQueItem * item)
+void DBHandler::insertSTTData(RTSTTQueItem * item)
 {
 	std::lock_guard<std::mutex> g(m_mxQue);
 	m_qRtSttQue.push(item);
 }
 
-void STT2DB::insertBatchTask()
+int DBHandler::insertFullSttData(std::string callid, std::string &stt)
+{
+    return 0;
+}
+
+void DBHandler::insertBatchTask()
 {
     // insert
 }
 
-int STT2DB::getBatchTask()
+int DBHandler::getBatchTask()
 {
 	std::lock_guard<std::mutex> g(m_mxDb);
     
@@ -471,14 +476,14 @@ int STT2DB::getBatchTask()
     return 0;
 }
 
-void STT2DB::deleteBatchTask()
+void DBHandler::deleteBatchTask()
 {
     // delete
 }
 
 // VFCLient모듈에서 사용되는 api로서 해당 task를 작업하기 직전 DB에 task 정보를 등록할 때 사용
 // args: call_id, counselor_code etc
-int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::string callId)
+int DBHandler::insertTaskInfo(std::string downloadPath, std::string filename, std::string callId)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -498,7 +503,7 @@ int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::
                 callId.c_str(), downloadPath.c_str(), filename.c_str());
         }
         else {
-            extract_error("STT2DB::insertTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::insertTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = 1;
         }
 
@@ -506,7 +511,7 @@ int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::
     }
     else
     {
-        m_Logger->error("STT2DB::insertTaskInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::insertTaskInfo - can't get connection from pool");
         ret = -1;
     }
 
@@ -515,7 +520,7 @@ int STT2DB::insertTaskInfo(std::string downloadPath, std::string filename, std::
 
 // VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
 // args: call_id, counselor_code, task_stat etc
-int STT2DB::updateTaskInfo(std::string callid, std::string counselorcode, char state)
+int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, char state)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -531,10 +536,10 @@ int STT2DB::updateTaskInfo(std::string callid, std::string counselorcode, char s
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
         if SQL_SUCCEEDED(retcode) {
-            m_Logger->debug("STT2DB::updateTaskInfo() - Query<%s>", sqlbuff);
+            m_Logger->debug("DBHandler::updateTaskInfo() - Query<%s>", sqlbuff);
         }
         else {
-            extract_error("STT2DB::updateTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::updateTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = 1;
         }
 
@@ -542,7 +547,7 @@ int STT2DB::updateTaskInfo(std::string callid, std::string counselorcode, char s
     }
     else
     {
-        m_Logger->error("STT2DB::updateTaskInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::updateTaskInfo - can't get connection from pool");
         ret = -1;
     }
 
@@ -551,7 +556,7 @@ int STT2DB::updateTaskInfo(std::string callid, std::string counselorcode, char s
 
 // VFClient모듈에서 사용되는 api로서 해당 task에 대해 이전에 작업한 내용인지 아닌지 확인하기 위해 사용
 // args: call_id, counselor_code etc
-int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::string callId)
+int DBHandler::searchTaskInfo(std::string downloadPath, std::string filename, std::string callId)
 {
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     int ret=0;
@@ -576,14 +581,14 @@ int STT2DB::searchTaskInfo(std::string downloadPath, std::string filename, std::
     }
     else
     {
-        m_Logger->error("STT2DB::searchTaskInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::searchTaskInfo - can't get connection from pool");
         ret = -1;
     }
 
     return ret;
 }
 
-int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount) 
+int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount) 
 {
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     int ret=0;
@@ -594,9 +599,10 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
     int counselorcode;
     char path[500];
     char filename[256];
-    int siCallId, siCCode, siPath, siFilename;
+    bool rxtx=false;
+    int siCallId, siCCode, siPath, siFilename, siRxtx;
 
-    // m_Logger->debug("BEFORE STT2DB::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+    // m_Logger->debug("BEFORE DBHandler::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     if (connSet)
     {
         sprintf(sqlbuff, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X' ORDER BY reg_dttm ASC LIMIT %d", availableCount);
@@ -614,13 +620,14 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
                 SQLGetData(connSet->stmt, 2, SQL_C_SLONG, &counselorcode, 0, (SQLLEN *)&siCCode);
                 SQLGetData(connSet->stmt, 3, SQL_C_CHAR, path, 500, (SQLLEN *)&siPath);
                 SQLGetData(connSet->stmt, 4, SQL_C_CHAR, filename, 255, (SQLLEN *)&siFilename);
+                //SQLGetData(connSet->stmt, 5, SQL_C_SHORT, &rxtx, 0, (SQLLEN *)&siRxtx);
 
-                JobInfoItem *item = new JobInfoItem(std::string(callid), std::to_string(counselorcode), std::string(path), std::string(filename));
+                JobInfoItem *item = new JobInfoItem(std::string(callid), std::to_string(counselorcode), std::string(path), std::string(filename), rxtx);
                 v.push_back(item);
             }
         }
         else if (retcode < 0) {
-            extract_error("STT2DB::getTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::getTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = retcode;
         }
 
@@ -630,14 +637,14 @@ int STT2DB::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
     }
     else
     {
-        m_Logger->error("STT2DB::getTaskInfo - can't get connection from pool");
+        m_Logger->error("DBHandler::getTaskInfo - can't get connection from pool");
         ret = -1;
     }
 
     return ret;
 }
 
-void STT2DB::setInterDBEnable(std::string dsn, int connCount=10)
+void DBHandler::setInterDBEnable(std::string dsn, int connCount=10)
 {
     if (m_bInterDBUse) return;
     
@@ -649,7 +656,7 @@ void STT2DB::setInterDBEnable(std::string dsn, int connCount=10)
     }
     else
     {
-        m_Logger->error("STT2DB::setInterDBEnable - failed to create InterDB ConnectionPool");
+        m_Logger->error("DBHandler::setInterDBEnable - failed to create InterDB ConnectionPool");
         
         delete m_pInterDBConnPool;
         
@@ -657,7 +664,7 @@ void STT2DB::setInterDBEnable(std::string dsn, int connCount=10)
 
 }
 
-void STT2DB::setInterDBDisable()
+void DBHandler::setInterDBDisable()
 {
     if (m_bInterDBUse) {
         delete m_pInterDBConnPool;
@@ -666,7 +673,7 @@ void STT2DB::setInterDBDisable()
     }
 }
 
-RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string sttvalue, uint64_t bpos, uint64_t epos)
+RTSTTQueItem::RTSTTQueItem(uint32_t idx, std::string callid, uint8_t spkno, std::string &sttvalue, uint64_t bpos, uint64_t epos)
 	:m_nDiaIdx(idx), m_sCallId(callid), m_nSpkNo(spkno), m_sSTTValue(sttvalue), m_nBpos(bpos), m_nEpos(epos)
 {
 }
@@ -675,8 +682,8 @@ RTSTTQueItem::~RTSTTQueItem()
 {
 }
 
-JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename)
-: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename)
+JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, bool rxtx=false)
+: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename), m_rxtx(rxtx)
 {
 
 }

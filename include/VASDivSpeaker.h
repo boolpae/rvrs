@@ -5,18 +5,18 @@
 
 #include <libgearman/gearman.h>
 
-class STT2DB;
-class STT2File;
+class DBHandler;
+class FileHandler;
 class JobInfoItem;
 
 class VASDivSpeaker {
 private:
-    STT2DB *m_hDB;
-    STT2File *m_hFile;
+    DBHandler *m_hDB;
+    FileHandler *m_hFile;
     JobInfoItem *m_jobItem;
 
 public:
-    VASDivSpeaker(STT2DB *db, STT2File *file, JobInfoItem *item);
+    VASDivSpeaker(DBHandler *db, FileHandler *file, JobInfoItem *item);
     virtual ~VASDivSpeaker();
 
     int startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);

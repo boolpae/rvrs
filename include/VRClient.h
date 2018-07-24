@@ -11,8 +11,8 @@
 using namespace std;
 
 class VRCManager;
-class STT2File;
-class STT2DB;
+class FileHandler;
+class DBHandler;
 
 typedef struct _queItem {
 	uint8_t flag;	// 통화 시작: 2, 과 통화 중: 1, 마지막 데이터 또는 통화 종료: 0
@@ -38,9 +38,9 @@ class VRClient
 	std::thread m_thrd;
 	mutable std::mutex m_mxQue;
     
-    STT2File *m_deliver;
+    FileHandler *m_deliver;
     log4cpp::Category *m_Logger;
-    STT2DB* m_s2d;
+    DBHandler* m_s2d;
     
     bool m_is_save_pcm;
     string m_pcm_path;
@@ -50,7 +50,7 @@ class VRClient
 public:
 
 public:
-	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	void finish();
 
 	string& getFname() { return m_sFname; }

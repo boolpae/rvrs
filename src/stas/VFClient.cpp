@@ -2,14 +2,15 @@
 #include "stas.h"
 #include "VFClient.h"
 #include "VFCManager.h"
+#include "DivSpkManager.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
-#include "STT2File.h"
+#include "FileHandler.h"
 #include "VASDivSpeaker.h"
 
 #include <thread>
@@ -54,12 +55,12 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
     JobInfoItem* item;
     
-    STT2DB *stt2db = STT2DB::getInstance();
-    STT2File *stt2file = STT2File::getInstance();
+    DBHandler *DBHandler = DBHandler::getInstance();
+    FileHandler *FileHandler = FileHandler::getInstance();
     log4cpp::Category *logger = config->getLogger();
 
-    if (!stt2db) {
-        logger->error("VFClient::thrdFunc(%ld) - Failed to get STT2DB instance", client->m_nNumId);
+    if (!DBHandler) {
+        logger->error("VFClient::thrdFunc(%ld) - Failed to get DBHandler instance", client->m_nNumId);
         return;
     }
 
@@ -163,15 +164,15 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
 
                                 // to DB
-                                if (stt2db) {
+                                if (DBHandler) {
                                     diaNumber++;
-                                    stt2db->insertRtSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                    DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
                                 }
 
                                 // to STTDeliver(file), FullText
-                                if (stt2file) {
-                                    //stt2file->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
-                                    stt2file->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                if (FileHandler) {
+                                    //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                    FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
                                 }
                             }
 #endif
@@ -179,29 +180,56 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
                             // # 화자 분리
                             if (sFuncName.size()) {
-                                VASDivSpeaker divspk(stt2db, stt2file, item);
+                                VASDivSpeaker divspk(DBHandler, FileHandler, item);
 
                                 //startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
                                 divspk.startWork(gearClient, sFuncName, strValue);
                             }
+                            else if (item->getRxTxType()){
+                                // 
+                                DivSpkManager *pDSM = DivSpkManager::instance();
+
+                                pDSM->doDivSpeaker(item->getCallId(), strValue);
+                            }
+                            else {
+                                while(std::getline(iss, line)) {
+                                    boost::split(strs, line, boost::is_any_of(","));
+                                    //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+
+                                    // to DB
+                                    if (DBHandler) {
+                                        diaNumber++;
+                                        DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                    }
+
+                                    // to STTDeliver(file), FullText
+                                    if (FileHandler) {
+                                        //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                        FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                    }
+                                }
+                            }
+
+                            // DBHandler에서 처리할 수 있도록... VRClient와 동일하게?
+                            // 그럼... 전체 STT결과 처리는?
 
                         }
-                        stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
                     }
                     else if (gearman_failed(rc)) {
                         logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                        stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
                     }
 
                 }
                 else {
                     logger->info("VFClient::thrdFunc(%ld) - Success to get gearman(vr_stt) but empty result.  [%s : %s]", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str());
-                    stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                    DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
                 }
             }
             else if (gearman_failed(rc)) {
                 logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                stt2db->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
             }
 #endif
             delete item;

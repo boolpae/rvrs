@@ -23,9 +23,9 @@
 #include "VRCManager.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 #include "HAManager.h"
@@ -34,7 +34,7 @@
 
 CallReceiver* CallReceiver::m_instance = NULL;
 
-CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, STT2DB* st2db, HAManager *ham)
+CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham)
 	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_st2db(st2db), m_ham(ham)
 {
 	//printf("\t[DEBUG] CallReceiver Constructed.\n");
@@ -50,7 +50,7 @@ CallReceiver::~CallReceiver()
     m_Logger->debug("CallReceiver Destructed.");
 }
 
-CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, STT2DB* st2db, HAManager *ham)
+CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham)
 {
 	if (m_instance) return m_instance;
 

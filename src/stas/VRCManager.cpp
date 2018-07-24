@@ -1,12 +1,12 @@
 
 #include "VRCManager.h"
 #include "VRClient.h"
-#include "STT2File.h"
+#include "FileHandler.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 #include <vector>
@@ -27,7 +27,7 @@ using namespace std;
 
 VRCManager* VRCManager::ms_instance = NULL;
 
-VRCManager::VRCManager(int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
+VRCManager::VRCManager(int geartimeout, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
 	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_deliver(deliver), m_Logger(logger), m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path)
 {
 	//printf("\t[DEBUG] VRCManager Constructed.\n");
@@ -190,7 +190,7 @@ void VRCManager::getFnamesFromString(std::string & gearResult, std::vector<std::
 
 }
 
-VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
+VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
 {
 	if (ms_instance) return ms_instance;
 

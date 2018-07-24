@@ -6,9 +6,9 @@
 #include "WorkTracer.h"
 
 #ifndef USE_ODBC
-#include "STT2DB.h"
+#include "DBHandler.h"
 #else
-#include "STT2DB_ODBC.h"
+#include "DBHandler_ODBC.h"
 #endif
 
 #include "HAManager.h"
@@ -45,7 +45,7 @@ QueueItem::~QueueItem()
 	printf("\t\t[%d] QueueItem Destroyed!\n", m_nNum);
 }
 
-CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, STT2DB* st2db, HAManager *ham)
+CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham)
 	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_st2db(st2db), m_ham(ham)
 {
 	//printf("\t[%d] CallExecutor Created!\n", m_nNum);

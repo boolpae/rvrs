@@ -21,8 +21,8 @@
 using namespace std;
 
 class VRClient;
-class STT2File;
-class STT2DB;
+class FileHandler;
+class DBHandler;
 
 class VRCManager
 {
@@ -38,10 +38,10 @@ class VRCManager
 
 	mutable std::mutex m_mxMap;
     
-    STT2File *m_deliver;
+    FileHandler *m_deliver;
     
     log4cpp::Category *m_Logger;
-    STT2DB* m_s2d;
+    DBHandler* m_s2d;
 
 	mutable std::mutex m_mxQue;
     
@@ -50,7 +50,7 @@ class VRCManager
     size_t m_framelen;
 
 public:
-	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
@@ -68,7 +68,7 @@ public:
     int addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc);
 
 private:
-	VRCManager(int geartimeout, STT2File *deliver, log4cpp::Category *logger, STT2DB* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	VRCManager(int geartimeout, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	virtual ~VRCManager();
 
 	bool connectGearman();
