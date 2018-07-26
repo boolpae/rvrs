@@ -536,6 +536,36 @@ void DBHandler::restartConnectionPool()
     ConnectionPool_start(m_pool);
 }
 
+void DBHandler::updateAllTask2Fail()
+{
+    Connection_T con;
+
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("DBHandler::updateAllTask2Fail - can't get connection from pool");
+            restartConnectionPool();
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("DBHandler::updateAllTask2Fail - inactive connection from pool");
+            Connection_close(con);
+        }
+        Connection_execute(con, "UPDATE JOB_INFO SET STATE='X' WHERE RG_DTM >= concat(date(now()), ' 00:00:00') and RG_DTM <= concat(date(now()), '23:59:59') and STATE='U' and timestampdiff(minute, concat(date(now()), ' 00:00:00'), RG_DTM) > 59");
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("DBHandler::updateAllTask2Fail - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
+    }
+    END_TRY;
+
+}
+
 void DBHandler::setInterDBEnable(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset)
 {
     std::string sUrl = dbtype + "://" + dbuser + ":" + dbpw + "@" + dbhost + ":" + dbport + "/" + dbname + "?charset=" + charset;

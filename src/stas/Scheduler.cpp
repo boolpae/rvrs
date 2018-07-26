@@ -24,6 +24,7 @@ Scheduler::Scheduler(DBHandler *sttdb, VFCManager *vfcmgr)
 Scheduler::~Scheduler()
 {
     if (m_thrd.joinable()) m_thrd.join();
+    if (m_thrdUpdater.joinable()) m_thrdUpdater.join();
 
     m_instance = nullptr;
 }
@@ -34,6 +35,7 @@ Scheduler* Scheduler::instance(DBHandler *sttdb, VFCManager *vfcmgr)
         m_instance = new Scheduler(sttdb, vfcmgr);
 
         m_instance->m_thrd = std::thread(Scheduler::thrdFuncScheduler, m_instance, vfcmgr);
+        m_instance->m_thrdUpdater = std::thread(Scheduler::thrdFuncStateUpdate, m_instance);
     }
     return m_instance;
 }
@@ -42,6 +44,7 @@ void Scheduler::release()
 {
 	if (m_instance) {
         m_instance->m_thrd.detach();
+        m_instance->m_thrdUpdater.detach();
         m_instance->m_bLiveFlag = false;
 		delete m_instance;
 	}
@@ -80,5 +83,29 @@ void Scheduler::thrdFuncScheduler(Scheduler *schd, VFCManager *vfcm)
 
         // config에 설정된 sec 시간 간격으로 확인
         std::this_thread::sleep_for(std::chrono::seconds(10));
+    }
+}
+
+void Scheduler::thrdFuncStateUpdate(Scheduler* schd)
+{
+    log4cpp::Category *logger = config->getLogger();
+    HAManager *ham = HAManager::getInstance();
+    JobInfoItem *item;
+
+    if (ham && !ham->getHAStat()) {
+        logger->debug("Scheduler::thrdFuncStateUpdate() - Waiting... for Standby Mode");
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    while(schd->m_bLiveFlag) {
+        int totalSleep = 0;
+        schd->m_sttdb->updateAllTask2Fail();
+        
+        while (totalSleep < 60) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            if (!schd->m_bLiveFlag) break;
+            totalSleep++;
+        }
+
     }
 }

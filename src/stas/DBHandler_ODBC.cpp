@@ -644,6 +644,35 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
     return ret;
 }
 
+void DBHandler::updateAllTask2Fail()
+{
+    // Connection_T con;
+    PConnSet connSet = m_pSolDBConnPool->getConnection();
+    char sqlbuff[512];
+    SQLRETURN retcode;
+
+    if (connSet)
+    {
+        sprintf(sqlbuff, "UPDATE JOB_INFO SET STATE='X' WHERE RG_DTM >= concat(date(now()), ' 00:00:00') and RG_DTM <= concat(date(now()), '23:59:59') and STATE='U' and timestampdiff(minute, concat(date(now()), ' 00:00:00'), RG_DTM) > 59");
+
+        retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
+
+        if SQL_SUCCEEDED(retcode) {
+            m_Logger->debug("DBHandler::updateAllTask2Fail() - Query<%s>", sqlbuff);
+        }
+        else {
+            extract_error("DBHandler::updateAllTask2Fail() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+        }
+
+        m_pSolDBConnPool->restoreConnection(connSet);
+    }
+    else
+    {
+        m_Logger->error("DBHandler::updateAllTask2Fail - can't get connection from pool");
+    }
+
+}
+
 void DBHandler::setInterDBEnable(std::string dsn, int connCount=10)
 {
     if (m_bInterDBUse) return;

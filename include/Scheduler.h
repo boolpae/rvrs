@@ -18,6 +18,7 @@ public:
 private:
     Scheduler(DBHandler *sttdb, VFCManager *vfcmgr);
     static void thrdFuncScheduler(Scheduler* schd, VFCManager *vfcmgr);
+    static void thrdFuncStateUpdate(Scheduler* schd);
     
 private:
     static Scheduler* m_instance;
@@ -27,6 +28,7 @@ private:
     VFCManager *m_vfcmgr;
 
 	std::thread m_thrd;
+    std::thread m_thrdUpdater;
 
 };
 
