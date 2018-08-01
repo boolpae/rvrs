@@ -152,8 +152,6 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                         if (value) {
                             uint32_t diaNumber=0;
                             std::string strValue((const char*)value);
-                            std::istringstream iss(strValue);
-                            std::vector<std::string> strs;
 
                             free(value);
 
@@ -192,6 +190,8 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 pDSM->doDivSpeaker(item->getCallId(), strValue);
                             }
                             else {
+                                std::istringstream iss(strValue);
+                                std::vector<std::string> strs;
                                 while(std::getline(iss, line)) {
                                     boost::split(strs, line, boost::is_any_of(","));
                                     //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;

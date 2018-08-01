@@ -18,16 +18,18 @@ class JobInfoItem {
     std::string m_counselorcode;
     std::string m_path;
     std::string m_filename;
+    std::string m_regdate;
     bool m_rxtx;
 
     public:
-    JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, bool rxtx);
+    JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, std::string regdate, bool rxtx);
     virtual ~JobInfoItem();
 
     std::string getCallId() { return m_callid; }
     std::string getCounselorCode() { return m_counselorcode; }
     std::string getPath() { return m_path; }
     std::string getFilename() {return m_filename;}
+    std::string getRegdate() { return m_regdate; }
     bool getRxTxType() { return m_rxtx; }
 };
 
@@ -110,6 +112,7 @@ public:
     // 작업 완료 후 아래의 api를 이용하여 해당 task에 대한 정보를 handling한다.
     int insertTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     int updateTaskInfo(std::string callid, std::string counselorcode, char state);
+    int updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state);
     int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     int getTaskInfo(std::vector< JobInfoItem* > &v, int count);
 

@@ -83,6 +83,8 @@ int VASDivSpeaker::startWork(gearman_client_st *gearClient, std::string &funcnam
         // 화자는 spk00, spk01 이라는 값으로 구분되며 갯수가 많은 값이 상담원이 된다. - spk00, spk01 의 갯수를 파악해야핸다.
         res1.size();
         res2.size();
+
+        //m_hDB->insertSTTData(idx, callid, spkno, spos, epos, stt);
         
         res1.clear();
         res2.clear();

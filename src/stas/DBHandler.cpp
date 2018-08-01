@@ -93,7 +93,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
                         cSpk = 'N';
                 }
 
-                Connection_execute(con, "INSERT INTO JOB_DATA (idx,call_id,spk,pos_start,pos_end,value) VALUES (%d,'%s','%c',%lu,%lu,'%s')",
+                Connection_execute(con, "INSERT INTO TBL_JOB_DATA (IDX,CALL_ID,SPK,POS_START,POS_END,VALUE) VALUES (%d,'%s','%c',%lu,%lu,'%s')",
                 item->getDiaIdx(), item->getCallId().c_str(), cSpk, item->getBpos(), item->getEpos(), ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
             }
             CATCH(SQLException)
@@ -179,7 +179,7 @@ int DBHandler::searchCallInfo(std::string counselorcode)
             Connection_close(con);
             return -2;
         }
-        ResultSet_T r = Connection_executeQuery(con, "SELECT counselor_code,center_code,status FROM CS_LIST WHERE counselor_code='%s'", counselorcode.c_str());
+        ResultSet_T r = Connection_executeQuery(con, "SELECT CS_CD,CT_CD,STAT FROM TBL_CS_LIST WHERE CS_CD='%s'", counselorcode.c_str());
 
         ret = ResultSet_next(r);
     }
@@ -213,9 +213,9 @@ int DBHandler::insertCallInfo(std::string counselorcode, std::string callid)
             Connection_close(con);
             return 2;
         }
-        Connection_execute(con, "INSERT INTO CS_LIST (counselor_code,call_id,status,reg_dttm) VALUES ('%s','%s','I',now())",
+        Connection_execute(con, "INSERT INTO TBL_CS_LIST (CS_CD,CALL_ID,CT_CD,STAT,REG_DTM) VALUES ('%s','%s','1','I',now())",
         counselorcode.c_str(), callid.c_str());
-        m_Logger->debug("DBHandler::insertCallInfo - SQL[INSERT INTO CS_LIST (counselor_code,call_id,reg_dttm) VALUES ('%s','%s',now())]", counselorcode.c_str(), callid.c_str());
+        m_Logger->debug("DBHandler::insertCallInfo - SQL[INSERT INTO TBL_CS_LIST (CS_CD,CALL_ID,CT_CD,STAT,REG_DTM) VALUES ('%s','%s','1','I',now())]", counselorcode.c_str(), callid.c_str());
     }
     CATCH(SQLException)
     {
@@ -248,11 +248,11 @@ int DBHandler::updateCallInfo(std::string callid, bool end)
             return 2;
         }
         if (!end) {
-            Connection_execute(con, "UPDATE CS_LIST SET status='I' WHERE call_id='%s'",
+            Connection_execute(con, "UPDATE TBL_CS_LIST SET STAT='I' WHERE CALL_ID='%s'",
             callid.c_str());
         }
         else {
-            Connection_execute(con, "UPDATE CS_LIST SET status='E' WHERE call_id='%s'",
+            Connection_execute(con, "UPDATE TBL_CS_LIST SET STAT='E' WHERE CALL_ID='%s'",
             callid.c_str());
         }
     }
@@ -287,14 +287,14 @@ int DBHandler::updateCallInfo(std::string counselorcode, std::string callid, boo
             return 2;
         }
         if (!end) {
-            Connection_execute(con, "UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s'",
+            Connection_execute(con, "UPDATE TBL_CS_LIST SET STAT='I', CALL_ID='%s' WHERE CS_CD='%s'",
             callid.c_str(), counselorcode.c_str());
-            m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE CS_LIST SET status='I', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
+            m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE TBL_CS_LIST SET STAT='I', CALL_ID='%s' WHERE CS_CD='%s']",callid.c_str(), counselorcode.c_str());
         }
         else {
-            Connection_execute(con, "UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s'",
+            Connection_execute(con, "UPDATE TBL_CS_LIST SET STAT='E', CALL_ID='%s' WHERE CS_CD='%s'",
             callid.c_str(), counselorcode.c_str());
-            m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE CS_LIST SET status='E', call_id='%s' WHERE counselor_code='%s']",callid.c_str(), counselorcode.c_str());
+            m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE TBL_CS_LIST SET STAT='E', CALL_ID='%s' WHERE CS_CD='%s']",callid.c_str(), counselorcode.c_str());
         }
     }
     CATCH(SQLException)
@@ -390,7 +390,7 @@ int DBHandler::insertTaskInfo(std::string downloadPath, std::string filename, st
             Connection_close(con);
             return 2;
         }
-        Connection_execute(con, "INSERT INTO JOB_INFO (call_id, pathname, filename, reg_dttm) VALUES ('%s', '%s', '%s', now())",
+        Connection_execute(con, "INSERT INTO TBL_JOB_INFO (CALL_ID,PATHNAME,FILE_NAME,REG_DTM,STATE) VALUES ('%s','%s','%s',now(),'N')",
         callId.c_str(), downloadPath.c_str(), filename.c_str());
     }
     CATCH(SQLException)
@@ -425,8 +425,41 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
             Connection_close(con);
             return 2;
         }
-        Connection_execute(con, "UPDATE JOB_INFO SET STATE='%c' WHERE call_id='%s' and counselor_code='%s'",
+        Connection_execute(con, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' and CS_CODE='%s'",
         state, callid.c_str(), counselorcode.c_str());
+    }
+    CATCH(SQLException)
+    {
+        m_Logger->error("DBHandler::updateTaskInfo - SQLException -- %s", Exception_frame.message);
+    }
+    FINALLY
+    {
+        //Connection_close(con);
+        ConnectionPool_returnConnection(m_pool, con);
+    }
+    END_TRY;
+    return 0;
+}
+
+int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state)
+{
+    Connection_T con;
+
+    TRY
+    {
+        con = ConnectionPool_getConnection(m_pool);
+        if ( con == NULL) {
+            m_Logger->error("DBHandler::updateTaskInfo - can't get connection from pool");
+            restartConnectionPool();
+            return 1;
+        }
+        else if ( !Connection_ping(con) ) {
+            m_Logger->error("DBHandler::updateTaskInfo - inactive connection from pool");
+            Connection_close(con);
+            return 2;
+        }
+        Connection_execute(con, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s' AND REG_DTM='%s'",
+        state, callid.c_str(), counselorcode.c_str(), regdate.c_str());
     }
     CATCH(SQLException)
     {
@@ -461,7 +494,7 @@ int DBHandler::searchTaskInfo(std::string downloadPath, std::string filename, st
             Connection_close(con);
             return -2;
         }
-        ResultSet_T r = Connection_executeQuery(con, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE call_id = '%s' and filename = '%s'",
+        ResultSet_T r = Connection_executeQuery(con, "SELECT CALL_ID,CS_CODE,PATH,FILE_NAME FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NAME='%s'",
         callId.c_str(), filename.c_str());
 
         ret = ResultSet_next(r);
@@ -498,7 +531,7 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
             Connection_close(con);
             return -2;
         }
-        ResultSet_T r = Connection_executeQuery(con, "SELECT call_id,counselor_code,pathname,filename FROM JOB_INFO WHERE state = 'N' or state = 'X' ORDER BY reg_dttm asc LIMIT %d", availableCount);
+        ResultSet_T r = Connection_executeQuery(con, "SELECT CALL_ID,CS_CODE,PATHNAME,FILE_NAME,REG_DTM FROM TBL_JOB_INFO WHERE STATE='N' ORDER BY REG_DTM asc LIMIT %d", availableCount);
 
         while (ResultSet_next(r)) 
         {
@@ -506,10 +539,11 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
             std::string counselorcode = ResultSet_getString(r, 2);
             std::string path = ResultSet_getString(r, 3);
             std::string filename = ResultSet_getString(r, 4);
+            std::string regdate = ResultSet_getString(r, 5);
             bool rxtx = false;
             //rxtx = ResultSet_getInt(r, 5);
 
-            JobInfoItem *item = new JobInfoItem(callid, counselorcode, path, filename, rxtx);
+            JobInfoItem *item = new JobInfoItem(callid, counselorcode, path, filename, regdate, rxtx);
             v.push_back(item);
         }
 
@@ -551,7 +585,7 @@ void DBHandler::updateAllTask2Fail()
             m_Logger->error("DBHandler::updateAllTask2Fail - inactive connection from pool");
             Connection_close(con);
         }
-        Connection_execute(con, "UPDATE JOB_INFO SET STATE='X' WHERE RG_DTM >= concat(date(now()), ' 00:00:00') and RG_DTM <= concat(date(now()), '23:59:59') and STATE='U' and timestampdiff(minute, concat(date(now()), ' 00:00:00'), RG_DTM) > 59");
+        Connection_execute(con, "UPDATE TBL_JOB_INFO SET STATE='X' WHERE RG_DTM >= concat(date(now()), ' 00:00:00') and RG_DTM <= concat(date(now()), '23:59:59') and STATE='U' and timestampdiff(minute, concat(date(now()), ' 00:00:00'), RG_DTM) > 59");
     }
     CATCH(SQLException)
     {
@@ -612,8 +646,8 @@ RTSTTQueItem::~RTSTTQueItem()
 {
 }
 
-JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, bool rxtx=false)
-: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename), m_rxtx(rxtx)
+JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, std::string regdate, bool rxtx=false)
+: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename), m_regdate(regdate), m_rxtx(rxtx)
 {
 
 }
