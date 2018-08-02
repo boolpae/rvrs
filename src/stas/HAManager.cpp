@@ -7,6 +7,7 @@
 #include "HAManager.h"
 #include "VRCManager.h"
 #include "VDCManager.h"
+#include "stas.h"
 
 #include <chrono>
 
@@ -21,13 +22,16 @@
 HAManager* HAManager::m_instance= nullptr;
 
 #ifdef LOG4CPP
-HAManager::HAManager(VRCManager *vrm, VDCManager *vdm, log4cpp::Category *logger)
-: m_vrm(vrm), m_vdm(vdm), m_Logger(logger), m_nActiveSock(0), m_nStandbySock(0)
+HAManager::HAManager(VRCManager *vrm, VDCManager *vdm/*, log4cpp::Category *logger*/)
+: m_vrm(vrm), m_vdm(vdm), /*m_Logger(logger),*/ m_nActiveSock(0), m_nStandbySock(0)
 #else
 HAManager::HAManager()
 : m_nActiveSock(0), m_nStandbySock(0)
 #endif
 {
+#ifdef LOG4CPP
+    m_Logger = config->getLogger();
+#endif
     m_mSyncTable.clear();
     m_bLiveFlag = true;
 }
@@ -51,14 +55,14 @@ HAManager::~HAManager()
 }
 
 #ifdef LOG4CPP
-HAManager* HAManager::instance(VRCManager *vrm, VDCManager *vdm, log4cpp::Category *logger)
+HAManager* HAManager::instance(VRCManager *vrm, VDCManager *vdm/*, log4cpp::Category *logger*/)
 #else
 HAManager* HAManager::instance()
 #endif
 {
     if (m_instance) return m_instance;
 #ifdef LOG4CPP
-    m_instance = new HAManager(vrm, vdm, logger);
+    m_instance = new HAManager(vrm, vdm/*, logger*/);
 #else
     m_instance = new HAManager();
 #endif
@@ -260,7 +264,7 @@ void HAManager::thrdStandby(HAManager *mgr, int standbysock)
     if (mgr->m_bLiveFlag) {
         std::thread thrd;
         mgr->m_bStat = true;
-        thrd = std::thread(HAManager::thrdActive, HAManager::instance(mgr->m_vrm, mgr->m_vdm, mgr->m_Logger));
+        thrd = std::thread(HAManager::thrdActive, HAManager::instance(mgr->m_vrm, mgr->m_vdm/*, mgr->m_Logger*/));
         thrd.detach();
     }
 }

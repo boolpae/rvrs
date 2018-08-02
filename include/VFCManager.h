@@ -39,7 +39,7 @@ private:
     
 	static uint64_t m_nVFCs;
 public:
-	static VFCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, log4cpp::Category *logger);
+	static VFCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout/*, log4cpp::Category *logger*/);
 	static void release();
 
 	void outputVFCStat();
@@ -53,7 +53,7 @@ public:
 	int getAvailableCount();
 
 private:
-	VFCManager(int geartimeout, log4cpp::Category *logger);
+	VFCManager(int geartimeout/*, log4cpp::Category *logger*/);
 	virtual ~VFCManager();
 
 	bool connectGearman();

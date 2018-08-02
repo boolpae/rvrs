@@ -14,12 +14,14 @@
 #endif
 
 #include "CallSignal.h"
+#include "stas.h"
 
 #include <string>
 
-Protocol::CallSignal::CallSignal(log4cpp::Category *logger)
-	: m_nPacketSize(0), m_Packet(NULL), m_Logger(logger)
+Protocol::CallSignal::CallSignal(/*log4cpp::Category *logger*/)
+	: m_nPacketSize(0), m_Packet(NULL)/*, m_Logger(logger)*/
 {
+	m_Logger = config->getLogger();
 }
 
 

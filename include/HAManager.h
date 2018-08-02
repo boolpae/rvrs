@@ -41,7 +41,7 @@ class HAManager {
     virtual ~HAManager();
 
 #ifdef LOG4CPP
-    static HAManager* instance(VRCManager *vrm, VDCManager *vdm, log4cpp::Category *logger);
+    static HAManager* instance(VRCManager *vrm, VDCManager *vdm/*, log4cpp::Category *logger*/);
 #else
     static HAManager* instance();
 #endif
@@ -62,7 +62,7 @@ class HAManager {
 
     private:
 #ifdef LOG4CPP
-    HAManager(VRCManager *vrm, VDCManager *vdm, log4cpp::Category *logger);
+    HAManager(VRCManager *vrm, VDCManager *vdm/*, log4cpp::Category *logger*/);
 #else
     HAManager();
 #endif

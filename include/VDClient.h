@@ -44,7 +44,7 @@ class VDClient
     uint32_t m_nPlaytime;
     
 public:
-	VDClient(VRCManager *vrcm, log4cpp::Category *logger);
+	VDClient(VRCManager *vrcm/*, log4cpp::Category *logger*/);
 	void finish();
 
 	// return:	호출 성공 시 : 0 반환, 실패 시 0 이 아닌 양수 값

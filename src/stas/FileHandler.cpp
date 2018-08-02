@@ -1,6 +1,7 @@
 
 
 #include "FileHandler.h"
+#include "stas.h"
 
 #include <thread>
 #include <iostream>
@@ -12,9 +13,10 @@
 
 FileHandler* FileHandler::ms_instance = NULL;
 
-FileHandler::FileHandler(std::string path, log4cpp::Category *logger)
-	: m_bLiveFlag(true), m_sResultPath(path), m_Logger(logger)
+FileHandler::FileHandler(std::string path/*, log4cpp::Category *logger*/)
+	: m_bLiveFlag(true), m_sResultPath(path)/*, m_Logger(logger)*/
 {
+    m_Logger = config->getLogger();
 	m_Logger->debug("FileHandler Constructed.");
 }
 
@@ -127,7 +129,7 @@ void FileHandler::insertSTT(STTQueItem * item)
 	m_qSttQue.push(item);
 }
 
-FileHandler* FileHandler::instance(std::string path, log4cpp::Category *logger)
+FileHandler* FileHandler::instance(std::string path/*, log4cpp::Category *logger*/)
 {
 	if (ms_instance) return ms_instance;
     
@@ -137,12 +139,13 @@ FileHandler* FileHandler::instance(std::string path, log4cpp::Category *logger)
         std::system(cmd.c_str());
         
         if ( ::access(path.c_str(), 0) ) {
+            log4cpp::Category *logger = config->getLogger();
             logger->error("FileHandler::instance - failed create path : %s", path.c_str());
             return nullptr;
         }
     }
 
-	ms_instance = new FileHandler(path, logger);
+	ms_instance = new FileHandler(path/*, logger*/);
 
 	ms_instance->m_thrd = std::thread(FileHandler::thrdMain, ms_instance);
 

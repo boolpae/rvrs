@@ -75,7 +75,7 @@ private:
     bool m_bInterDBUse;
     
 private:
-    DBHandler(log4cpp::Category *logger);
+    DBHandler(/*log4cpp::Category *logger*/);
 	static void thrdMain(DBHandler* s2d);
 	void insertSTTData(RTSTTQueItem* item);
 
@@ -84,7 +84,7 @@ private:
 public:
     virtual ~DBHandler();
     
-    static DBHandler* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger);
+    static DBHandler* instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset/*, log4cpp::Category *logger*/);
     static void release();
     static DBHandler* getInstance();
     

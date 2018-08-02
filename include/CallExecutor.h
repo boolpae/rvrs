@@ -56,7 +56,7 @@ class CallExecutor
     HAManager *m_ham;
 
 public:
-	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham=nullptr);
+	CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, /*log4cpp::Category *logger,*/ DBHandler* st2db, HAManager *ham=nullptr);
 	virtual ~CallExecutor();
 
 	static void thrdMain(CallExecutor* exe);

@@ -1,5 +1,6 @@
 
 #include "DBHandler.h"
+#include "stas.h"
 
 #include <iconv.h>
 
@@ -8,9 +9,10 @@
 DBHandler* DBHandler::m_instance = nullptr;
 
 
-DBHandler::DBHandler(log4cpp::Category *logger)
-: m_bLiveFlag(true), m_Logger(logger), m_bInterDBUse(false)
+DBHandler::DBHandler(/*log4cpp::Category *logger*/)
+: m_bLiveFlag(true), /*m_Logger(logger),*/ m_bInterDBUse(false)
 {
+    m_Logger = config->getLogger();
 	m_Logger->debug("DBHandler Constructed.");
 }
 
@@ -113,11 +115,11 @@ void DBHandler::thrdMain(DBHandler * s2d)
         Connection_close(con);
 }
 
-DBHandler* DBHandler::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset, log4cpp::Category *logger)
+DBHandler* DBHandler::instance(std::string dbtype, std::string dbhost, std::string dbport, std::string dbuser, std::string dbpw, std::string dbname, std::string charset/*, log4cpp::Category *logger*/)
 {
     if (m_instance) return m_instance;
     
-    m_instance = new DBHandler(logger);
+    m_instance = new DBHandler(/*logger*/);
     
     std::string sUrl = dbtype + "://" + dbuser + ":" + dbpw + "@" + dbhost + ":" + dbport + "/" + dbname + "?charset=" + charset;
     m_instance->m_url = URL_new(sUrl.c_str());
@@ -130,6 +132,7 @@ DBHandler* DBHandler::instance(std::string dbtype, std::string dbhost, std::stri
     }
     CATCH(SQLException)
     {
+        log4cpp::Category *logger = config->getLogger();
         logger->error("DBHandler::instance - SQLException -- %s", Exception_frame.message);
         
         ConnectionPool_free(&m_instance->m_pool);

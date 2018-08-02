@@ -29,15 +29,17 @@
 #endif
 
 #include "HAManager.h"
+#include "stas.h"
 
 #include <thread>
 
 CallReceiver* CallReceiver::m_instance = NULL;
 
-CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham)
-	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_st2db(st2db), m_ham(ham)
+CallReceiver::CallReceiver(VDCManager *vdcm, VRCManager *vrcm, /*log4cpp::Category *logger,*/ DBHandler* st2db, HAManager *ham)
+	: m_nSockfd(0), m_nNumofExecutor(3), m_vdcm(vdcm), m_vrcm(vrcm), /*m_Logger(logger),*/ m_st2db(st2db), m_ham(ham)
 {
 	//printf("\t[DEBUG] CallReceiver Constructed.\n");
+	m_Logger = config->getLogger();
     m_Logger->debug("CallReceiver Constructed.");
 }
 
@@ -50,11 +52,11 @@ CallReceiver::~CallReceiver()
     m_Logger->debug("CallReceiver Destructed.");
 }
 
-CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham)
+CallReceiver* CallReceiver::instance(VDCManager *vdcm, VRCManager *vrcm, /*log4cpp::Category *logger,*/ DBHandler* st2db, HAManager *ham)
 {
 	if (m_instance) return m_instance;
 
-	m_instance = new CallReceiver(vdcm, vrcm, logger, st2db, ham);
+	m_instance = new CallReceiver(vdcm, vrcm, /*logger,*/ st2db, ham);
 	return m_instance;
 }
 
@@ -90,7 +92,7 @@ void CallReceiver::thrdMain(CallReceiver* rcv)
 	}
 
 	for (int i = 0; i < noe; i++) {
-		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, rcv->m_Logger, rcv->m_st2db, rcv->m_ham));
+		vExes.push_back(new CallExecutor(i+1, rcv->m_vdcm, rcv->m_vrcm, /*rcv->m_Logger,*/ rcv->m_st2db, rcv->m_ham));
 	}
 
 	for (int i = 0; i < noe; i++) {

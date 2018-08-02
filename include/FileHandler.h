@@ -48,7 +48,7 @@ class FileHandler
     log4cpp::Category *m_Logger;
     
 public:
-	static FileHandler* instance(std::string path, log4cpp::Category *logger);
+	static FileHandler* instance(std::string path/*, log4cpp::Category *logger*/);
 	static void release();
 	static FileHandler* getInstance();
 
@@ -56,7 +56,7 @@ public:
 	void insertSTT(std::string callid, std::string& stt, std::string filename);	// for FILE, BATCH
 
 private:
-	FileHandler(std::string path, log4cpp::Category *logger);
+	FileHandler(std::string path/*, log4cpp::Category *logger*/);
 	virtual ~FileHandler();
 
 	static void thrdMain(FileHandler* dlv);

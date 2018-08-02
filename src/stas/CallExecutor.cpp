@@ -13,6 +13,7 @@
 
 #include "HAManager.h"
 #include "VRClient.h"
+#include "stas.h"
 
 #include <thread>
 #include <chrono>
@@ -45,10 +46,11 @@ QueueItem::~QueueItem()
 	printf("\t\t[%d] QueueItem Destroyed!\n", m_nNum);
 }
 
-CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham)
-	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), m_Logger(logger), m_st2db(st2db), m_ham(ham)
+CallExecutor::CallExecutor(uint16_t num, VDCManager *vdcm, VRCManager *vrcm, /*log4cpp::Category *logger,*/ DBHandler* st2db, HAManager *ham)
+	: m_nNum(num), m_vdcm(vdcm), m_vrcm(vrcm), /*m_Logger(logger),*/ m_st2db(st2db), m_ham(ham)
 {
 	//printf("\t[%d] CallExecutor Created!\n", m_nNum);
+	m_Logger = config->getLogger();
     m_Logger->debug("[%d] CallExecutor Created!", m_nNum);
 }
 
@@ -68,7 +70,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 {
 	uint16_t num = exe->getExecNum();
 	QueueItem* item = NULL;
-	CallSignal *cs = new CallSignal(exe->m_Logger);
+	CallSignal *cs = new CallSignal(/*exe->m_Logger*/);
 	std::vector< uint16_t > vPorts;
 	std::string sCounselorCode;
 	std::string sCallId;

@@ -2,13 +2,15 @@
 #include "VDCManager.h"
 #include "VRCManager.h"
 #include "VDClient.h"
+#include "stas.h"
 
 VDCManager* VDCManager::ms_instance = NULL;
 
-VDCManager::VDCManager(uint32_t pt, VRCManager *vrcm, log4cpp::Category *logger)
-: m_nPlaytime(pt), m_vrcm(vrcm), m_Logger(logger)
+VDCManager::VDCManager(uint32_t pt, VRCManager *vrcm/*, log4cpp::Category *logger*/)
+: m_nPlaytime(pt), m_vrcm(vrcm)/*, m_Logger(logger)*/
 {
 	//printf("\t[DEBUG] VDCManager Constructed.\n");
+	m_Logger = config->getLogger();
     m_Logger->debug("VDCManager Constructed.");
 }
 
@@ -25,7 +27,7 @@ VDCManager::~VDCManager()
     m_Logger->debug("VDCManager Destructed.");
 }
 
-VDCManager* VDCManager::instance(uint16_t tcount, uint16_t bport, uint16_t eport, uint32_t pt, VRCManager *vrcm, log4cpp::Category *logger)
+VDCManager* VDCManager::instance(uint16_t tcount, uint16_t bport, uint16_t eport, uint32_t pt, VRCManager *vrcm/*, log4cpp::Category *logger*/)
 {
 	VDClient* client;
 	int i = 0;
@@ -33,17 +35,18 @@ VDCManager* VDCManager::instance(uint16_t tcount, uint16_t bport, uint16_t eport
 
 	if (ms_instance) return ms_instance;
 
-	ms_instance = new VDCManager(pt, vrcm, logger);
+	ms_instance = new VDCManager(pt, vrcm/*, logger*/);
 
 	// TOTAL_CHANNEL_COUNT : 생성할 채널의 총 갯수
 	// BEGIN_PORT, END_PORT : 음성 데이터를 받기 위한 UDP포트의 범위
 	// 총 채널의 갯수만큼 VDClient를 만들지 못 한 경우 VDCManager instance 생성 실패
 	while (i++ < tcount) {
-		client = new VDClient(vrcm, logger);
+		client = new VDClient(vrcm/*, logger*/);
         client->setPlaytime(pt);
 
 		while (client->init(bport)) {
 			//printf("\t[DEBUG] VDCManager::instance() - init(%d) error\n", bport);
+			log4cpp::Category *logger = config->getLogger();
             logger->error("VDCManager::instance() - init(%d) error", bport);
 			bport++;
 			if (bport > eport)

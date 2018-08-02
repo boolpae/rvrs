@@ -11,6 +11,7 @@
 #endif
 
 #include "HAManager.h"
+#include "stas.h"
 
 #include <thread>
 #include <iostream>
@@ -100,13 +101,14 @@ typedef struct
 
 #endif // FAD_FUNC
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), m_Logger(logger), m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), /*m_Logger(logger),*/ m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
 	//thrd.detach();
 	//printf("\t[DEBUG] VRClinet Constructed.\n");
+    m_Logger = config->getLogger();
     m_Logger->debug("VRClinet Constructed.");
 }
 

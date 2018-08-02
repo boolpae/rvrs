@@ -23,10 +23,11 @@ using namespace std;
 VFCManager* VFCManager::m_instance = nullptr;
 uint64_t VFCManager::m_nVFCs=0;
 
-VFCManager::VFCManager(int geartimeout, log4cpp::Category *logger)
-	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0), m_Logger(logger)
+VFCManager::VFCManager(int geartimeout/*, log4cpp::Category *logger*/)
+	: m_sGearHost("127.0.0.1"), m_nGearPort(4730), m_GearTimeout(geartimeout), m_nSockGearman(0)/*, m_Logger(logger)*/
 {
 	//printf("\t[DEBUG] VFCManager Constructed.\n");
+    m_Logger = config->getLogger();
     m_Logger->debug("VFCManager Constructed.");
 }
 
@@ -188,11 +189,11 @@ size_t VFCManager::getWorkerCountFromString(std::string & gearResult)
 
 }
 
-VFCManager* VFCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, log4cpp::Category *logger)
+VFCManager* VFCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout/*, log4cpp::Category *logger*/)
 {
 	if (m_instance) return m_instance;
 
-	m_instance = new VFCManager(geartimeout, logger);
+	m_instance = new VFCManager(geartimeout/*, logger*/);
 
 	// for DEV
 	m_instance->setGearHost(gearHostIp);//);("192.168.229.135")

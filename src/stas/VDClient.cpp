@@ -4,6 +4,7 @@
 #include "VRCManager.h"
 #include "WorkTracer.h"
 #include "HAManager.h"
+#include "stas.h"
 
 #include <thread>
 #include <iostream>
@@ -28,13 +29,14 @@
 
 #endif
 
-VDClient::VDClient(VRCManager *vrcm, log4cpp::Category *logger)
-	: m_nLiveFlag(1), m_nWorkStat(0), m_nPort(0), m_nSockfd(0), m_sCallId(""), m_nSpkNo(0), m_vrcm(vrcm), m_Logger(logger), m_nPlaytime(3*16000)
+VDClient::VDClient(VRCManager *vrcm/*, log4cpp::Category *logger*/)
+	: m_nLiveFlag(1), m_nWorkStat(0), m_nPort(0), m_nSockfd(0), m_sCallId(""), m_nSpkNo(0), m_vrcm(vrcm), /*m_Logger(logger),*/ m_nPlaytime(3*16000)
 {
 	m_pVrc = NULL;
 	m_tTimeout = time(NULL);
 
 	//printf("\t[DEBUG] VDClinet Constructed.\n");
+	m_Logger = config->getLogger();
     m_Logger->debug("VDClinet Constructed.");
 }
 

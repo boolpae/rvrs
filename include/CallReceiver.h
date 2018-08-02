@@ -36,7 +36,7 @@ class CallReceiver
     HAManager *m_ham;
 
 public:
-	static CallReceiver* instance(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham=nullptr);
+	static CallReceiver* instance(VDCManager *vdcm, VRCManager *vrcm, /*log4cpp::Category *logger,*/ DBHandler* st2db, HAManager *ham=nullptr);
 	static void release();
 
 	void setNumOfExecutor(uint16_t num) { m_nNumofExecutor = num; }
@@ -44,7 +44,7 @@ public:
 	SOCKET getSockfd() { return m_nSockfd; }
 
 private:
-	CallReceiver(VDCManager *vdcm, VRCManager *vrcm, log4cpp::Category *logger, DBHandler* st2db, HAManager *ham=nullptr);
+	CallReceiver(VDCManager *vdcm, VRCManager *vrcm, /*log4cpp::Category *logger,*/ DBHandler* st2db, HAManager *ham=nullptr);
 	virtual ~CallReceiver();
 
 	static void thrdMain(CallReceiver* rcv);

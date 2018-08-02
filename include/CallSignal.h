@@ -36,7 +36,7 @@ namespace Protocol {
         log4cpp::Category *m_Logger;
 
 	public:
-		CallSignal(log4cpp::Category *logger);
+		CallSignal(/*log4cpp::Category *logger*/);
 		virtual ~CallSignal();
 
 		void init();

@@ -71,7 +71,7 @@ public:
 	static WorkTracer* instance();
 	static void release();
     
-    void setLogger(log4cpp::Category *logger);
+    //void setLogger(log4cpp::Category *logger);
 	
 	void insertWork(std::string callid, uint8_t jobType, WorkQueItem::PROCTYPE pType, uint8_t res=0);
 

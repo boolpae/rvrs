@@ -1,6 +1,7 @@
 ﻿
 #include "WorkTracer.h"
 #include "configuration.h"
+#include "stas.h"
 
 #include <iostream>
 #include <thread>
@@ -8,8 +9,9 @@
 WorkTracer* WorkTracer::ms_instance = NULL;
 
 WorkTracer::WorkTracer()
-	: m_bLiveFlag(true), m_Logger(NULL)
+	: m_bLiveFlag(true)/*, m_Logger(NULL)*/
 {
+	m_Logger = config->getLogger();
 	std::cout << "\t[DEBUG] WorkTracer Constructed." << std::endl;
 }
 
@@ -171,7 +173,9 @@ std::string & WorkQueItem::getWorkDescription()
 	return m_sWorkDescription;
 }
 
+#if 0
 void WorkTracer::setLogger(log4cpp::Category *logger)
 {
     m_Logger = logger;
 }
+#endif

@@ -150,14 +150,14 @@ int main(int argc, const char** argv)
     }
 
 	WorkTracer::instance();
-    WorkTracer::instance()->setLogger(&tracerLog);
+    //WorkTracer::instance()->setLogger(&tracerLog);
     
     if (!config->getConfig("stt_result.use", "false").compare("true")) {
-        deliver = FileHandler::instance(config->getConfig("stt_result.path", "./stt_result"), logger);
+        deliver = FileHandler::instance(config->getConfig("stt_result.path", "./stt_result")/*, logger*/);
     }
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, logger, st2db, (config->getConfig("stas.savepcm", "false").find("true")==0)?true:false, config->getConfig("stas.pcmpath", "/home/stt"), config->getConfig("stas.framelen", 20));
-	VDCManager* vdcm = VDCManager::instance(config->getConfig("stas.channel_count", 200), config->getConfig("stas.udp_bport", 10000), config->getConfig("stas.udp_eport", 11000), config->getConfig("stas.playtime", 3), vrcm, logger);
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, /*logger,*/ st2db, (config->getConfig("stas.savepcm", "false").find("true")==0)?true:false, config->getConfig("stas.pcmpath", "/home/stt"), config->getConfig("stas.framelen", 20));
+	VDCManager* vdcm = VDCManager::instance(config->getConfig("stas.channel_count", 200), config->getConfig("stas.udp_bport", 10000), config->getConfig("stas.udp_eport", 11000), config->getConfig("stas.playtime", 3), vrcm/*, logger*/);
     
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
@@ -168,7 +168,7 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-	VFCManager* vfcm = VFCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), logger);
+	VFCManager* vfcm = VFCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0)/*, logger*/);
     Notifier *noti = nullptr;
     if(vfcm) {
         noti = Notifier::instance(vfcm, st2db);
@@ -181,7 +181,7 @@ int main(int argc, const char** argv)
     }
 
     if (!config->getConfig("ha.use", "false").compare("true")) {
-        ham = HAManager::instance(vrcm, vdcm, logger);
+        ham = HAManager::instance(vrcm, vdcm/*, logger*/);
         if (ham->init(config->getConfig("ha.addr", "192.168.0.1"), config->getConfig("ha.port", 7777)) < 0) {
             logger->error("MAIN - ERROR (Failed to get HAManager instance)");
             VDCManager::release();
@@ -193,7 +193,7 @@ int main(int argc, const char** argv)
         }
     }
     
-	rcv = CallReceiver::instance(vdcm, vrcm, logger, st2db, ham);
+	rcv = CallReceiver::instance(vdcm, vrcm, /*logger,*/ st2db, ham);
     rcv->setNumOfExecutor(config->getConfig("stas.callexe_count", 5));
 
 	if (!rcv->init(config->getConfig("stas.callport", 7000))) {

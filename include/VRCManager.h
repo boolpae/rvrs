@@ -50,7 +50,7 @@ class VRCManager
     size_t m_framelen;
 
 public:
-	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	static void release();
 
 	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
@@ -68,7 +68,7 @@ public:
     int addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc);
 
 private:
-	VRCManager(int geartimeout, FileHandler *deliver, log4cpp::Category *logger, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	VRCManager(int geartimeout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	virtual ~VRCManager();
 
 	bool connectGearman();
