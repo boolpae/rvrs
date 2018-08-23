@@ -5,6 +5,9 @@
 #include <thread>
 #include <stdint.h>
 
+// For Gearman
+#include <libgearman/gearman.h>
+
 class VFCManager;
 
 class VFClient {
@@ -17,6 +20,8 @@ public:
 
 private:
     static void thrdFunc(VFCManager* mgr, VFClient* clt);
+
+    bool requestGearman(gearman_client_st *gearman, const char* funcname, const char*reqValue, size_t reqLen, std::string &resStr);
 
 private:
     std::thread m_thrd;

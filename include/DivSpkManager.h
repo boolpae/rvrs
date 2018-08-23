@@ -22,6 +22,7 @@ public:
     int doDivSpeaker(std::string callid, std::string &sttValue);
     int insertSttValue(std::string callid, std::string &sttValue);
     int getSttValue(std::string callid, std::string &sttValue);
+    void clearSttValue(std::string callid);
 
 private:
     DivSpkManager();

@@ -15,13 +15,16 @@
 
 #include <thread>
 
-// For Gearman
-#include <libgearman/gearman.h>
-
 #include <string.h>
 
 #include <boost/algorithm/string.hpp>
 #include <sstream>
+
+#ifdef USE_RAPIDJSON
+#include "rapidjson/document.h"     // rapidjson's DOM-style API
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#endif
 
 VFClient::VFClient(VFCManager* mgr, std::string gearHost, uint16_t gearPort, int gearTimeout, uint64_t numId)
 : m_LiveFlag(true), m_mgr(mgr), m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_nNumId(numId)
@@ -97,23 +100,60 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
     while(client->m_LiveFlag) {
         if(item = mgr->popItem()) {
+            str:string sValue;
+#ifdef USE_RAPIDJSON
+            {
+                rapidjson::Document d;
+                rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+                d.SetObject();
+                d.AddMember("CMD", "STT", alloc);
+                d.AddMember("PROTOCOL", "FTP", alloc);
+                d.AddMember("PATH", rapidjson::Value(item->getPath().c_str(), alloc).Move(), alloc);
+                d.AddMember("FILENAME", rapidjson::Value(item->getFilename().c_str(), alloc).Move(), alloc);
+                d.AddMember("CALL-ID", rapidjson::Value(item->getCallId().c_str(), alloc).Move(), alloc);
+
+                {
+                    rapidjson::Value account;
+
+                    account.SetObject();
+
+                    account.AddMember("ID", "boolpae", alloc);
+                    account.AddMember("PW", "password", alloc);
+
+                    d.AddMember("ACCOUNT", account, alloc);
+                }
+
+                rapidjson::StringBuffer strbuf;
+                rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                d.Accept(writer);
+
+                reqFilePath = strbuf.GetString();
+            }
+
+#else
+            reqFilePath = item->getPath() + "/" + item->getFilename();
+            logger->debug("VFClient::thrdFunc(%ld) - FilePath(%s)", client->m_nNumId, reqFilePath.c_str());
+
+#endif
             memset(buf, 0, sizeof(buf));
             buflen = 0;
             
-            reqFilePath = item->getPath() + "/" + item->getFilename();
-            logger->debug("VFClient::thrdFunc(%ld) - FilePath(%s)", client->m_nNumId, reqFilePath.c_str());
+
 #if 1
+            // 1. Start STT : JOB_STT
             value= gearman_client_do(gearClient, "vr_stt", NULL, 
                                             (const void*)reqFilePath.c_str(), reqFilePath.size(),
                                             &result_size, &rc);
             if (gearman_success(rc)) {
                 // Make use of value
                 if (value) {
-                    std::string sValue((const char*)value);
+                    //std::string sValue((const char*)value);
+                    sValue = (const char*)value;
                     std::string sFuncName="";
                     size_t nPos1=0, nPos2=0;
                     int nFilesize=0;
-                    //std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
+                    // std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
                     // value의 값이 '{spk_flag'로 시작될 경우 화자 분리 로직으로 처리
                     // 화자 분리 또는 일반의 경우 동일하게 unsegment까지 우선 진행되어야 한다.
                     // parse a result's header {} or filesize
@@ -127,71 +167,157 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
                     free(value);
 
-                    // # Parse Header
-                    if (sValue.find("spk_flag") != string::npos) {
-                        // 2. cond.(화자분리), 필요한 인자값 수집 - gearman function 이름값 가져오기
+#ifdef USE_RAPIDJSON
+                    {
+                        rapidjson::Document doc;
 
-                        nPos1 = sValue.find("spk_node");
-                        nPos2 = sValue.find("'", nPos1) + 1;
-                        nPos1 = sValue.find("'", nPos2);
-                        sFuncName = sValue.substr(nPos2, nPos1-nPos2);
-                        nPos2 = sValue.find("\n") + 1;
-                        nFilesize = std::stoi(sValue.c_str() + nPos2);
-                        nPos1 = sValue.find("\n", nPos2) + 1;
-                        //value = (void *)(sValue.c_str() + nPos1);
-                        //result_size = strlen((const char*)value);
+                        if (!doc.Parse(sValue.c_str()).HasParseError() && doc["RESULT"].GetBool()) {
+                            rapidjson::Value& res = doc["STT-RESULT"];
 
+                            sFuncName = doc["FUNC-NAME"].GetString();
+
+                            {
+                                rapidjson::Value& resStts = res["VALUES"];
+
+                                resStts.IsArray();
+
+                                res["CHANNEL-COUNT"].GetInt();
+                                res["SPK-COUNT"].GetInt();
+
+                                // 2ch waves
+                                // mono wave
+
+                                // if ( res["CHANNEL-COUNT"].GetInt() == 2 ) {}
+                                for (rapidjson::SizeType i = 0; i < resStts.Size(); i++) {// Uses SizeType instead of size_t
+                                    rapidjson::Document d;
+                                    rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+                                    d.SetObject();
+                                    d.AddMember("CMD", "UNSEGMENT", alloc);
+                                    d.AddMember("CALL-ID", rapidjson::Value(item->getCallId().c_str(), alloc).Move(), alloc);
+                                    d.AddMember("STT-RESULT", rapidjson::Value(resStts[i].GetString(), alloc).Move(), alloc);
+
+                                    rapidjson::StringBuffer strbuf;
+                                    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                                    d.Accept(writer);
+
+                                    reqFilePath = strbuf.GetString();
+                                    //printf("a[%d] = %s\n", i, resStts[i].GetString());
+                                    value= gearman_client_do(gearClient, "vr_text", NULL, 
+                                                                    strbuf.GetString(), strbuf.GetLength(),
+                                                                    &result_size, &rc);
+                                    if (gearman_success(rc)) {
+                                        // Make use of value
+                                        if (value) {
+                                            uint32_t diaNumber=0;
+                                            std::string strValue((const char*)value);
+
+                                            free(value);
+
+                                            //std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
+                                            // Unsegment 결과를 정제(parsing)하여 목적에 따라 처리한다.
+                                            rapidjson::Document docUnseg;
+
+                                            if (!docUnseg.Parse(strValue.c_str()).HasParseError() && docUnseg["RESULT"].GetBool()) {
+                                                std:string sttValue(docUnseg["UNSEGMENT-RESULT"].GetString());
+                                                // # 화자 분리
+                                                if (res["CHANNEL-COUNT"].GetInt()==1 && res["SPK-COUNT"].GetInt()==2) {
+                                                    VASDivSpeaker divspk(DBHandler, FileHandler, item);
+
+                                                    //startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
+                                                    divspk.startWork(gearClient, sFuncName, sttValue);
+                                                }
+                                                else if (item->getRxTxType()){
+                                                    // 
+                                                    DivSpkManager *pDSM = DivSpkManager::instance();
+
+                                                    pDSM->doDivSpeaker(item->getCallId(), sttValue);
+                                                }
+                                                else {
+                                                    std::istringstream iss(sttValue);
+                                                    std::vector<std::string> strs;
+                                                    while(std::getline(iss, line)) {
+                                                        boost::split(strs, line, boost::is_any_of(","));
+                                                        //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+
+                                                        // to DB
+                                                        if (DBHandler) {
+                                                            diaNumber++;
+                                                            DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                                        }
+
+                                                        // to STTDeliver(file), FullText
+                                                        if (FileHandler) {
+                                                            //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                                            FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else { // if Unsegment Result is False ...
+
+                                            }
+                                            // DBHandler에서 처리할 수 있도록... VRClient와 동일하게?
+                                            // 그럼... 전체 STT결과 처리는?
+
+                                        }
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                                    }
+                                    else if (gearman_failed(rc)) {
+                                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                                    }
+
+                                }
+                            }
+
+                        }
                     }
+#else   // USE_RAPIDJSON
 
-                    // # Unsegment!
-                    value= gearman_client_do(gearClient, "vr_text", NULL, 
-                                                    (const void*)(sValue.c_str() + nPos1), strlen(sValue.c_str() + nPos1),
-                                                    &result_size, &rc);
-                    if (gearman_success(rc)) {
-                        // Make use of value
-                        if (value) {
-                            uint32_t diaNumber=0;
-                            std::string strValue((const char*)value);
+                    // 2CH Wave...include RX,TX
+                    if (sValue.find("||") != string::npos) {
+                        /*
+                         * 2Ch wave의 경우 하나의 wav파일에 rx,tx음성이 함께 들어있다.
+                         * 이 경우 rx,tx에 대한 stt결과가 '||' 구분자로 구분되어 함께 전송된다.
+                         * sValue에서 '||' 구분자를 이용하여 rx,tx를 분리하여 unsegment를 진행한다.
+                         * rx,tx에 대해 두 번의 unsegment를 진행하는데 한 번이라도 실패할 경우 실패로 간주한다.
+                         * 두 번의 unsegment가 성공할 경우 각 각의 unsegment 결과에서 상담원, 고객을 알아낸다.(라인갯수)
+                         * 상담원, 고객으로 구별된 데이터를 DB에 저장 후 마무리
+                         */
+                        std::string rx(sValue.substr(0, sValue.find("||")));
+                        std::string tx(sValue.substr(sValue.find("||")+2));
+                    }
+                    else {
+                        // # Parse Header
+                        if (sValue.find("spk_flag") != string::npos) {
+                            // 2. cond.(화자분리), 필요한 인자값 수집 - gearman function 이름값 가져오기
 
-                            free(value);
+                            nPos1 = sValue.find("spk_node");
+                            nPos2 = sValue.find("'", nPos1) + 1;
+                            nPos1 = sValue.find("'", nPos2);
+                            sFuncName = sValue.substr(nPos2, nPos1-nPos2);
+                            nPos2 = sValue.find("\n") + 1;
+                            nFilesize = std::stoi(sValue.c_str() + nPos2);
+                            nPos1 = sValue.find("\n", nPos2) + 1;
+                            //value = (void *)(sValue.c_str() + nPos1);
+                            //result_size = strlen((const char*)value);
 
-                            //std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
-#ifdef CODE_EXAM_SECTION
-                            while(std::getline(iss, line)) {
-                                boost::split(strs, line, boost::is_any_of(","));
-                                //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+                        }
+                        // 2. Unsegment! : JOB_UNSEGMENT
+                        value= gearman_client_do(gearClient, "vr_text", NULL, 
+                                                        (const void*)(sValue.c_str() + nPos1), strlen(sValue.c_str() + nPos1),
+                                                        &result_size, &rc);
+                        if (gearman_success(rc)) {
+                            // Make use of value
+                            if (value) {
+                                uint32_t diaNumber=0;
+                                std::string strValue((const char*)value);
 
-                                // to DB
-                                if (DBHandler) {
-                                    diaNumber++;
-                                    DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
-                                }
+                                free(value);
 
-                                // to STTDeliver(file), FullText
-                                if (FileHandler) {
-                                    //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
-                                    FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
-                                }
-                            }
-#endif
-                            // Unsegment 결과를 정제(parsing)하여 목적에 따라 처리한다.
-
-                            // # 화자 분리
-                            if (sFuncName.size()) {
-                                VASDivSpeaker divspk(DBHandler, FileHandler, item);
-
-                                //startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
-                                divspk.startWork(gearClient, sFuncName, strValue);
-                            }
-                            else if (item->getRxTxType()){
-                                // 
-                                DivSpkManager *pDSM = DivSpkManager::instance();
-
-                                pDSM->doDivSpeaker(item->getCallId(), strValue);
-                            }
-                            else {
-                                std::istringstream iss(strValue);
-                                std::vector<std::string> strs;
+                                //std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
+    #ifdef CODE_EXAM_SECTION
                                 while(std::getline(iss, line)) {
                                     boost::split(strs, line, boost::is_any_of(","));
                                     //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
@@ -208,27 +334,140 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                         FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
                                     }
                                 }
+    #endif
+                                // Unsegment 결과를 정제(parsing)하여 목적에 따라 처리한다.
+
+                                // # 화자 분리
+                                if (item->getRxTxType()){
+                                    // 
+                                    DivSpkManager *pDSM = DivSpkManager::instance();
+
+                                    pDSM->doDivSpeaker(item->getCallId(), strValue);
+                                }
+                                else {
+                                    std::istringstream iss(strValue);
+                                    std::vector<std::string> strs;
+                                    while(std::getline(iss, line)) {
+                                        boost::split(strs, line, boost::is_any_of(","));
+                                        //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+
+                                        // to DB
+                                        if (DBHandler) {
+                                            diaNumber++;
+                                            DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                        }
+
+                                        // to STTDeliver(file), FullText
+                                        if (FileHandler) {
+                                            //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                            FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                        }
+                                    }
+                                }
+
+                                if (sFuncName.size()) {
+                                    VASDivSpeaker divspk(DBHandler, FileHandler, item);
+
+                                    //startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
+                                    divspk.startWork(gearClient, sFuncName, strValue);
+                                }
+
+                                // DBHandler에서 처리할 수 있도록... VRClient와 동일하게?
+                                // 그럼... 전체 STT결과 처리는?
+
                             }
-
-                            // DBHandler에서 처리할 수 있도록... VRClient와 동일하게?
-                            // 그럼... 전체 STT결과 처리는?
-
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
                         }
-                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                        else if (gearman_failed(rc)) {
+                            logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                        }
                     }
-                    else if (gearman_failed(rc)) {
-                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
-                    }
-
+#endif  // USE_RAPIDJSON
                 }
                 else {
                     logger->info("VFClient::thrdFunc(%ld) - Success to get gearman(vr_stt) but empty result.  [%s : %s]", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str());
                     DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
                 }
             }
-            else if (gearman_failed(rc)) {
+            else {
                 logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+            }
+#else
+            // 1. Start STT : JOB_STT
+            if (client->requestGearman(gearClient, "vr_stt", reqFilePath.c_str(), reqFilePath.size(), sValue)) {
+
+                // 2Ch Wave
+                if ( sValue.find("||") != std::string::npos ) {
+                    std::string rx(sValue.substr(0, sValue.find("||")));
+                    std::string tx(sValue.substr(sValue.find("||")+2));
+
+                    // loop 2 times
+
+                }
+                else {
+                    std::string sFuncName="";
+                    size_t nPos1=0, nPos2=0;
+                    int nFilesize=0;
+
+                    // Software Speaker divide
+                    if ( sValue.find("spk_flag") != std::string::npos ) {
+                        nPos1 = sValue.find("spk_node");
+                        nPos2 = sValue.find("'", nPos1) + 1;
+                        nPos1 = sValue.find("'", nPos2);
+                        sFuncName = sValue.substr(nPos2, nPos1-nPos2);
+                        nPos2 = sValue.find("\n") + 1;
+                        nFilesize = std::stoi(sValue.c_str() + nPos2);
+
+                    }
+
+                    if (client->requestGearman(gearClient, "vr_text", (sValue.c_str() + nPos1), strlen(sValue.c_str() + nPos1), sValue)) {
+                        if (item->getRxTxType()){
+                            // 
+                            DivSpkManager *pDSM = DivSpkManager::instance();
+
+                            pDSM->doDivSpeaker(item->getCallId(), sValue);
+                        }
+                        else {
+                            uint32_t diaNumber=0;
+                            std::istringstream iss(sValue);
+                            std::vector<std::string> strs;
+                            while(std::getline(iss, line)) {
+                                boost::split(strs, line, boost::is_any_of(","));
+                                //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+
+                                // to DB
+                                if (DBHandler) {
+                                    diaNumber++;
+                                    DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                }
+
+                                // to STTDeliver(file), FullText
+                                if (FileHandler) {
+                                    //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                    FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                }
+                            }
+                        }
+
+                        if (sFuncName.size()) {
+                            VASDivSpeaker divspk(DBHandler, FileHandler, item);
+
+                            //startWork(gearman_client_st *gearClient, std::string &funcname, std::string &unseg);
+                            divspk.startWork(gearClient, sFuncName, sValue);
+                        }
+
+                    }
+                    else {
+                        logger->error("VFClient::thrdFunc(%ld) - failed requestGearman(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                    }
+                }
+
+            }
+            else {
+                logger->error("VFClient::thrdFunc(%ld) - failed requestGearman(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
                 DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
             }
 #endif
@@ -244,4 +483,24 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 #if 1
     gearman_client_free(gearClient);
 #endif
+}
+
+bool VFClient::requestGearman(gearman_client_st *gearClient, const char* funcname, const char*reqValue, size_t reqLen, std::string &resStr)
+{
+    bool ret = false;
+    void *value = NULL;
+    size_t result_size;
+    gearman_return_t rc;
+
+    value= gearman_client_do(gearClient, funcname, NULL, 
+                                    (const void*)reqValue, reqLen,
+                                    &result_size, &rc);
+    if (gearman_success(rc)) {
+        resStr = (const char*)value;
+
+        free(value);
+        ret = true;
+    }
+
+    return ret;
 }

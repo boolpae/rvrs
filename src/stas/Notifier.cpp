@@ -159,10 +159,13 @@ void Notifier::thrdFunc(Notifier *noti)
                     std::shared_ptr<std::string> filename = std::make_shared<std::string>(event->name, event->len);
                     std::string file_ext = filename->substr(filename->rfind(".") + 1);
 
-                    logger->debug("Noti file %s (Watch: '%s', ext: '%s')", filename->c_str(), watch_ext.c_str(), file_ext.c_str());
+                    //logger->debug("Noti file %s (Watch: '%s', ext: '%s')", filename->c_str(), watch_ext.c_str(), file_ext.c_str());
 
                     if (filename->at(0) != '.' && file_ext.find(watch_ext) == 0 &&
                         (file_ext.size() == watch_ext.size() || file_ext.at(watch_ext.size()) == '\0' )) {
+
+                        logger->debug("Noti file %s (Watch: '%s', ext: '%s')", filename->c_str(), watch_ext.c_str(), file_ext.c_str());
+
                         try {
                             // option값에 따라 동작이 바뀌어야 한다.
                             // pushItem() 시 protocol 추가해야한다. - FILE, MOUNT, HTTP, HTTPS, FTP, FTPS, SFTP, SCP, SSH
@@ -180,6 +183,7 @@ void Notifier::thrdFunc(Notifier *noti)
                                 std::string pathfile = *path.get()+"/"+*filename.get();
                                 std::ifstream index_file(pathfile);
                                 std::vector<std::string> v;
+                                logger->debug("open file %s", pathfile.c_str());
                                 if (index_file.is_open()) {
                                     for (std::string line; std::getline(index_file, line); ) {
                                         if (line.empty() || line.size() < 5)
@@ -187,9 +191,13 @@ void Notifier::thrdFunc(Notifier *noti)
 
                                         boost::split(v, line, boost::is_any_of(",  \t"), boost::token_compress_on);
 
+                                        logger->debug("line %s (v.size: %d)", line.c_str(), v.size());
+
                                         if (v.size() > 1) {
-                                            if (!noti->m_DBHandler->searchTaskInfo(downpath, v[0], v[1])) 
+                                            if (!noti->m_DBHandler->searchTaskInfo(downpath, v[0], v[1])) {
+                                                logger->debug("insert to TBL_JOB_INFO(%s)", v[0].c_str());
                                                 noti->m_DBHandler->insertTaskInfo(downpath, v[0], v[1]);
+                                            }
                                         }
                                         else {
                                             if (!noti->m_DBHandler->searchTaskInfo(downpath, v[0], v[0])) 

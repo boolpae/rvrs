@@ -13,6 +13,12 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 
+#ifdef USE_RAPIDJSON
+#include "rapidjson/document.h"     // rapidjson's DOM-style API
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#endif
+
 typedef struct _stt_result {
 	uint ts;
 	uint te;
@@ -39,7 +45,28 @@ int VASDivSpeaker::startWork(gearman_client_st *gearClient, std::string &funcnam
     std::string sValue;
     log4cpp::Category *logger = config->getLogger();
 
+#ifdef USE_RAPIDJSON
+    {
+        rapidjson::Document d;
+        rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+        d.SetObject();
+        d.AddMember("CMD", "SPK", alloc);
+        d.AddMember("CALL-ID", rapidjson::Value(m_jobItem->getCallId().c_str(), alloc).Move(), alloc);
+        d.AddMember("PATH", rapidjson::Value(m_jobItem->getPath().c_str(), alloc).Move(), alloc);
+        d.AddMember("FILENAME", rapidjson::Value(m_jobItem->getFilename().c_str(), alloc).Move(), alloc);
+        d.AddMember("UNSEGMENT-RESULT", rapidjson::Value(unseg.c_str(), alloc).Move(), alloc);
+
+        rapidjson::StringBuffer strbuf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+        d.Accept(writer);
+
+        sValue = strbuf.GetString();
+    }
+
+#else
     sValue = m_jobItem->getCallId() + "," + m_jobItem->getPath() + "/" + m_jobItem->getFilename() + "\n" + unseg;
+#endif  // USE_RAPIDJSON
 
     value= gearman_client_do(gearClient, funcname.c_str(), NULL, 
                                     (const void*)(sValue.c_str()), sValue.size(),
@@ -54,14 +81,25 @@ int VASDivSpeaker::startWork(gearman_client_st *gearClient, std::string &funcnam
         char spker[8];
         uint nTs, nTe;
 
-        sValue = (const char*)value;
-        free(value);
 
         // '\n'를 이용한 line별 구분 - vector
         // spk00, spk01 갯수 파악
         // 위에서 파악된 spk00, spk01 갯수를 이용하여 상담원과 고객 구분
         // line별(vector)로 DB에 저장
         // FullText 저장 (DB 또는 File)
+#ifdef USE_RAPIDJSON
+        rapidjson::Document doc;
+
+        sValue = "";
+        if (!doc.Parse((const char*)value).HasParseError() && doc["RESULT"].GetBool()) {
+            sValue = doc["SPK-RESULT"].GetString();
+        }
+        free(value);
+#else
+        sValue = (const char*)value;
+        free(value);
+#endif  // USE_RAPIDJSON
+
         boost::split(lines, sValue, boost::is_any_of("\n"));
 
         for (iter = lines.begin(); iter != lines.end(); iter++) {

@@ -38,7 +38,7 @@ int DivSpkManager::doDivSpeaker(std::string callid, std::string &sttValue)
 {
     int ret=0;
     std::string existSttValue;
-    std::string newSttValue;
+    //td::string newSttValue;
 
     // Search CallId from Vector : 
     ret = getSttValue(callid, existSttValue);
@@ -67,7 +67,7 @@ int DivSpkManager::doDivSpeaker(std::string callid, std::string &sttValue)
             res1.push_back(sres);
         }
 
-        boost::split(lines, newSttValue, boost::is_any_of("\n"));
+        boost::split(lines, sttValue, boost::is_any_of("\n"));
         for (iter = lines.begin(); iter != lines.end(); iter++) {
             //std::cout << *iter << std::endl;
             sscanf((*iter).c_str(), "%d,%d", &nTs, &nTe);
@@ -118,4 +118,17 @@ int DivSpkManager::getSttValue(std::string callid, std::string &sttValue)
     }
 
     return m_vSpkItems.size();
+}
+
+void DivSpkManager::clearSttValue(std::string callid) {
+    // Lock
+    std::lock_guard<std::mutex> g(m_mxQue);
+    std::vector< SpkItem >::iterator iter;
+
+    for(iter = m_vSpkItems.begin(); iter != m_vSpkItems.end(); iter++) {
+        if ((*iter).callid == callid) {
+            m_vSpkItems.erase(iter);
+            break;
+        }
+    }
 }

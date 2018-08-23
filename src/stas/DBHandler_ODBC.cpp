@@ -599,16 +599,28 @@ int DBHandler::searchTaskInfo(std::string downloadPath, std::string filename, st
 
     if (connSet)
     {
-        sprintf(sqlbuff, "SELECT CALL_ID,CS_CODE,PATHNAME,FILE_NAME FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NAME='%s'",
+        //sprintf(sqlbuff, "SELECT CALL_ID,CS_CODE,PATHNAME,FILE_NAME FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NAME='%s'",
+        sprintf(sqlbuff, "SELECT COUNT(CALL_ID) FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NAME='%s'",
             callId.c_str(), filename.c_str());
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+#if 0
         if (retcode == SQL_NO_DATA) {
+            m_Logger->error("DBHandler::searchTaskInfo - retcode(SQL_NO_DATA, %d)", retcode);
             ret = 0;
 	    }
 	    else if (retcode == SQL_SUCCESS){
+            m_Logger->error("DBHandler::searchTaskInfo - retcode(SQL_SUCCESS, %d)", retcode);
             ret = 1;
+        }
+#endif
+        while (SQLFetch(connSet->stmt) == SQL_SUCCESS) 
+        {
+            int resCnt=0, siCnt;
+
+            SQLGetData(connSet->stmt, 1, SQL_C_SHORT, &ret, 0, (SQLLEN *)&siCnt);
+            break;
         }
 
         m_pSolDBConnPool->restoreConnection(connSet);
@@ -688,7 +700,7 @@ void DBHandler::updateAllTask2Fail()
 
     if (connSet)
     {
-        sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='X' WHERE RG_DTM >= concat(date(now()), ' 00:00:00') and RG_DTM <= concat(date(now()), '23:59:59') and STATE='U' and timestampdiff(minute, concat(date(now()), ' 00:00:00'), RG_DTM) > 59");
+        sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='X' WHERE REG_DTM >= concat(date(now()), ' 00:00:00') and REG_DTM <= concat(date(now()), ' 23:59:59') and STATE='U' and DATE_SUB(now(), INTERVAL 1 HOUR) > REG_DTM");
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
