@@ -203,13 +203,13 @@ void DBHandler::thrdMain(DBHandler * s2d)
             nEnd = item->getEpos();
             // sprintf(sSpk, "%c", cSpk);
             sprintf(callId, "%s", item->getCallId().c_str());
-            sprintf(sttValue, "%s", item->getSTTValue().c_str());
+            sprintf(sttValue, "%s", utf_buf);//item->getSTTValue().c_str());
             // lenSpk = strlen(sSpk);
             lenCallid = strlen(callId);
             lenStt = strlen(sttValue);
             
-            // printf("nIdx(%d, %d), cSpk(%s, %d), nStart(%d), nEnd(%d) callId(%s) sttValue (%s), len(%d)\n", 
-            //     nIdx, lenIdx, sSpk, lenSpk, nStart, nEnd, callId, sttValue, lenStt);
+            printf("nIdx(%d, %d), nStart(%d), nEnd(%d) callId(%s) sttValue (%s), len(%d)\n", 
+                 nIdx, lenIdx, nStart, nEnd, callId, utf_buf, lenStt);
 
             retcode = SQLExecute(connSet->stmt);//SQLExecDirect (connSet->stmt, (SQLCHAR*)sqlbuff, SQL_NTS);//
             //printf("SQLExecute RET(%d)\n", retcode);
@@ -533,11 +533,11 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
         //sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s'",
         //    state, callid.c_str(), counselorcode.c_str());
         if (errcode && strlen(errcode)) {
-            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s'",
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s'",
                 tbName, state, errcode, callid.c_str());
         }
         else {
-            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c' WHERE CALL_ID='%s'",
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c' WHERE CALL_ID='%s'",
                 tbName, state, callid.c_str());
         }
 
@@ -575,11 +575,11 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std
         // sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s' AND REG_DTM='%s'",
         //     state, callid.c_str(), counselorcode.c_str(), regdate.c_str());
         if (errcode && strlen(errcode)) {
-            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND REG_DTM='%s'",
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND REG_DTM='%s'",
                 tbName, state, errcode, callid.c_str(), regdate.c_str());
         }
         else {
-            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c' WHERE CALL_ID='%s' AND REG_DTM='%s'",
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c' WHERE CALL_ID='%s' AND REG_DTM='%s'",
                 tbName, state, callid.c_str(), regdate.c_str());
         }
 
@@ -666,11 +666,12 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount, c
     char rxtx[8];
     int siCallId, siCCode, siPath, siFilename, siRxtx, siRegdate;
 
-    // m_Logger->debug("BEFORE DBHandler::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
+    //m_Logger->debug("BEFORE DBHandler::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d), availableCount(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool), availableCount);
+    
     if (connSet)
     {
-        sprintf(sqlbuff, "SELECT CALL_ID,CS_CODE,PATH_NM,FILE_NM,REG_DTM,RCD_TP FROM '%s' WHERE STATE='I' ORDER BY REG_DTM ASC LIMIT %d", tableName, availableCount);
-
+        sprintf(sqlbuff, "SELECT CALL_ID,CS_CD,PATH_NM,FILE_NM,REG_DTM,RCD_TP FROM %s WHERE STATE='I' ORDER BY REG_DTM ASC LIMIT %d", tableName, availableCount);
+        //m_Logger->debug("BEFORE DBHandler::getTaskInfo - SQL(%s)", sqlbuff);
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
         if (retcode == SQL_SUCCESS) {

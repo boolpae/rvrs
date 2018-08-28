@@ -485,7 +485,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                 }
             }
             else {
-                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d), gearman_error_msg(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, gearman_client_error(gearClient));
                 DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
             }
 #else
