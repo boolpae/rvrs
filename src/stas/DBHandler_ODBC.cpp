@@ -203,7 +203,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
             nEnd = item->getEpos();
             // sprintf(sSpk, "%c", cSpk);
             sprintf(callId, "%s", item->getCallId().c_str());
-            sprintf(sttValue, "%s", "utf_buf");//item->getSTTValue().c_str());
+            sprintf(sttValue, "%s", utf_buf);//item->getSTTValue().c_str());
             // lenSpk = strlen(sSpk);
             lenCallid = strlen(callId);
             lenStt = strlen(sttValue);
