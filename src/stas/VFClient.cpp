@@ -261,11 +261,11 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                             // 그럼... 전체 STT결과 처리는?
 
                                         }
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
                                     }
                                     else if (gearman_failed(rc)) {
                                         logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
                                     }
 
                                 }
@@ -285,8 +285,95 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                          * 두 번의 unsegment가 성공할 경우 각 각의 unsegment 결과에서 상담원, 고객을 알아낸다.(라인갯수)
                          * 상담원, 고객으로 구별된 데이터를 DB에 저장 후 마무리
                          */
-                        std::string rx(sValue.substr(0, sValue.find("||")));
-                        std::string tx(sValue.substr(sValue.find("||")+2));
+                        std::string rx_unseg;
+                        std::string tx_unseg;
+                        std::string rx(sValue.substr(0, sValue.find("||")));    // 고객
+                        std::string tx(sValue.substr(sValue.find("||")+2));     // 상담원
+
+                        value= gearman_client_do(gearClient, "vr_text", NULL, 
+                                                        (const void*)(rx.c_str()), rx.size(),
+                                                        &result_size, &rc);
+                        if (gearman_success(rc)) {
+                            if (value) {
+                                rx_unseg = (const char*)value;
+                                free(value);
+                            }
+
+                            value= gearman_client_do(gearClient, "vr_text", NULL, 
+                                                            (const void*)(tx.c_str()), tx.size(),
+                                                            &result_size, &rc);
+                            if (gearman_success(rc)) {
+                                if (value) {
+                                    tx_unseg = (const char*)value;
+                                    free(value);
+                                }
+#if 0
+                                // 화자분리
+                                DivSpkManager *pDSM = DivSpkManager::instance();
+
+                                pDSM->doDivSpeaker(item->getCallId(), rx_unseg);
+                                pDSM->doDivSpeaker(item->getCallId(), tx_unseg);
+#endif
+                                {
+                                    uint32_t diaNumber=0;
+                                    uint8_t spkno=2;
+                                    std::istringstream iss(rx_unseg);
+                                    std::vector<std::string> strs;
+                                    while(std::getline(iss, line)) {
+                                        boost::split(strs, line, boost::is_any_of(","));
+                                        //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+
+                                        // to DB
+                                        if (DBHandler) {
+                                            diaNumber++;
+                                            DBHandler->insertSTTData(diaNumber, item->getCallId(), spkno, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                        }
+
+                                        // to STTDeliver(file), FullText
+                                        if (FileHandler) {
+                                            //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                            FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                        }
+                                    }
+                                }
+
+                                {
+                                    uint32_t diaNumber=0;
+                                    uint8_t spkno=1;
+                                    std::istringstream iss(tx_unseg);
+                                    std::vector<std::string> strs;
+                                    while(std::getline(iss, line)) {
+                                        boost::split(strs, line, boost::is_any_of(","));
+                                        //std::cout << "[1] : " << strs[0] << " [2] : " << strs[1] << " [3] : " << strs[2] << std::endl;
+
+                                        // to DB
+                                        if (DBHandler) {
+                                            diaNumber++;
+                                            DBHandler->insertSTTData(diaNumber, item->getCallId(), spkno, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                        }
+
+                                        // to STTDeliver(file), FullText
+                                        if (FileHandler) {
+                                            //FileHandler->insertSTT(item->getCallId(), strs[2], 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4));
+                                            FileHandler->insertSTT(item->getCallId(), strs[2], item->getCallId());
+                                        }
+                                    }
+                                }
+
+
+                            }
+                            else {
+                                // FAIL
+                                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_tx). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
+                            }
+                        }
+                        else {
+                            // FAIL
+                            logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_rx). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
+                        }
+
                     }
                     else {
                         // # Parse Header
@@ -312,6 +399,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                             // Make use of value
                             if (value) {
                                 uint32_t diaNumber=0;
+                                uint8_t spkno=0;
                                 std::string strValue((const char*)value);
 
                                 free(value);
@@ -338,13 +426,19 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 // Unsegment 결과를 정제(parsing)하여 목적에 따라 처리한다.
 
                                 // # 화자 분리
-                                if (item->getRxTxType()){
-                                    // 
+                                if (item->getRxTxType().compare("RX") == 0){
+                                    spkno=2;
+#if 0
                                     DivSpkManager *pDSM = DivSpkManager::instance();
 
                                     pDSM->doDivSpeaker(item->getCallId(), strValue);
+#endif
                                 }
-                                else {
+                                else if (item->getRxTxType().compare("TX") == 0){
+                                    spkno=1;
+                                }
+
+                                {
                                     std::istringstream iss(strValue);
                                     std::vector<std::string> strs;
                                     while(std::getline(iss, line)) {
@@ -354,7 +448,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                         // to DB
                                         if (DBHandler) {
                                             diaNumber++;
-                                            DBHandler->insertSTTData(diaNumber, item->getCallId(), 0, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
+                                            DBHandler->insertSTTData(diaNumber, item->getCallId(), spkno, std::stoi(strs[0].c_str()+4), std::stoi(strs[1].c_str()+4), strs[2]);
                                         }
 
                                         // to STTDeliver(file), FullText
@@ -376,23 +470,23 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 // 그럼... 전체 STT결과 처리는?
 
                             }
-                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
                         }
                         else if (gearman_failed(rc)) {
                             logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
                         }
                     }
 #endif  // USE_RAPIDJSON
                 }
                 else {
                     logger->info("VFClient::thrdFunc(%ld) - Success to get gearman(vr_stt) but empty result.  [%s : %s]", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str());
-                    DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y');
+                    DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
                 }
             }
             else {
                 logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
             }
 #else
             // 1. Start STT : JOB_STT
@@ -461,14 +555,14 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                     }
                     else {
                         logger->error("VFClient::thrdFunc(%ld) - failed requestGearman(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
                     }
                 }
 
             }
             else {
                 logger->error("VFClient::thrdFunc(%ld) - failed requestGearman(vr_stt). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X');
+                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), gearman_client_error(gearClient));
             }
 #endif
             delete item;
@@ -500,6 +594,9 @@ bool VFClient::requestGearman(gearman_client_st *gearClient, const char* funcnam
 
         free(value);
         ret = true;
+    }
+    else {
+        resStr = gearman_client_error(gearClient);
     }
 
     return ret;

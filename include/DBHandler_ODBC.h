@@ -19,10 +19,11 @@ class JobInfoItem {
     std::string m_path;
     std::string m_filename;
     std::string m_regdate;
-    bool m_rxtx;
+    std::string m_rxtx;
+    std::string m_tableName; // TBL_JOB_INFO, TBL_JOB_SELF_INFO, TBL_JOB_RETRY_INFO
 
     public:
-    JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, std::string regdate, bool rxtx);
+    JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, std::string regdate, std::string rxtx, std::string tableName="TBL_JOB_INFO");
     virtual ~JobInfoItem();
 
     std::string getCallId() { return m_callid; }
@@ -30,7 +31,10 @@ class JobInfoItem {
     std::string getPath() { return m_path; }
     std::string getFilename() {return m_filename;}
     std::string getRegdate() {return m_regdate;}
-    bool getRxTxType() { return m_rxtx; }
+    std::string getRxTxType() { return m_rxtx; }
+
+    void setTableName(std::string tbName) { m_tableName = tbName; }
+    std::string getTableName() { return m_tableName; }
 };
 
 class RTSTTQueItem {
@@ -88,10 +92,10 @@ public:
     // VFClient에서 사용되는 api로서 작업 시작 전,
     // 작업 완료 후 아래의 api를 이용하여 해당 task에 대한 정보를 handling한다.
     int insertTaskInfo(std::string downloadPath, std::string filename, std::string callId);
-    int updateTaskInfo(std::string callid, std::string counselorcode, char state);
-    int updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state);
+    int updateTaskInfo(std::string callid, std::string counselorcode, char state, const char *tbName="TBL_JOB_INFO", const char *errcode=nullptr);
+    int updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state, const char *tbName="TBL_JOB_INFO", const char *errcode=nullptr);
     int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
-    int getTaskInfo(std::vector< JobInfoItem* > &v, int count);
+    int getTaskInfo(std::vector< JobInfoItem* > &v, int count, const char *tableName="TBL_JOB_INFO");
 
     // void restartConnectionPool();
 

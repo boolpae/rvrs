@@ -66,15 +66,45 @@ void Scheduler::thrdFuncScheduler(Scheduler *schd, VFCManager *vfcm)
         // DBHandler의 api를 이용하여 새로운 task를 확인
         // 새로운 task를 VFCManager의 큐에 등록
 
-        // get items from DB
-        if (schd->m_sttdb->getTaskInfo(v, vfcm->getAvailableCount()) > 0) {
+        // Self테이블
+        if (schd->m_sttdb->getTaskInfo(v, vfcm->getAvailableCount(), "TBL_JOB_SELF_INFO") > 0) {
             for( std::vector< JobInfoItem* >::iterator iter = v.begin(); iter != v.end(); iter++) {
                 item = *iter;
 
                 logger->debug("thrdFuncScheduler (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
                 // put item to VFCMgr's Queue
                 if (schd->m_vfcmgr->pushItem(item/*item->getPath()+"/"+item->getFilename()*/) > 0) {
-                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'U');
+                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'U', item->getTableName().c_str());
+                }
+            }
+
+            v.clear();
+        }
+
+        // Retry테이블
+        if (schd->m_sttdb->getTaskInfo(v, vfcm->getAvailableCount(), "TBL_JOB_RETRY_INFO") > 0) {
+            for( std::vector< JobInfoItem* >::iterator iter = v.begin(); iter != v.end(); iter++) {
+                item = *iter;
+
+                logger->debug("thrdFuncScheduler (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
+                // put item to VFCMgr's Queue
+                if (schd->m_vfcmgr->pushItem(item/*item->getPath()+"/"+item->getFilename()*/) > 0) {
+                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'U', item->getTableName().c_str());
+                }
+            }
+
+            v.clear();
+        }
+
+        // get items from DB
+        if (schd->m_sttdb->getTaskInfo(v, vfcm->getAvailableCount(), "TBL_JOB_INFO") > 0) {
+            for( std::vector< JobInfoItem* >::iterator iter = v.begin(); iter != v.end(); iter++) {
+                item = *iter;
+
+                logger->debug("thrdFuncScheduler (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
+                // put item to VFCMgr's Queue
+                if (schd->m_vfcmgr->pushItem(item/*item->getPath()+"/"+item->getFilename()*/) > 0) {
+                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'U', item->getTableName().c_str());
                 }
             }
 

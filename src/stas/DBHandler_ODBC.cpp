@@ -493,13 +493,13 @@ int DBHandler::insertTaskInfo(std::string downloadPath, std::string filename, st
 
     if (connSet)
     {
-        sprintf(sqlbuff, "INSERT INTO TBL_JOB_INFO (CALL_ID,PATHNAME,FILE_NAME,REG_DTM,STATE) VALUES ('%s','%s','%s',now(),'N')",
+        sprintf(sqlbuff, "INSERT INTO TBL_JOB_INFO (CALL_ID,PATH_NM,FILE_NM,REG_DTM,STATE) VALUES ('%s','%s','%s',now(),'I')",
             callId.c_str(), downloadPath.c_str(), filename.c_str());
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
         if SQL_SUCCEEDED(retcode) {
-            m_Logger->debug("INSERT INTO TBL_JOB_INFO (CALL_ID,PATHNAME,FILE_NAME,REG_DTM,STATE) VALUES ('%s','%s','%s',now(),'N')",
+            m_Logger->debug("INSERT INTO TBL_JOB_INFO (CALL_ID,PATH_NM,FILE_NM,REG_DTM,STATE) VALUES ('%s','%s','%s',now(),'I')",
                 callId.c_str(), downloadPath.c_str(), filename.c_str());
         }
         else {
@@ -520,7 +520,7 @@ int DBHandler::insertTaskInfo(std::string downloadPath, std::string filename, st
 
 // VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
 // args: call_id, counselor_code, task_stat etc
-int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, char state)
+int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, char state, const char *tbName, const char *errcode)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -530,8 +530,16 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
 
     if (connSet)
     {
-        sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s'",
-            state, callid.c_str(), counselorcode.c_str());
+        //sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s'",
+        //    state, callid.c_str(), counselorcode.c_str());
+        if (errcode && strlen(errcode)) {
+            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s'",
+                tbName, state, errcode, callid.c_str());
+        }
+        else {
+            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c' WHERE CALL_ID='%s'",
+                tbName, state, callid.c_str());
+        }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
@@ -554,7 +562,7 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
     return ret;
 }
 
-int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state)
+int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state, const char *tbName, const char *errcode)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -564,8 +572,17 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std
 
     if (connSet)
     {
-        sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s' AND REG_DTM='%s'",
-            state, callid.c_str(), counselorcode.c_str(), regdate.c_str());
+        // sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s' AND REG_DTM='%s'",
+        //     state, callid.c_str(), counselorcode.c_str(), regdate.c_str());
+        if (errcode && strlen(errcode)) {
+            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND REG_DTM='%s'",
+                tbName, state, errcode, callid.c_str(), regdate.c_str());
+        }
+        else {
+            sprintf(sqlbuff, "UPDATE '%s' SET STATE='%c' WHERE CALL_ID='%s' AND REG_DTM='%s'",
+                tbName, state, callid.c_str(), regdate.c_str());
+        }
+
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
@@ -600,7 +617,7 @@ int DBHandler::searchTaskInfo(std::string downloadPath, std::string filename, st
     if (connSet)
     {
         //sprintf(sqlbuff, "SELECT CALL_ID,CS_CODE,PATHNAME,FILE_NAME FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NAME='%s'",
-        sprintf(sqlbuff, "SELECT COUNT(CALL_ID) FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NAME='%s'",
+        sprintf(sqlbuff, "SELECT COUNT(CALL_ID) FROM TBL_JOB_INFO WHERE CALL_ID='%s' AND FILE_NM='%s'",
             callId.c_str(), filename.c_str());
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
@@ -634,7 +651,7 @@ int DBHandler::searchTaskInfo(std::string downloadPath, std::string filename, st
     return ret;
 }
 
-int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount) 
+int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount, const char *tableName) 
 {
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     int ret=0;
@@ -646,13 +663,13 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
     char path[500];
     char filename[256];
     char regdate[24];
-    bool rxtx=false;
+    char rxtx[8];
     int siCallId, siCCode, siPath, siFilename, siRxtx, siRegdate;
 
     // m_Logger->debug("BEFORE DBHandler::getTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool));
     if (connSet)
     {
-        sprintf(sqlbuff, "SELECT CALL_ID,CS_CODE,PATHNAME,FILE_NAME,REG_DTM FROM TBL_JOB_INFO WHERE STATE='N' ORDER BY REG_DTM ASC LIMIT %d", availableCount);
+        sprintf(sqlbuff, "SELECT CALL_ID,CS_CODE,PATH_NM,FILE_NM,REG_DTM,RCD_TP FROM '%s' WHERE STATE='I' ORDER BY REG_DTM ASC LIMIT %d", tableName, availableCount);
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
@@ -668,8 +685,9 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount)
                 SQLGetData(connSet->stmt, 3, SQL_C_CHAR, path, sizeof(path)-1, (SQLLEN *)&siPath);
                 SQLGetData(connSet->stmt, 4, SQL_C_CHAR, filename, sizeof(filename)-1, (SQLLEN *)&siFilename);
                 SQLGetData(connSet->stmt, 5, SQL_C_CHAR, regdate, sizeof(regdate)-1, (SQLLEN *)&siRegdate);
+                SQLGetData(connSet->stmt, 5, SQL_C_CHAR, rxtx, sizeof(rxtx)-1, (SQLLEN *)&siRxtx);
 
-                JobInfoItem *item = new JobInfoItem(std::string(callid), std::to_string(counselorcode), std::string(path), std::string(filename), std::string(regdate), rxtx);
+                JobInfoItem *item = new JobInfoItem(std::string(callid), std::to_string(counselorcode), std::string(path), std::string(filename), std::string(regdate), std::string(rxtx), std::string(tableName));
                 v.push_back(item);
             }
         }
@@ -758,8 +776,8 @@ RTSTTQueItem::~RTSTTQueItem()
 {
 }
 
-JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, std::string regdate, bool rxtx=false)
-: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename), m_regdate(regdate), m_rxtx(rxtx)
+JobInfoItem::JobInfoItem(std::string callid, std::string counselorcode, std::string path, std::string filename, std::string regdate, std::string rxtx, std::string tableName)
+: m_callid(callid), m_counselorcode(counselorcode), m_path(path), m_filename(filename), m_regdate(regdate), m_rxtx(rxtx), m_tableName(tableName)
 {
 
 }
