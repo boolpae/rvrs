@@ -203,7 +203,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
             nEnd = item->getEpos();
             // sprintf(sSpk, "%c", cSpk);
             sprintf(callId, "%s", item->getCallId().c_str());
-            sprintf(sttValue, "%s", utf_buf);//item->getSTTValue().c_str());
+            sprintf(sttValue, "%s", "utf_buf");//item->getSTTValue().c_str());
             // lenSpk = strlen(sSpk);
             lenCallid = strlen(callId);
             lenStt = strlen(sttValue);
@@ -309,14 +309,23 @@ int DBHandler::searchCallInfo(std::string counselorcode)
 
     if (connSet)
     {
-        sprintf(sqlbuff, "SELECT CS_CD,CT_CD,STAT FROM TBL_CS_LIST WHERE CS_CD='%s'", counselorcode.c_str());
+        //sprintf(sqlbuff, "SELECT CS_CD,CT_CD,STAT FROM TBL_CS_LIST WHERE CS_CD='%s'", counselorcode.c_str());
+        sprintf(sqlbuff, "SELECT COUNT(CS_CD) FROM TBL_CS_LIST WHERE CS_CD='%s'", counselorcode.c_str());
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
-
+#if 0
         if (retcode == SQL_NO_DATA) {
             ret = 0;
 	    }
 	    else if (retcode == SQL_SUCCESS){
             ret = 1;
+        }
+#endif
+        while (SQLFetch(connSet->stmt) == SQL_SUCCESS) 
+        {
+            int resCnt=0, siCnt;
+
+            SQLGetData(connSet->stmt, 1, SQL_C_SHORT, &ret, 0, (SQLLEN *)&siCnt);
+            break;
         }
 
         m_pSolDBConnPool->restoreConnection(connSet);
