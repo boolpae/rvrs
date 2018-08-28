@@ -247,7 +247,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
                     return;
                 }
             }
-
+            retcode = SQLCLoseCursor(connSet->stmt);
             if (utf_buf) free(utf_buf);
 			delete item;
 		}
@@ -327,7 +327,7 @@ int DBHandler::searchCallInfo(std::string counselorcode)
             SQLGetData(connSet->stmt, 1, SQL_C_SHORT, &ret, 0, (SQLLEN *)&siCnt);
             break;
         }
-
+        retcode = SQLCLoseCursor(connSet->stmt);
         m_pSolDBConnPool->restoreConnection(connSet);
     }
     else
@@ -354,6 +354,7 @@ int DBHandler::insertCallInfo(std::string counselorcode, std::string callid)
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("DBHandler::insertCallInfo - SQL[INSERT INTO TBL_CS_LIST (CS_CD,CT_CD,CALL_ID,STAT,REG_DTM) VALUES ('%s','1','%s',now())]", counselorcode.c_str(), callid.c_str());
         }
@@ -393,6 +394,7 @@ int DBHandler::updateCallInfo(std::string callid, bool end)
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("UPDATE TBL_CS_LIST SET STAT='%c' WHERE CALL_ID='%s'",
                 (end)?'E':'I', callid.c_str());
@@ -436,6 +438,7 @@ int DBHandler::updateCallInfo(std::string counselorcode, std::string callid, boo
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("DBHandler::updateCallInfo - SQL[UPDATE TBL_CS_LIST SET STAT='%c', CALL_ID='%s' WHERE CS_CD='%s']", (end)?'E':'I', callid.c_str(), counselorcode.c_str());
         }
@@ -507,6 +510,7 @@ int DBHandler::insertTaskInfo(std::string downloadPath, std::string filename, st
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("INSERT INTO TBL_JOB_INFO (CALL_ID,PATH_NM,FILE_NM,REG_DTM,STATE) VALUES ('%s','%s','%s',now(),'I')",
                 callId.c_str(), downloadPath.c_str(), filename.c_str());
@@ -552,6 +556,7 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("DBHandler::updateTaskInfo() - Query<%s>", sqlbuff);
         }
@@ -595,6 +600,7 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("DBHandler::updateTaskInfo2() - Query<%s>", sqlbuff);
         }
@@ -649,6 +655,7 @@ int DBHandler::searchTaskInfo(std::string downloadPath, std::string filename, st
             break;
         }
 
+        retcode = SQLCLoseCursor(connSet->stmt);
         m_pSolDBConnPool->restoreConnection(connSet);
     }
     else
@@ -705,7 +712,7 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount, c
             extract_error("DBHandler::getTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = retcode;
         }
-
+        retcode = SQLCLoseCursor(connSet->stmt);
         m_pSolDBConnPool->restoreConnection(connSet);
 
         ret = v.size();
@@ -731,7 +738,7 @@ void DBHandler::updateAllTask2Fail()
         sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='X' WHERE REG_DTM >= concat(date(now()), ' 00:00:00') and REG_DTM <= concat(date(now()), ' 23:59:59') and STATE='U' and DATE_SUB(now(), INTERVAL 1 HOUR) > REG_DTM");
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
-
+        retcode = SQLCLoseCursor(connSet->stmt);
         if SQL_SUCCEEDED(retcode) {
             m_Logger->debug("DBHandler::updateAllTask2Fail() - Query<%s>", sqlbuff);
         }
