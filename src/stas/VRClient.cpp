@@ -169,6 +169,7 @@ void VRClient::thrdMain(VRClient* client) {
     std::vector<uint8_t> vBuff[2];
     size_t sframe[2];
     size_t eframe[2];
+    uint64_t totalVoiceDataLen[2];
     size_t framelen;
 
     vBuff[0].reserve(MM_SIZE);
@@ -263,15 +264,20 @@ void VRClient::thrdMain(VRClient* client) {
         
         aDianum[0] = 0;
         aDianum[1] = 0;
+
+        totalVoiceDataLen[0] = 0;
+        totalVoiceDataLen[1] = 0;
 #endif
             
 		while (client->m_nLiveFlag)
 		{
 			while (!client->m_qRTQue.empty()) {
-				g = new std::lock_guard<std::mutex>(client->m_mxQue);
+				// g = new std::lock_guard<std::mutex>(client->m_mxQue);
 				item = client->m_qRTQue.front();
 				client->m_qRTQue.pop();
-				delete g;
+				// delete g;
+
+                totalVoiceDataLen[item->spkNo-1] += item->lenVoiceData;
 
                 vPos[item->spkNo -1].epos += item->lenVoiceData;
 				// queue에서 가져온 item을 STT 하는 로직을 아래에 코딩한다.
@@ -330,7 +336,11 @@ void VRClient::thrdMain(VRClient* client) {
                     eframe[item->spkNo-1] += (client->m_framelen/8);
                     // Convert the read samples to int16
                     vadres = fvad_process(vad, (const int16_t *)vpBuf, client->m_framelen);
+
+                    //client->m_Logger->debug("VRClient::thrdMain(%s) - SUB WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+
                     if (vadres < 0) {
+                        //client->m_Logger->error("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
                         continue;
                     }
 
@@ -543,13 +553,16 @@ void VRClient::thrdMain(VRClient* client) {
 #endif
 
 					if (!(--client->m_nNumofChannel)) {
+                        uint64_t totalVLen = totalVoiceDataLen[item->spkNo-1];
+
 						client->m_Mgr->removeVRC(client->m_sCallId);
+
 						if ( item->voiceData != NULL ) delete[] item->voiceData;
 						delete item;
 
                         if (client->m_s2d) {
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
-                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y');
+                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, 0);
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);
@@ -567,7 +580,8 @@ void VRClient::thrdMain(VRClient* client) {
 				delete item;
 				// 예외 발생 시 처리 내용 : VDCManager의 removeVDC를 호출할 수 있어야 한다. - 이 후 VRClient는 item->flag(0)에 대해서만 처리한다.
 			}
-			std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            //client->m_Logger->debug("VRClient::thrdMain(%s) - WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
         
 #ifdef FAD_FUNC

@@ -261,11 +261,11 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                             // 그럼... 전체 STT결과 처리는?
 
                                         }
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, 0, item->getTableName().c_str());
                                     }
                                     else if (gearman_failed(rc)) {
                                         logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
                                     }
 
                                 }
@@ -287,7 +287,8 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                          */
                         std::string rx_unseg;
                         std::string tx_unseg;
-                        std::string rx(sValue.substr(0, sValue.find("||")));    // 고객
+                        nFilesize = std::stoi(sValue.substr(0, sValue.find("\n")));
+                        std::string rx(sValue.substr(sValue.find("\n")+1, sValue.find("||")));    // 고객
                         std::string tx(sValue.substr(sValue.find("||")+2));     // 상담원
 
                         value= gearman_client_do(gearClient, "vr_text", NULL, 
@@ -359,25 +360,27 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                         }
                                     }
                                 }
-                                
-                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
+                                logger->debug("VFClient::thrdFunc(%ld) - STT SUCCESS [%s : %s], timeout(%d), fsize(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, nFilesize);
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, 0, item->getTableName().c_str());
 
                             }
                             else {
                                 // FAIL
                                 logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_tx). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
                             }
                         }
                         else {
                             // FAIL
                             logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_rx). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
                         }
 
                     }
                     else {
                         // # Parse Header
+                        std::string fsize;
+
                         if (sValue.find("spk_flag") != string::npos) {
                             // 2. cond.(화자분리), 필요한 인자값 수집 - gearman function 이름값 가져오기
 
@@ -391,6 +394,10 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                             //value = (void *)(sValue.c_str() + nPos1);
                             //result_size = strlen((const char*)value);
 
+                        }
+                        else {
+                            nFilesize = std::stoi(sValue.substr(0, sValue.find("\n")));
+                            nPos1 = sValue.find("\n");
                         }
                         // 2. Unsegment! : JOB_UNSEGMENT
                         value= gearman_client_do(gearClient, "vr_text", NULL, 
@@ -471,23 +478,24 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 // 그럼... 전체 STT결과 처리는?
 
                             }
-                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
+                            logger->debug("VFClient::thrdFunc(%ld) - STT SUCCESS [%s : %s], timeout(%d), fsize(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, nFilesize);
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, 0, item->getTableName().c_str());
                         }
                         else if (gearman_failed(rc)) {
                             logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
-                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
                         }
                     }
 #endif  // USE_RAPIDJSON
                 }
                 else {
                     logger->info("VFClient::thrdFunc(%ld) - Success to get gearman(vr_stt) but empty result.  [%s : %s]", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str());
-                    DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', item->getTableName().c_str());
+                    DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', 0, 0, 0, item->getTableName().c_str());
                 }
             }
             else {
                 logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], timeout(%d), gearman_error_msg(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, gearman_client_error(gearClient));
-                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
+                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), "E20400"/*gearman_client_error(gearClient)*/);
             }
 #else
             // 1. Start STT : JOB_STT
