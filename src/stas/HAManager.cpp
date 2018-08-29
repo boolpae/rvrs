@@ -182,6 +182,7 @@ void HAManager::thrdStandby(HAManager *mgr, int standbysock)
                 int nSignalCount=0;
                 char cSigType;
                 char sCallId[33];
+                char sCounselCode[33];
                 char sFuncName[33];
                 uint16_t port1;
                 uint16_t port2;
@@ -200,17 +201,17 @@ void HAManager::thrdStandby(HAManager *mgr, int standbysock)
                     for(int i=0; i<nSignalCount; i++) {
                         memset(buff, 0, sizeof(buff));
                         memcpy(buff, sRecvString.c_str() + (i * 75), 75);
-                        sscanf(buff, "%c%32s%32s%5hd%5hd", &cSigType, sCallId, sFuncName, &port1, &port2);
+                        sscanf(buff, "%c%32s%32s%32s%5hd%5hd", &cSigType, sCallId, sCounselCode, sFuncName, &port1, &port2);
 
                         if (cSigType == 'A') { // Add SignalItem
-                            SyncItem *item = new SyncItem(cSigType, std::string(sCallId), std::string(sFuncName), port1, port2);
+                            SyncItem *item = new SyncItem(cSigType, std::string(sCallId), std::string(sCounselCode), std::string(sFuncName), port1, port2);
                             mgr->m_mSyncTable[std::string(sCallId)] = item;
 
 #ifdef LOG4CPP
                             // control channel logic
                             if (mgr->m_vrm) {
                                 // set vrc worker info
-                                if (mgr->m_vrm->addVRC(std::string(sCallId), std::string(sFuncName), 'R', 2))
+                                if (mgr->m_vrm->addVRC(std::string(sCallId), std::string(sCounselCode), std::string(sFuncName), 'R', 2))
                                 {
                                     if (mgr->m_Logger) mgr->m_Logger->error("HAManager::thrdStandby() - Failed Set VRC : %s", sCallId);
                                 }
@@ -409,7 +410,7 @@ void HAManager::thrdActive(HAManager *mgr)
                 if ( mgr->m_mSyncTable.size() && ((len=write(client_fd, buff, 4+sizeof(uint16_t))) > 0) ) {
                     for(iter = mgr->m_mSyncTable.begin(); iter != mgr->m_mSyncTable.end(); iter++) {
                         syncItem = iter->second;
-                        sprintf(buff, "%c%-32s%-32s%-5hd%-5hd", (syncItem->m_bSignalType?'A':'R'),syncItem->m_sCallId.c_str(), syncItem->m_sFuncName.c_str(), syncItem->m_n1port, syncItem->m_n2port);
+                        sprintf(buff, "%c%-32s%-32s%-32s%-5hd%-5hd", (syncItem->m_bSignalType?'A':'R'),syncItem->m_sCallId.c_str(),syncItem->m_sCounselCode.c_str(), syncItem->m_sFuncName.c_str(), syncItem->m_n1port, syncItem->m_n2port);
                         if (write(client_fd, buff, 75) <= 0) break;
                     }
 
@@ -495,7 +496,7 @@ void HAManager::thrdSender(HAManager *mgr, int sockfd)
             memcpy(buff, "STAS", 4);
             nLen = htons(75);
             memcpy(buff+4, &nLen, sizeof(uint16_t));
-            sprintf(buff+6, "%c%-32s%-32s%-5hd%-5hd", (item->m_bSignalType?'A':'R'), item->m_sCallId.c_str(), item->m_sFuncName.c_str(), item->m_n1port, item->m_n2port);
+            sprintf(buff+6, "%c%-32s%-32s%-32s%-5hd%-5hd", (item->m_bSignalType?'A':'R'), item->m_sCallId.c_str(), item->m_sCounselCode.c_str(), item->m_sFuncName.c_str(), item->m_n1port, item->m_n2port);
             write(sockfd, buff, 79+sizeof(uint16_t));
             if (item->m_bSignalType) {
 #ifdef LOG4CPP
@@ -514,18 +515,18 @@ void HAManager::thrdSender(HAManager *mgr, int sockfd)
     }
 }
 
-int HAManager::insertSyncItem( bool calltype, std::string callid, std::string funcname, uint16_t port1, uint16_t port2 )
+int HAManager::insertSyncItem( bool calltype, std::string callid, std::string counselcode, std::string funcname, uint16_t port1, uint16_t port2 )
 {
     SyncItem *item;
     std::lock_guard<std::mutex> g(m_mxQue);
 
     if (m_bSenderFlag) {
-        item = new SyncItem(calltype, callid, funcname, port1, port2);
+        item = new SyncItem(calltype, callid, counselcode, funcname, port1, port2);
         m_qSignalQue.push(item);
     }
 
     if (calltype) {
-        item = new SyncItem(calltype, callid, funcname, port1, port2);
+        item = new SyncItem(calltype, callid, counselcode, funcname, port1, port2);
         m_mSyncTable[callid] = item;
     }
     else {
@@ -569,8 +570,8 @@ void HAManager::outputSignals()
     }
 }
 
-SyncItem::SyncItem(bool bSignalType, std::string sCallId, std::string sFuncName, unsigned short n1port, unsigned short n2port)
-    : m_bSignalType(bSignalType), m_sCallId(sCallId), m_sFuncName(sFuncName), m_n1port(n1port), m_n2port(n2port)
+SyncItem::SyncItem(bool bSignalType, std::string sCallId, std::string sCounselCode, std::string sFuncName, unsigned short n1port, unsigned short n2port)
+    : m_bSignalType(bSignalType), m_sCallId(sCallId), m_sCounselCode(sCounselCode), m_sFuncName(sFuncName), m_n1port(n1port), m_n2port(n2port)
 {
 
 }

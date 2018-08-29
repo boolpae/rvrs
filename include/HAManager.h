@@ -24,6 +24,7 @@ class SyncItem {
     SyncItem(
         bool bSignalType, // true: call start, false: call end
         std::string sCallId,
+        std::string sCounselCode,
         std::string sFuncName,
         unsigned short n1port,
         unsigned short n2port);
@@ -31,6 +32,7 @@ class SyncItem {
 
     bool m_bSignalType; // true: call start, false: call end
     std::string m_sCallId;
+    std::string m_sCounselCode;
     std::string m_sFuncName;
     unsigned short m_n1port;
     unsigned short m_n2port;
@@ -52,7 +54,7 @@ class HAManager {
 
     //int sendCallSignal();
 
-    int insertSyncItem( bool calltype, std::string callid, std::string funcname, uint16_t port1, uint16_t port2 );
+    int insertSyncItem( bool calltype, std::string callid,  std::string counselcode, std::string funcname, uint16_t port1, uint16_t port2 );
     //void deleteSyncItem( std::string callid );
 
     bool getHAStat() { return m_bStat; }

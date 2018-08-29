@@ -30,6 +30,7 @@ class VRClient
     int m_nGearTimeout;
 	string m_sFname;
 	string m_sCallId;
+	string m_sCounselCode;
 	volatile uint8_t m_nLiveFlag;	// Threading Class로서 객체 삭제를 thread에서 수행하도록 설계
 	uint8_t m_cJobType;	// VRClient의 작업 타입(파일:F, 실시간:R)
 	uint8_t m_nNumofChannel;
@@ -50,11 +51,12 @@ class VRClient
 public:
 
 public:
-	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, string& counselcode, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	void finish();
 
 	string& getFname() { return m_sFname; }
 	string& getCallId() { return m_sCallId; }
+	string& getCounselCode() { return m_sCounselCode; }
 
 	void insertQueItem(QueItem* item);
 

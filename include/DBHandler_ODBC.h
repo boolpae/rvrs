@@ -96,6 +96,7 @@ public:
     int updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state, const char *tbName="TBL_JOB_INFO", const char *errcode=nullptr);
     int searchTaskInfo(std::string downloadPath, std::string filename, std::string callId);
     int getTaskInfo(std::vector< JobInfoItem* > &v, int count, const char *tableName="TBL_JOB_INFO");
+    int insertTaskInfoRT(std::string downloadPath, std::string filename, std::string callId, std::string counselcode);
 
     // void restartConnectionPool();
 

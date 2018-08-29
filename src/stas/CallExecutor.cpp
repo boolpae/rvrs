@@ -98,7 +98,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 					// VDC, VRC 요청
 					// 1. VRC 요청 : 성공 시 VDC 요청, 실패 패킷 생성하여 sendto
 					WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_REQ_WORKER);
-                    if ((resReq = exe->m_vrcm->requestVRC(sCallId, 'R', cs->getUdpCnt()))) {
+                    if ((resReq = exe->m_vrcm->requestVRC(sCallId, sCounselorCode, 'R', cs->getUdpCnt()))) {
 						WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_WORKER);
 
 						if (resReq == 1) {
@@ -135,6 +135,8 @@ void CallExecutor::thrdMain(CallExecutor* exe)
                                 	exe->m_st2db->updateCallInfo(sCounselorCode, sCallId, false);
 								else
 									exe->m_st2db->insertCallInfo(sCounselorCode, sCallId);
+
+								exe->m_st2db->insertTaskInfoRT(std::string("/home/stt/Smart-VR/input"), sCallId, sCallId, sCounselorCode);
 									
                             }
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 1);
@@ -142,7 +144,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
                             
                             // HA
                             if (exe->m_ham)
-                                exe->m_ham->insertSyncItem(true, sCallId, exe->m_vrcm->getVRClient(sCallId)->getFname(), vPorts[0], vPorts[1]);
+                                exe->m_ham->insertSyncItem(true, sCallId, sCounselorCode, exe->m_vrcm->getVRClient(sCallId)->getFname(), vPorts[0], vPorts[1]);
 						}
 					}
 				}

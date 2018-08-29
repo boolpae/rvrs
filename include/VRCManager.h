@@ -53,7 +53,7 @@ public:
 	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	static void release();
 
-	int16_t requestVRC(string& callid, uint8_t jobType, uint8_t noc);
+	int16_t requestVRC(string& callid, string& counselcode, uint8_t jobType, uint8_t noc);
 	void removeVRC(string callid);
 	void removeAllVRC();
 
@@ -65,7 +65,7 @@ public:
 
 	uint16_t getGearPort() { return m_nGearPort; }
     
-    int addVRC(string callid, string fname, uint8_t jobtype, uint8_t noc);
+    int addVRC(string callid, string counselcode, string fname, uint8_t jobtype, uint8_t noc);
 
 private:
 	VRCManager(int geartimeout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);

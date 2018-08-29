@@ -101,8 +101,8 @@ typedef struct
 
 #endif // FAD_FUNC
 
-VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
-	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), /*m_Logger(logger),*/ m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
+VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, string& counselcode, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
+	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_sCounselCode(counselcode), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), /*m_Logger(logger),*/ m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
 {
 	m_Mgr = mgr;
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -549,13 +549,14 @@ void VRClient::thrdMain(VRClient* client) {
 
                         if (client->m_s2d) {
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
+                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y');
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);
 #else
                         // HA
                         if (HAManager::getInstance())
-                            HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, std::string("remove"), 1, 1);
+                            HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, client->m_sCounselCode, std::string("remove"), 1, 1);
 
 #endif
 						break;
