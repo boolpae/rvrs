@@ -84,8 +84,8 @@ void DBHandler::thrdMain(DBHandler * s2d)
     char sqlbuff[1024];
     int nIdx;
 
-    int lenStt, lenIdx, lenCallid, /*lenSpk,*/ lenStart, lenEnd;
-    char sttValue[501];
+    SQLLEN lenStt, lenIdx, lenCallid, /*lenSpk,*/ lenStart, lenEnd;
+    char sttValue[1024];
     char callId[256];
     int nStart, nEnd;
 
@@ -104,18 +104,18 @@ void DBHandler::thrdMain(DBHandler * s2d)
 
     retcode = SQLBindParameter(connSet->stmt, 1, SQL_PARAM_INPUT,
                         SQL_C_SLONG, SQL_INTEGER, 0, 0,
-                        (SQLPOINTER)&nIdx, sizeof(nIdx), (SQLLEN*)&lenIdx);
+                        (SQLPOINTER)&nIdx, sizeof(SQLINTEGER), (SQLLEN*)&lenIdx);
     retcode = SQLBindParameter(connSet->stmt, 2, SQL_PARAM_INPUT,
-                        SQL_C_CHAR, SQL_VARCHAR, 255, 0,
+                        SQL_C_CHAR, SQL_VARCHAR, sizeof(callId), 0,
                         (SQLPOINTER)callId, sizeof(callId), (SQLLEN*)&lenCallid);
     retcode = SQLBindParameter(connSet->stmt, 3, SQL_PARAM_INPUT,
                         SQL_C_SLONG, SQL_INTEGER, 0, 0,
-                        (SQLPOINTER)&nStart, sizeof(nStart), (SQLLEN*)&lenStart);
+                        (SQLPOINTER)&nStart, sizeof(SQLINTEGER), (SQLLEN*)&lenStart);
     retcode = SQLBindParameter(connSet->stmt, 4, SQL_PARAM_INPUT,
                         SQL_C_SLONG, SQL_INTEGER, 0, 0,
-                        (SQLPOINTER)&nEnd, sizeof(nEnd), (SQLLEN*)&lenEnd);
+                        (SQLPOINTER)&nEnd, sizeof(SQLINTEGER), (SQLLEN*)&lenEnd);
     retcode = SQLBindParameter(connSet->stmt, 5, SQL_PARAM_INPUT,
-                        SQL_C_CHAR, SQL_VARCHAR, 500, 0,
+                        SQL_C_CHAR, SQL_VARCHAR, sizeof(sttValue), 0,
                         (SQLPOINTER)sttValue, sizeof(sttValue), (SQLLEN*)&lenStt);
     // retcode = SQLBindParameter(connSet->stmt, 6, SQL_PARAM_INPUT,
     //                     SQL_C_CHAR, SQL_CHAR, 1, 0,
@@ -133,9 +133,9 @@ void DBHandler::thrdMain(DBHandler * s2d)
 			delete g;
 
             in_size = item->getSTTValue().size();
-            out_size = item->getSTTValue().size() * 2;
+            out_size = in_size * 2 + 1;
             utf_buf = (char *)malloc(out_size);
-            
+
             if (utf_buf) {
                 memset(utf_buf, 0, out_size);
 
@@ -153,7 +153,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
                 utf_buf = nullptr;
                 ret = -1;
             }
-            
+
             // insert rtstt to db
             switch(item->getSpkNo()) {
                 case 1:
@@ -166,29 +166,6 @@ void DBHandler::thrdMain(DBHandler * s2d)
                     cSpk = 'N';
             }
 
-#if 0
-            // sprintf(sqlbuff, "INSERT INTO JOB_DATA (idx,call_id,spk,pos_start,pos_end,value) VALUES (%d,'%s','%c',%lu,%lu,'%s')",
-            //     item->getDiaIdx(), item->getCallId().c_str(), cSpk, item->getBpos(), item->getEpos(), ((ret == -1) ? item->getSTTValue().c_str() : utf_buf));
-            lenStt = item->getSTTValue().size();//strlen(input_buf_ptr);
-            lenIdx = 11;
-            sprintf(sqlbuff, "INSERT INTO JOB_DATA (idx,call_id,spk,pos_start,pos_end,value) VALUES (%d,'%s','%c',%lu,%lu,?)",
-                item->getDiaIdx(), item->getCallId().c_str(), cSpk, item->getBpos(), item->getEpos());//, input_buf_ptr);
-            printf("QUERY<%s>\n", sqlbuff);
-#if 0
-            retcode = SQLBindParameter(connSet->stmt, 1, SQL_PARAM_INPUT,
-                               SQL_C_LONG, SQL_INTEGER, 11, 0,
-                               (SQLPOINTER)&nIdx, 11, (SQLLEN*)&lenIdx);
-#endif
-            retcode = SQLBindParameter(connSet->stmt, 1, SQL_PARAM_INPUT,
-                               SQL_C_CHAR, SQL_VARCHAR, 500, 0,
-                               (SQLPOINTER)sttValue, 500, (SQLLEN*)&lenStt);
-            printf("SQLBindParameter RET(%d)\n", retcode);
-
-            retcode = SQLPrepare(connSet->stmt, (SQLCHAR*)sqlbuff, SQL_NTS);
-            printf("SQLPrepare RET(%d)\n", retcode);
-            retcode = SQLNumParams(connSet->stmt, &NumParams);
-            printf("SQLNumParams RET(%d) NumParams(%d)\n", retcode, NumParams);
-#endif
             sprintf(sqlbuff, "INSERT INTO TBL_JOB_DATA (IDX,SPK,CALL_ID,POS_START,POS_END,VALUE) VALUES (?,'%c',?,?,?,?)", cSpk);
             //printf("QUERY<%s>\n", sqlbuff);
 
@@ -208,8 +185,8 @@ void DBHandler::thrdMain(DBHandler * s2d)
             lenCallid = strlen(callId);
             lenStt = strlen(sttValue);
             
-            printf("nIdx(%d, %d), nStart(%d), nEnd(%d) callId(%s) sttValue (%s), len(%d)\n", 
-                 nIdx, lenIdx, nStart, nEnd, callId, utf_buf, lenStt);
+            // printf("nIdx(%d, %d), nStart(%d), nEnd(%d) callId(%s) sttValue (%s), len(%d,%d) inout_size(%d,%d)\n", 
+            //      nIdx, lenIdx, nStart, nEnd, callId, utf_buf, lenCallid, lenStt, in_size, out_size);
 
             retcode = SQLExecute(connSet->stmt);//SQLExecDirect (connSet->stmt, (SQLCHAR*)sqlbuff, SQL_NTS);//
             //printf("SQLExecute RET(%d)\n", retcode);
@@ -223,18 +200,18 @@ void DBHandler::thrdMain(DBHandler * s2d)
                 if (connSet) {
                     retcode = SQLBindParameter(connSet->stmt, 1, SQL_PARAM_INPUT,
                                         SQL_C_SLONG, SQL_INTEGER, 0, 0,
-                                        (SQLPOINTER)&nIdx, sizeof(nIdx), (SQLLEN*)&lenIdx);
+                                        (SQLPOINTER)&nIdx, sizeof(SQLINTEGER), (SQLLEN*)&lenIdx);
                     retcode = SQLBindParameter(connSet->stmt, 2, SQL_PARAM_INPUT,
-                                        SQL_C_CHAR, SQL_VARCHAR, 255, 0,
+                                        SQL_C_CHAR, SQL_VARCHAR, sizeof(callId), 0,
                                         (SQLPOINTER)callId, sizeof(callId), (SQLLEN*)&lenCallid);
                     retcode = SQLBindParameter(connSet->stmt, 3, SQL_PARAM_INPUT,
                                         SQL_C_SLONG, SQL_INTEGER, 0, 0,
-                                        (SQLPOINTER)&nStart, sizeof(nStart), (SQLLEN*)&lenStart);
+                                        (SQLPOINTER)&nStart, sizeof(SQLINTEGER), (SQLLEN*)&lenStart);
                     retcode = SQLBindParameter(connSet->stmt, 4, SQL_PARAM_INPUT,
                                         SQL_C_SLONG, SQL_INTEGER, 0, 0,
-                                        (SQLPOINTER)&nEnd, sizeof(nEnd), (SQLLEN*)&lenEnd);
+                                        (SQLPOINTER)&nEnd, sizeof(SQLINTEGER), (SQLLEN*)&lenEnd);
                     retcode = SQLBindParameter(connSet->stmt, 5, SQL_PARAM_INPUT,
-                                        SQL_C_CHAR, SQL_VARCHAR, 500, 0,
+                                        SQL_C_CHAR, SQL_VARCHAR, sizeof(sttValue), 0,
                                         (SQLPOINTER)sttValue, sizeof(sttValue), (SQLLEN*)&lenStt);
 
                 }
