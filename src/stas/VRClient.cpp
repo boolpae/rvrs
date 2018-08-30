@@ -386,12 +386,12 @@ void VRClient::thrdMain(VRClient* client) {
 
                                     // to DB
                                     if (client->m_s2d) {
-                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
+                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
                                     }
                                     //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                                     // to STTDeliver(file)
                                     if (client->m_deliver) {
-                                        client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
+                                        client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10);
                                     }
 
                                     free(value);
@@ -531,12 +531,12 @@ void VRClient::thrdMain(VRClient* client) {
                             //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
                                 if (client->m_s2d) {
-                                    client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1], modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
+                                    client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
                                 }
                                 //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                                 // to STTDeliver(file)
                                 if (client->m_deliver) {
-                                    client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1], eframe[item->spkNo -1]);
+                                    client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10);
                                 }
 
                                 free(value);
@@ -564,7 +564,7 @@ void VRClient::thrdMain(VRClient* client) {
                         if (client->m_s2d) {
                             auto t2 = std::chrono::high_resolution_clock::now();
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
-                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count());
+                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count());
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);
