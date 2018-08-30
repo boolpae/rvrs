@@ -139,7 +139,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
             memset(buf, 0, sizeof(buf));
             buflen = 0;
             
-
+            auto t1 = std::chrono::high_resolution_clock::now();
 #if 1
             // 1. Start STT : JOB_STT
             value= gearman_client_do(gearClient, "vr_stt", NULL, 
@@ -261,7 +261,8 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                             // 그럼... 전체 STT결과 처리는?
 
                                         }
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, 0, item->getTableName().c_str());
+                                        auto t2 = std::chrono::high_resolution_clock::now();
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count(), item->getTableName().c_str());
                                     }
                                     else if (gearman_failed(rc)) {
                                         logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);
@@ -360,8 +361,9 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                         }
                                     }
                                 }
+                                auto t2 = std::chrono::high_resolution_clock::now();
                                 logger->debug("VFClient::thrdFunc(%ld) - STT SUCCESS [%s : %s], timeout(%d), fsize(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, nFilesize);
-                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, 0, item->getTableName().c_str());
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count(), item->getTableName().c_str());
 
                             }
                             else {
@@ -478,8 +480,9 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 // 그럼... 전체 STT결과 처리는?
 
                             }
+                            auto t2 = std::chrono::high_resolution_clock::now();
                             logger->debug("VFClient::thrdFunc(%ld) - STT SUCCESS [%s : %s], timeout(%d), fsize(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, nFilesize);
-                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, 0, item->getTableName().c_str());
+                            DBHandler->updateTaskInfo(item->getCallId(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count(), item->getTableName().c_str());
                         }
                         else if (gearman_failed(rc)) {
                             logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], timeout(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout);

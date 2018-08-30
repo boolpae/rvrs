@@ -268,6 +268,7 @@ void VRClient::thrdMain(VRClient* client) {
         totalVoiceDataLen[0] = 0;
         totalVoiceDataLen[1] = 0;
 #endif
+        auto t1 = std::chrono::high_resolution_clock::now();
             
 		while (client->m_nLiveFlag)
 		{
@@ -561,8 +562,9 @@ void VRClient::thrdMain(VRClient* client) {
 						delete item;
 
                         if (client->m_s2d) {
+                            auto t2 = std::chrono::high_resolution_clock::now();
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
-                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, 0);
+                            client->m_s2d->updateTaskInfo(client->m_sCallId, client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count());
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);
