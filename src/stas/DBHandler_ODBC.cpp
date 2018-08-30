@@ -85,7 +85,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
     int nIdx;
 
     SQLLEN lenStt, lenIdx, lenCallid, /*lenSpk,*/ lenStart, lenEnd;
-    char sttValue[1024];
+    char sttValue[2048];
     char callId[256];
     int nStart, nEnd;
 
@@ -197,6 +197,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
 
             if (retcode < 0) {
                 extract_error("SQLExecute()", connSet->stmt, SQL_HANDLE_STMT);
+#if 0
                 //s2d->m_Logger->error("DBHandler::insertCallInfo - SQLException -- %s", Exception_frame.message);
                 connSet = s2d->m_pSolDBConnPool->reconnectConnection(connSet);
 
@@ -226,6 +227,7 @@ void DBHandler::thrdMain(DBHandler * s2d)
                     logger->error("DBHandler::thrdMain() finish! - for SQLExecute ERROR\n");
                     return;
                 }
+#endif
             }
             retcode = SQLCloseCursor(connSet->stmt);
             if (utf_buf) free(utf_buf);
@@ -540,7 +542,7 @@ int DBHandler::insertTaskInfoRT(std::string downloadPath, std::string filename, 
                 callId.c_str(), counselcode.c_str(), downloadPath.c_str(), filename.c_str());
         }
         else {
-            extract_error("DBHandler::insertTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            extract_error("DBHandler::insertTaskInfoRT() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
             ret = 1;
         }
         retcode = SQLCloseCursor(connSet->stmt);
