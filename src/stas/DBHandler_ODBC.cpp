@@ -558,7 +558,7 @@ int DBHandler::insertTaskInfoRT(std::string downloadPath, std::string filename, 
 
 // VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
 // args: call_id, counselor_code, task_stat etc
-int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
+int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -571,12 +571,12 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
         //sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s'",
         //    state, callid.c_str(), counselorcode.c_str());
         if (errcode && strlen(errcode)) {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s'",
-                tbName, state, errcode, callid.c_str());
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s'",
+                tbName, state, errcode, callid.c_str(), rxtx.c_str());
         }
         else {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s'",
-                tbName, state, fsize, plen, wtime, callid.c_str());
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s'",
+                tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str());
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
@@ -601,7 +601,7 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, cha
     return ret;
 }
 
-int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std::string regdate, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
+int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, std::string regdate, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -614,12 +614,12 @@ int DBHandler::updateTaskInfo(std::string callid, std::string counselorcode, std
         // sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s' AND REG_DTM='%s'",
         //     state, callid.c_str(), counselorcode.c_str(), regdate.c_str());
         if (errcode && strlen(errcode)) {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND REG_DTM='%s'",
-                tbName, state, errcode, callid.c_str(), regdate.c_str());
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s' AND REG_DTM='%s'",
+                tbName, state, errcode, callid.c_str(), rxtx.c_str(), regdate.c_str());
         }
         else {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND REG_DTM='%s'",
-                tbName, state, fsize, plen, wtime, callid.c_str(), regdate.c_str());
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s' AND REG_DTM='%s'",
+                tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str(), regdate.c_str());
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
