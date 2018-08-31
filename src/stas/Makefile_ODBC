@@ -29,13 +29,15 @@ SOURCE			:= CallExecutor.cpp \
 #SOURCE			+= v1/restapi_v1.cc v1/servers.cc v1/waves.cc
 #INCLUDE_PATH	:= $(PRJ_HOME)/include/dnn
 INCLUDE_PATH	:= /usr/local/include
+INCLUDE_PATH	+= /usr/local/include/xredis
 #INCLUDE_PATH	+= /usr/local/include/zdb
 LIBRARIES		:= ${DIST}/itf_common
 #LIBRARIES		+= dnn/libsplproc dnn/libfrontend dnn/libmsearch dnn/libasearch
 #LIBRARIES		+= dnn/libbase dnn/liblsearch dnn/liblaserdnn2 dnn/libdnnapi dnn/libdnn.gpu
-FLAGS			:= -DFAD_FUNC -DUSE_ODBC
+FLAGS			:= -DFAD_FUNC -DUSE_ODBC -DUSE_XREDIS
 SHARED_LIBS		:= -lboost_program_options -lboost_filesystem -lboost_system
 SHARED_LIBS		+= -llog4cpp -lgearman -lodbc -lfvad
+SHARED_LIBS		+= -lxredis -lhiredis
 SHARED_LIBS		+= -lrt -lm -lpthread
 #ifeq ($(KERNEL_VERSION), 2)
 #SHARED_LIBS		+= -L/usr/lib64/atlas -llapack -lcblas -latlas -lf77blas

@@ -40,7 +40,11 @@
 
 #include <fvad.h>
 
-
+#ifdef USE_XREDIS
+#include "rapidjson/document.h"     // rapidjson's DOM-style API
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+#endif
 
 #define WAVE_FORMAT_UNKNOWN      0X0000;
 #define WAVE_FORMAT_PCM          0X0001;
@@ -100,6 +104,27 @@ typedef struct
 } WAVE_HEADER;
 
 #endif // FAD_FUNC
+
+#ifdef USE_XREDIS
+static unsigned int APHash(const char *str) {
+    unsigned int hash = 0;
+    int i;
+    for (i=0; *str; i++) {
+        if ((i&  1) == 0) {
+            hash ^= ((hash << 7) ^ (*str++) ^ (hash >> 3));
+        } else {
+            hash ^= (~((hash << 11) ^ (*str++) ^ (hash >> 5)));
+        }
+    }
+    return (hash&  0x7FFFFFFF);
+}
+
+enum {
+ CACHE_TYPE_1, 
+ CACHE_TYPE_2,
+ CACHE_TYPE_MAX,
+};
+#endif
 
 VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, string& counselcode, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
 	: m_sGearHost(gearHost), m_nGearPort(gearPort), m_nGearTimeout(gearTimeout), m_sFname(fname), m_sCallId(callid), m_sCounselCode(counselcode), m_nLiveFlag(1), m_cJobType(jobType), m_nNumofChannel(noc), m_deliver(deliver), /*m_Logger(logger),*/ m_s2d(s2d), m_is_save_pcm(is_save_pcm), m_pcm_path(pcm_path), m_framelen(framelen*8)
@@ -177,6 +202,15 @@ void VRClient::thrdMain(VRClient* client) {
     
     framelen = client->m_framelen * 2;
 #endif // FAD_FUNC
+
+#ifdef USE_XREDIS
+    VALUES vVal;
+    std::string sPubCannel = config->getConfig("redis.pubchannel", "RT-STT");
+    xRedisClient &xRedis = client->getXRdedisClient();
+    RedisDBIdx dbi(&xRedis);
+
+    dbi.CreateDBIndex(client->getCallId().c_str(), APHash, CACHE_TYPE_1);
+#endif
     
     for (int i=0; i<client->m_nNumofChannel; i++) {
         stPos.bpos = 0;
@@ -231,7 +265,7 @@ void VRClient::thrdMain(VRClient* client) {
         vad = fvad_new();
         if (!vad) {//} || (fvad_set_sample_rate(vad, in_info.samplerate) < 0)) {
             client->m_Logger->error("VRClient::thrdMain() - ERROR (Failed fvad_new(%s))", client->m_sCallId.c_str());
-
+            gearman_client_free(gearClient);
             WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
             client->m_thrd.detach();
             delete client;
@@ -384,6 +418,34 @@ void VRClient::thrdMain(VRClient* client) {
                                     // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                                     //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
+#ifdef USE_XREDIS
+                                    int64_t zCount=0;
+                                    std::string sJsonValue;
+
+                                    {
+                                        rapidjson::Document d;
+                                        rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+                                        d.SetObject();
+                                        d.AddMember("IDX", diaNumber, alloc);
+                                        d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
+                                        d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
+                                        d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
+                                        d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
+                                        d.AddMember("VALUE", rapidjson::Value(modValue.c_str(), alloc).Move(), alloc);
+
+                                        rapidjson::StringBuffer strbuf;
+                                        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                                        d.Accept(writer);
+
+                                        sJsonValue = strbuf.GetString();
+                                    }
+
+                                    vVal.push_back(toString(diaNumber));
+                                    vVal.push_back(sJsonValue);
+
+                                    xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
+#endif
                                     // to DB
                                     if (client->m_s2d) {
                                         client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
@@ -530,6 +592,39 @@ void VRClient::thrdMain(VRClient* client) {
                             // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                             //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
+#ifdef USE_XREDIS
+                                int64_t zCount=0;
+                                std::string sJsonValue;
+
+                                {
+                                    rapidjson::Document d;
+                                    rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+                                    d.SetObject();
+                                    d.AddMember("IDX", diaNumber, alloc);
+                                    d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
+                                    d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
+                                    d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
+                                    d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
+                                    d.AddMember("VALUE", rapidjson::Value(modValue.c_str(), alloc).Move(), alloc);
+
+                                    rapidjson::StringBuffer strbuf;
+                                    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                                    d.Accept(writer);
+
+                                    sJsonValue = strbuf.GetString();
+                                }
+
+                                vVal.push_back(toString(diaNumber));
+                                vVal.push_back(sJsonValue);
+
+                                
+                                // vVal.push_back(toString(diaNumber));
+                                // vVal.push_back(modValue);
+
+                                xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
+#endif
+
                                 if (client->m_s2d) {
                                     client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
                                 }
@@ -563,6 +658,12 @@ void VRClient::thrdMain(VRClient* client) {
 
                         if (client->m_s2d) {
                             auto t2 = std::chrono::high_resolution_clock::now();
+
+#ifdef USE_XREDIS
+                            int64_t zCount=0;
+                            xRedis.publish(dbi, sPubCannel, client->getCallId(), zCount);
+#endif
+
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
                             client->m_s2d->updateTaskInfo(client->m_sCallId, std::string("MN"), client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count());
                         }
@@ -616,3 +717,10 @@ void VRClient::insertQueItem(QueItem* item)
 	std::lock_guard<std::mutex> g(m_mxQue);
 	m_qRTQue.push(item);
 }
+
+#ifdef USE_XREDIS
+xRedisClient& VRClient::getXRdedisClient()
+{
+    return m_Mgr->getRedisClient();
+}
+#endif

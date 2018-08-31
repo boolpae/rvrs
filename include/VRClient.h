@@ -8,6 +8,12 @@
 
 #include <log4cpp/Category.hh>
 
+#ifdef USE_XREDIS
+#include "xRedisClient.h"
+
+using namespace xrc;
+#endif
+
 using namespace std;
 
 class VRCManager;
@@ -59,6 +65,10 @@ public:
 	string& getCounselCode() { return m_sCounselCode; }
 
 	void insertQueItem(QueItem* item);
+
+#ifdef USE_XREDIS
+	xRedisClient& getXRdedisClient();
+#endif
 
 private:
 	virtual ~VRClient();

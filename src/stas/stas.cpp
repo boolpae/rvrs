@@ -157,10 +157,18 @@ int main(int argc, const char** argv)
     }
 
 	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, /*logger,*/ st2db, (config->getConfig("stas.savepcm", "false").find("true")==0)?true:false, config->getConfig("stas.pcmpath", "/home/stt"), config->getConfig("stas.framelen", 20));
-	VDCManager* vdcm = VDCManager::instance(config->getConfig("stas.channel_count", 200), config->getConfig("stas.udp_bport", 10000), config->getConfig("stas.udp_eport", 11000), config->getConfig("stas.playtime", 3), vrcm/*, logger*/);
-    
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
+        VDCManager::release();
+        FileHandler::release();
+        WorkTracer::release();
+        delete config;
+        return -1;
+    }
+
+	VDCManager* vdcm = VDCManager::instance(config->getConfig("stas.channel_count", 200), config->getConfig("stas.udp_bport", 10000), config->getConfig("stas.udp_eport", 11000), config->getConfig("stas.playtime", 3), vrcm/*, logger*/);
+    if (!vdcm) {
+        logger->error("MAIN - ERROR (Failed to get VDCManager instance)");
         VDCManager::release();
         FileHandler::release();
         WorkTracer::release();

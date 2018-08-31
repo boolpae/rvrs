@@ -212,6 +212,39 @@ VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t ge
     }
 #endif
 
+#ifdef USE_XREDIS
+
+	enum {
+	CACHE_TYPE_1, 
+	CACHE_TYPE_2,
+	CACHE_TYPE_MAX,
+	};
+
+	RedisNode redisList[3]=
+	{
+		{0,"127.0.0.1", 7000, "", 8, 5, 0},
+		{1,"127.0.0.1", 7000, "", 8, 5, 0},
+		{2,"127.0.0.1", 7000, "", 8, 5, 0}
+	};
+
+	for(int i=0; i<3; i++) {
+		redisList[i].host = config->getConfig("redis.addr", "127.0.0.1").c_str();
+		redisList[i].port = config->getConfig("redis.port", 6379);
+		redisList[i].passwd = config->getConfig("redis.password", "").c_str();
+		redisList[i].poolsize = config->getConfig("redis.poolsize", 10);
+	}
+
+	ms_instance->m_xRedis.Init(CACHE_TYPE_MAX);
+    bool bConn = ms_instance->m_xRedis.ConnectRedisCache(redisList, sizeof(redisList) / sizeof(RedisNode), 3, CACHE_TYPE_1);
+
+	if (!bConn) {
+		log4cpp::Category *logger = config->getLogger();
+        logger->error("VRCManager::instance() - ERROR (Failed to connect redis server)");
+		delete ms_instance;
+		ms_instance = nullptr;
+	}
+#endif
+
 	return ms_instance;
 }
 
