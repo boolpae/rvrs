@@ -47,6 +47,9 @@ VRCManager::~VRCManager()
     disconnectGearman();
 	removeAllVRC();
 
+#ifdef USE_XREDIS
+	m_xRedis.Release();
+#endif
 	//printf("\t[DEBUG] VRCManager Destructed.\n");
     m_Logger->debug("VRCManager Destructed.");
 }

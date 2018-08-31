@@ -661,7 +661,9 @@ void VRClient::thrdMain(VRClient* client) {
 
 #ifdef USE_XREDIS
                             int64_t zCount=0;
-                            xRedis.publish(dbi, sPubCannel.c_str(), client->getCallId().c_str(), zCount);
+                            if (!xRedis.publish(dbi, sPubCannel.c_str(), client->getCallId().c_str(), zCount)) {
+                                client->m_Logger->error("VRClient::thrdMain(%s) - redis publish(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
+                            }
 #endif
 
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
