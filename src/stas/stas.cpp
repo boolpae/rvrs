@@ -156,7 +156,7 @@ int main(int argc, const char** argv)
         deliver = FileHandler::instance(config->getConfig("stt_result.path", "./stt_result")/*, logger*/);
     }
 
-	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, /*logger,*/ st2db, (config->getConfig("stas.savepcm", "false").find("true")==0)?true:false, config->getConfig("stas.pcmpath", "/home/stt"), config->getConfig("stas.framelen", 20));
+	VRCManager* vrcm = VRCManager::instance(config->getConfig("stas.mpihost", "127.0.0.1"), config->getConfig("stas.mpiport", 4730), config->getConfig("stas.mpitimeout", 0), deliver, /*logger,*/ st2db, (config->getConfig("stas.savewav", "false").find("true")==0)?true:false, config->getConfig("stas.wavpath", "/home/stt"), config->getConfig("stas.framelen", 20));
     if (!vrcm) {
         logger->error("MAIN - ERROR (Failed to get VRCManager instance)");
         VDCManager::release();
