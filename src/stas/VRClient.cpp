@@ -180,6 +180,7 @@ void VRClient::thrdMain(VRClient* client) {
     gearman_return_t rc;
     PosPair stPos;
     std::vector< PosPair > vPos;
+    WAVE_HEADER wHdr[2];
 #ifndef FAD_FUNC    
     char* pEndpos=NULL;
     std::size_t start,end;
@@ -211,6 +212,79 @@ void VRClient::thrdMain(VRClient* client) {
 
     dbi.CreateDBIndex(client->getCallId().c_str(), APHash, CACHE_TYPE_1);
 #endif
+    for(int i=0; i<2; i++) {
+#if 0
+typedef struct
+{
+	unsigned char ChunkID[4];    // Contains the letters "RIFF" in ASCII form
+	unsigned int ChunkSize;      // This is the size of the rest of the chunk following this number
+	unsigned char Format[4];     // Contains the letters "WAVE" in ASCII form
+} RIFF;
+
+//-------------------------------------------
+// [Channel]
+// - streo     : [left][right]
+// - 3 channel : [left][right][center]
+// - quad      : [front left][front right][rear left][reat right]
+// - 4 channel : [left][center][right][surround]
+// - 6 channel : [left center][left][center][right center][right][surround]
+//-------------------------------------------
+typedef struct
+{
+	unsigned char  ChunkID[4];    // Contains the letters "fmt " in ASCII form
+	unsigned int   ChunkSize;     // 16 for PCM.  This is the size of the rest of the Subchunk which follows this number.
+	unsigned short AudioFormat;   // PCM = 1
+	unsigned short NumChannels;   // Mono = 1, Stereo = 2, etc.
+	unsigned int   SampleRate;    // 8000, 44100, etc.
+	unsigned int   AvgByteRate;   // SampleRate * NumChannels * BitsPerSample/8
+	unsigned short BlockAlign;    // NumChannels * BitsPerSample/8
+	unsigned short BitPerSample;  // 8 bits = 8, 16 bits = 16, etc
+} FMT;
+
+
+typedef struct
+{
+	char          ChunkID[4];    // Contains the letters "data" in ASCII form
+	unsigned int  ChunkSize;     // NumSamples * NumChannels * BitsPerSample/8
+} DATA;
+
+
+typedef struct
+{
+	RIFF Riff;
+	FMT	 Fmt;
+	DATA Data;
+} WAVE_HEADER;
+#endif
+        //memset(wHdr[i], 0, sizeof(WAVE_HEADER));
+        memcpy(wHdr[i].Riff.ChunkID, "RIFF", 4);
+        wHdr[i].Riff.ChunkSize = 0;
+        memcpy(wHdr[i].Riff.Format, "WAVE", 4);
+
+        memcpy(wHdr[i].Fmt.ChunkID, "fmt ", 4);
+        wHdr[i].Fmt.ChunkSize = 16;
+        wHdr[i].Fmt.AudioFormat = 1;
+        wHdr[i].Fmt.NumChannels = 1;
+        wHdr[i].Fmt.SampleRate = 8000;
+        wHdr[i].Fmt.AvgByteRate = 8000 * 1 * 16 / 8 ;
+        wHdr[i].Fmt.BlockAlign = 1 * 16 / 8;
+        wHdr[i].Fmt.BitPerSample = 16;
+
+        memcpy(wHdr[i].Data.ChunkID, "data", 4);
+        wHdr[i].Data.ChunkSize = 0;
+
+        if (client->m_is_save_pcm) {
+            std::string spker = (i == 0)?std::string("r"):std::string("l");
+            std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".wav");
+            std::ofstream pcmFile;
+
+            pcmFile.open(filename, ios::out | ios::trunc | ios::binary);
+            if (pcmFile.is_open()) {
+                pcmFile.write((const char*)wHdr[i], sizeof(WAVE_HEADER));
+                pcmFile.close();
+            }
+        }
+    }
     
     for (int i=0; i<client->m_nNumofChannel; i++) {
         stPos.bpos = 0;
@@ -349,7 +423,7 @@ void VRClient::thrdMain(VRClient* client) {
 
                 if (client->m_is_save_pcm) {
                     std::string spker = (item->spkNo == 1)?std::string("r"):std::string("l");
-                    std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".pcm");
+                    std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".wav");
                     std::ofstream pcmFile;
 
                     pcmFile.open(filename, ios::out | ios::app | ios::binary);
@@ -677,6 +751,24 @@ void VRClient::thrdMain(VRClient* client) {
                             HAManager::getInstance()->insertSyncItem(false, client->m_sCallId, client->m_sCounselCode, std::string("remove"), 1, 1);
 
 #endif
+                        for (int i=0; i<2; i++) {
+                            if (client->m_is_save_pcm) {
+                                std::string spker = (i == 0)?std::string("r"):std::string("l");
+                                std::string filename = client->m_pcm_path + "/" + client->m_sCallId + std::string("_") + /*std::to_string(client->m_nNumofChannel)*/spker + std::string(".wav");
+                                std::ofstream pcmFile;
+
+                                wHdr[i].Riff.ChunkSize = totalVoiceDataLen[i] + sizeof(WAVE_HEADER) - 8;
+                                wHdr[i].Data.ChunkSize = totalVoiceDataLen[i];
+
+                                pcmFile.open(filename, ios::out | ios::app | ios::binary);
+                                if (pcmFile.is_open()) {
+                                    pcmFile.seekp(0);
+                                    pcmFile.write((const char*)wHdr[i], sizeof(WAVE_HEADER));
+                                    pcmFile.close();
+                                }
+                            }
+                        }
+
 						break;
 					}
 				}
