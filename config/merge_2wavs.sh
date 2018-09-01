@@ -5,16 +5,15 @@ DATE='date +%Y/%m/%d:%H:%M:%S'
 LOG='/home/stt/Smart-VR/logs/merge_wavs.log'
 
 function echo_log {
-	echo `$DATE`" $1"
-#		>> $LOG
+	echo `$DATE`" $1" >> $LOG
 	if [ $2 != 0 ]; then
 		exit $2
 	fi
 }
 
-RM="rm"
+RM="/usr/bin/rm"
 RM_USE="TRUE"
-SOX="sox"
+SOX="/usr/bin/sox"
 #soxi="/usr/bin/soxi"
 SOX_OPTIONS="--multi-threaded -m"
 #SOX_OPTIONS="-m"
