@@ -725,9 +725,9 @@ void VRClient::thrdMain(VRClient* client) {
                                     pcmFile.close();
                                 }
                             }
-                            if (config->getConfig()->isSet("stas.merge")) {
+                            if (config->isSet("stas.merge")) {
                                 std::string cmd = "";
-                                cmd = server->getConfig()->getConfig("stas.merge");
+                                cmd = config->getConfig("stas.merge");
                                 cmd.push_back(' ');
                                 cmd.append(client->m_pcm_path.c_str());
                                 cmd.push_back(' ');
