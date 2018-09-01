@@ -280,7 +280,7 @@ typedef struct
 
             pcmFile.open(filename, ios::out | ios::trunc | ios::binary);
             if (pcmFile.is_open()) {
-                pcmFile.write((const char*)wHdr[i], sizeof(WAVE_HEADER));
+                pcmFile.write((const char*)&wHdr[i], sizeof(WAVE_HEADER));
                 pcmFile.close();
             }
         }
@@ -760,10 +760,10 @@ typedef struct
                                 wHdr[i].Riff.ChunkSize = totalVoiceDataLen[i] + sizeof(WAVE_HEADER) - 8;
                                 wHdr[i].Data.ChunkSize = totalVoiceDataLen[i];
 
-                                pcmFile.open(filename, ios::out | ios::app | ios::binary);
+                                pcmFile.open(filename, ios::in | ios::out /*| ios::ate */| ios::binary);
                                 if (pcmFile.is_open()) {
                                     pcmFile.seekp(0);
-                                    pcmFile.write((const char*)wHdr[i], sizeof(WAVE_HEADER));
+                                    pcmFile.write((const char*)&wHdr[i], sizeof(WAVE_HEADER));
                                     pcmFile.close();
                                 }
                             }
