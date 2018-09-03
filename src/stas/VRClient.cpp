@@ -41,6 +41,8 @@
 #include <fvad.h>
 
 #ifdef USE_XREDIS
+#include <iconv.h>
+
 #include "rapidjson/document.h"     // rapidjson's DOM-style API
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
@@ -454,29 +456,55 @@ void VRClient::thrdMain(VRClient* client) {
                                     int64_t zCount=0;
                                     std::string sJsonValue;
 
-                                    {
-                                        rapidjson::Document d;
-                                        rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+                                    size_t in_size, out_size;
+                                    iconv_t it;
+                                    char *utf_buf = NULL;
+                                    char *input_buf_ptr = NULL;
+                                    char *output_buf_ptr = NULL;
 
-                                        d.SetObject();
-                                        d.AddMember("IDX", diaNumber, alloc);
-                                        d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
-                                        d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
-                                        d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
-                                        d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
-                                        d.AddMember("VALUE", rapidjson::Value(modValue.c_str(), alloc).Move(), alloc);
+                                    in_size = modValue.size();
+                                    out_size = in_size * 2 + 1;
+                                    utf_buf = (char *)malloc(out_size);
 
-                                        rapidjson::StringBuffer strbuf;
-                                        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-                                        d.Accept(writer);
+                                    if (utf_buf) {
+                                        memset(utf_buf, 0, out_size);
 
-                                        sJsonValue = strbuf.GetString();
+                                        input_buf_ptr = (char *)modValue.c_str();
+                                        output_buf_ptr = utf_buf;
+
+                                        it = iconv_open("UTF-8", "EUC-KR");
+
+                                        iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
+                                        
+                                        iconv_close(it);
+                                        
+
+                                        {
+                                            rapidjson::Document d;
+                                            rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+                                            d.SetObject();
+                                            d.AddMember("IDX", diaNumber, alloc);
+                                            d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
+                                            d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
+                                            d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
+                                            d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
+                                            d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
+
+                                            rapidjson::StringBuffer strbuf;
+                                            rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                                            d.Accept(writer);
+
+                                            sJsonValue = strbuf.GetString();
+                                        }
+
+                                        vVal.push_back(toString(diaNumber));
+                                        vVal.push_back(sJsonValue);
+
+                                        xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
+
+                                        free(utf_buf);
                                     }
-
-                                    vVal.push_back(toString(diaNumber));
-                                    vVal.push_back(sJsonValue);
-
-                                    xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
 #endif
                                     // to DB
                                     if (client->m_s2d) {
