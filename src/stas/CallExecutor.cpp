@@ -88,7 +88,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 			if ((resReq = cs->parsePacket(item->m_packet)) == 200) {
 				
                 // cs->printPacketInfo();
-                exe->m_Logger->info("CallExecutor::thrdMain() - [%d] Received CallSignal from %s:%d(%s)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), cs->getCallId());
+                exe->m_Logger->info("CallExecutor::thrdMain() - [%d] Received CallSignal from %s:%d(%s : %s)", num, inet_ntoa(item->m_si.sin_addr), ntohs(item->m_si.sin_port), cs->getCounselorCode(), cs->getCallId());
 				
 				sCounselorCode = std::string(cs->getCounselorCode());
                 sCallId = std::string(cs->getCallId());
