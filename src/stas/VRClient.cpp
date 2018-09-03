@@ -207,12 +207,14 @@ void VRClient::thrdMain(VRClient* client) {
 #endif // FAD_FUNC
 
 #ifdef USE_XREDIS
+    iconv_t it;
     VALUES vVal;
     std::string sPubCannel = config->getConfig("redis.pubchannel", "RT-STT");
     xRedisClient &xRedis = client->getXRdedisClient();
     RedisDBIdx dbi(&xRedis);
 
     dbi.CreateDBIndex(client->getCallId().c_str(), APHash, CACHE_TYPE_1);
+    it = iconv_open("UTF-8", "EUC-KR");
 #endif
 
     for(int i=0; i<2; i++) {
@@ -457,7 +459,7 @@ void VRClient::thrdMain(VRClient* client) {
                                     std::string sJsonValue;
 
                                     size_t in_size, out_size;
-                                    iconv_t it;
+                                    // iconv_t it;
                                     char *utf_buf = NULL;
                                     char *input_buf_ptr = NULL;
                                     char *output_buf_ptr = NULL;
@@ -472,11 +474,11 @@ void VRClient::thrdMain(VRClient* client) {
                                         input_buf_ptr = (char *)modValue.c_str();
                                         output_buf_ptr = utf_buf;
 
-                                        it = iconv_open("UTF-8", "EUC-KR");
+                                        // it = iconv_open("UTF-8", "EUC-KR");
 
                                         iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
                                         
-                                        iconv_close(it);
+                                        // iconv_close(it);
                                         
 
                                         {
@@ -655,34 +657,58 @@ void VRClient::thrdMain(VRClient* client) {
 #ifdef USE_XREDIS
                                 int64_t zCount=0;
                                 std::string sJsonValue;
+                                size_t in_size, out_size;
+                                // iconv_t it;
+                                char *utf_buf = NULL;
+                                char *input_buf_ptr = NULL;
+                                char *output_buf_ptr = NULL;
 
-                                {
-                                    rapidjson::Document d;
-                                    rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+                                in_size = modValue.size();
+                                out_size = in_size * 2 + 1;
+                                utf_buf = (char *)malloc(out_size);
 
-                                    d.SetObject();
-                                    d.AddMember("IDX", diaNumber, alloc);
-                                    d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
-                                    d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
-                                    d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
-                                    d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
-                                    d.AddMember("VALUE", rapidjson::Value(modValue.c_str(), alloc).Move(), alloc);
+                                if (utf_buf) {
+                                    memset(utf_buf, 0, out_size);
 
-                                    rapidjson::StringBuffer strbuf;
-                                    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-                                    d.Accept(writer);
+                                    input_buf_ptr = (char *)modValue.c_str();
+                                    output_buf_ptr = utf_buf;
 
-                                    sJsonValue = strbuf.GetString();
+                                    // it = iconv_open("UTF-8", "EUC-KR");
+
+                                    iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
+                                    
+                                    // iconv_close(it);
+
+                                    {
+                                        rapidjson::Document d;
+                                        rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+
+                                        d.SetObject();
+                                        d.AddMember("IDX", diaNumber, alloc);
+                                        d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
+                                        d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
+                                        d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
+                                        d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
+                                        d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
+
+                                        rapidjson::StringBuffer strbuf;
+                                        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                                        d.Accept(writer);
+
+                                        sJsonValue = strbuf.GetString();
+                                    }
+
+                                    vVal.push_back(toString(diaNumber));
+                                    vVal.push_back(sJsonValue);
+
+                                    
+                                    // vVal.push_back(toString(diaNumber));
+                                    // vVal.push_back(modValue);
+
+                                    xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
+
+                                    free(utf_buf);
                                 }
-
-                                vVal.push_back(toString(diaNumber));
-                                vVal.push_back(sJsonValue);
-
-                                
-                                // vVal.push_back(toString(diaNumber));
-                                // vVal.push_back(modValue);
-
-                                xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
 #endif
 
                                 if (client->m_s2d) {
@@ -799,6 +825,10 @@ void VRClient::thrdMain(VRClient* client) {
     std::vector< PosPair >().swap(vPos);
 
 	WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
+
+#ifdef USE_XREDIS
+    iconv_close(it);
+#endif
 
 	client->m_thrd.detach();
 	delete client;

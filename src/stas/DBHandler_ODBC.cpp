@@ -96,6 +96,8 @@ void DBHandler::thrdMain(DBHandler * s2d)
     logger = config->getLogger();
     PConnSet connSet = s2d->m_pSolDBConnPool->getConnection();//ConnectionPool_getConnection(s2d->m_pool);
 
+    it = iconv_open("UTF-8", "EUC-KR");
+
     // sprintf(sqlbuff, "INSERT INTO JOB_DATA (idx,call_id,pos_start,pos_end,value,spk) VALUES (?,?,?,?,?)");
     // printf("QUERY<%s>\n", sqlbuff);
 
@@ -142,11 +144,11 @@ void DBHandler::thrdMain(DBHandler * s2d)
                 input_buf_ptr = (char *)item->getSTTValue().c_str();
                 output_buf_ptr = utf_buf;
 
-                it = iconv_open("UTF-8", "EUC-KR");
+                // it = iconv_open("UTF-8", "EUC-KR");
 
                 ret = iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
                  
-                iconv_close(it);
+                // iconv_close(it);
                 
             }
             else {
@@ -236,6 +238,8 @@ void DBHandler::thrdMain(DBHandler * s2d)
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
         //printf("DBHandler::thrdMain()\n");
 	}
+
+    iconv_close(it);
 
     if (DBHandler::getInstance() && connSet)
         s2d->m_pSolDBConnPool->restoreConnection(connSet);
