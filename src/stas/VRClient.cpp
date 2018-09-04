@@ -359,6 +359,7 @@ void VRClient::thrdMain(VRClient* client) {
                 }
                 else if (item->flag == 2) {
                     sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
+                    t1 = std::chrono::high_resolution_clock::now();
                 }
                 else {
                     sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "NOLA");
@@ -503,7 +504,9 @@ void VRClient::thrdMain(VRClient* client) {
                                         vVal.push_back(toString(diaNumber));
                                         vVal.push_back(sJsonValue);
 
-                                        xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
+                                        if ( !xRedis.zadd(dbi, client->getCallId(), vVal, zCount) ) {
+                                            client->m_Logger->error("VRClient::thrdMain(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
+                                        }
 
                                         free(utf_buf);
                                     }
@@ -705,7 +708,9 @@ void VRClient::thrdMain(VRClient* client) {
                                     // vVal.push_back(toString(diaNumber));
                                     // vVal.push_back(modValue);
 
-                                    xRedis.zadd(dbi, client->getCallId(), vVal, zCount);
+                                    if ( !xRedis.zadd(dbi, client->getCallId(), vVal, zCount) ) {
+                                        client->m_Logger->error("VRClient::thrdMain(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
+                                    }
 
                                     free(utf_buf);
                                 }
@@ -751,7 +756,6 @@ void VRClient::thrdMain(VRClient* client) {
                                 client->m_Logger->error("VRClient::thrdMain(%s) - redis publish(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
                             }
 #endif
-
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
                             client->m_s2d->updateTaskInfo(client->m_sCallId, std::string("MN"), client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count());
                         }
@@ -792,7 +796,7 @@ void VRClient::thrdMain(VRClient* client) {
                                 }
                             }
                         }
-
+                        client->m_Logger->debug("VRClient::thrdMain(%s) - FINISH CALL.", client->m_sCallId.c_str());
 						break;
 					}
 				}
@@ -802,7 +806,7 @@ void VRClient::thrdMain(VRClient* client) {
 				// 예외 발생 시 처리 내용 : VDCManager의 removeVDC를 호출할 수 있어야 한다. - 이 후 VRClient는 item->flag(0)에 대해서만 처리한다.
 			}
             //client->m_Logger->debug("VRClient::thrdMain(%s) - WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
         
 #ifdef FAD_FUNC

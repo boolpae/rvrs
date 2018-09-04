@@ -22,14 +22,17 @@ static int extract_error(const char *fn, SQLHANDLE handle, SQLSMALLINT type)
     SQLRETURN ret;
     log4cpp::Category *logger = config->getLogger();
 
-    fprintf(stderr, "\nThe driver reported the following error %s\n", fn);
     do
     {
         ret = SQLGetDiagRec(type, handle, ++i, SQLState, &NativeError,
                             MessageText, sizeof(MessageText), &TextLength);
+    fprintf(stderr, "\nDEBUG - The driver reported the following error %s, ret(%d)\n", fn, ret);
         if (SQL_SUCCEEDED(ret)) {
             logger->error("%s:%ld:%ld:%s",
                         SQLState, (long) i, (long) NativeError, MessageText);
+        }
+        else if (ret < 0) {
+            NativeError = 2006;
         }
     }
     while( ret == SQL_SUCCESS );

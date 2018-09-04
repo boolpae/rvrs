@@ -357,6 +357,10 @@ void VRCManager::outputVRCStat()
     
     if ( m_mWorkerTable.size() )
         m_Logger->info("VRCManager::outputVRCStat() - Current working VRClient count(%d)", m_mWorkerTable.size());
+
+#ifdef USE_XREDIS
+	m_xRedis.Keepalive();
+#endif
 }
 
 VRClient* VRCManager::getVRClient(string& callid)

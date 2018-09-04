@@ -136,7 +136,7 @@ void CallExecutor::thrdMain(CallExecutor* exe)
 								else
 									exe->m_st2db->insertCallInfo(sCounselorCode, sCallId);
 
-								exe->m_st2db->insertTaskInfoRT(std::string("/home/stt/Smart-VR/input"), sCallId, sCallId, sCounselorCode);
+								exe->m_st2db->insertTaskInfoRT(config->getConfig("stas.wavpath", "/home/stt/Smart-VR/input"), sCallId, sCallId, sCounselorCode);
 									
                             }
 							WorkTracer::instance()->insertWork(sCallId, 'R', WorkQueItem::PROCTYPE::R_RES_CHANNEL, 1);
