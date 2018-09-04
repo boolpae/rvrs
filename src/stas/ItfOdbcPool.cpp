@@ -132,26 +132,26 @@ void        ItfOdbcPool::restoreConnection(ConnSet *conn)  // 사용 완료된 �
 
 PConnSet    ItfOdbcPool::reconnectConnection(ConnSet *conn)    // 사용 중 문제가 생긴 커넥션에 대해 재연결
 {
-    std::lock_guard<std::mutex> *g = nullptr;
+    //std::lock_guard<std::mutex> *g = nullptr;
     SQLRETURN fsts;
     SQLHENV env;
     SQLHDBC dbc;
     SQLHSTMT stmt;
     SQLRETURN ret;
-    int id = conn->id;
-    PConnSet connSet = m_mConnSets.find(id)->second;
+    //int id = conn->id;
+    //PConnSet connSet = m_mConnSets.find(id)->second;
 
-    g = new std::lock_guard<std::mutex>(m_mxDb);
-    SQLFreeHandle(SQL_HANDLE_STMT, connSet->stmt);
-    SQLDisconnect(connSet->dbc);
-    SQLFreeHandle(SQL_HANDLE_DBC, connSet->dbc);
-    SQLFreeHandle(SQL_HANDLE_ENV, connSet->env);
-    delete connSet;
-    m_mConnSets.erase(id);
-    m_nConnSetCount--;
-    delete g; g = nullptr;
+    //g = new std::lock_guard<std::mutex>(m_mxDb);
+    SQLFreeHandle(SQL_HANDLE_STMT, conn->stmt);
+    SQLDisconnect(conn->dbc);
+    SQLFreeHandle(SQL_HANDLE_DBC, conn->dbc);
+    SQLFreeHandle(SQL_HANDLE_ENV, conn->env);
+    //delete connSet;
+    //m_mConnSets.erase(id);
+    //m_nConnSetCount--;
+    //delete g; g = nullptr;
 
-    connSet = nullptr;
+    //connSet = nullptr;
 
     /* Allocate an environment handle */
     fsts = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
@@ -175,27 +175,31 @@ PConnSet    ItfOdbcPool::reconnectConnection(ConnSet *conn)    // 사용 중 문
             if (SQL_SUCCEEDED(ret)) {
                 /* Allocate a statement handle */
                 fsts = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-                if (!SQL_SUCCEEDED(fsts))
+                if (SQL_SUCCEEDED(fsts))
                 {
-                    /* an error occurred allocating the database handle */
-                    SQLDisconnect(dbc);
-                    SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-                    SQLFreeHandle(SQL_HANDLE_ENV, env);
-                    //continue;
+                    conn->env = env;
+                    conn->dbc = dbc;
+                    conn->stmt = stmt;
+                    return conn;
                 }
 
-                connSet = new ConnSet();
-                connSet->id = id;
-                connSet->env = env;
-                connSet->dbc = dbc;
-                connSet->stmt = stmt;
-                connSet->useStat = true;
-                connSet->currStat = false;
+                /* an error occurred allocating the database handle */
+                SQLDisconnect(dbc);
+                SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+                SQLFreeHandle(SQL_HANDLE_ENV, env);
 
-                g = new std::lock_guard<std::mutex>(m_mxDb);
-                m_mConnSets.insert(std::make_pair(id, connSet));
-                m_nConnSetCount++;
-                delete g; g = nullptr;
+                //connSet = new ConnSet();
+                //connSet->id = id;
+                // conn->env = env;
+                // conn->dbc = dbc;
+                // conn->stmt = stmt;
+                // conn->useStat = true;
+                // conn->currStat = false;
+
+                // g = new std::lock_guard<std::mutex>(m_mxDb);
+                // m_mConnSets.insert(std::make_pair(id, connSet));
+                // m_nConnSetCount++;
+                // delete g; g = nullptr;
             }
             else {
                 SQLFreeHandle(SQL_HANDLE_DBC, dbc);
@@ -207,6 +211,6 @@ PConnSet    ItfOdbcPool::reconnectConnection(ConnSet *conn)    // 사용 중 문
         }
     }
 
-    return connSet;
+    return nullptr;
 }
 
