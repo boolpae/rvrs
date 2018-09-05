@@ -617,14 +617,14 @@ int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string 
         if (errcode && strlen(errcode)) {
             // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s'",
             //     tbName, state, errcode, callid.c_str(), rxtx.c_str());
-            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%c','%s','%s')",
-                callid.c_str(), rxtx.c_str(), plen, fsize, state, errcode, timebuff);
+            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%d','%c','%s','%s')",
+                callid.c_str(), rxtx.c_str(), plen, fsize, wtime, state, errcode, timebuff);
         }
         else {
             // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s'",
             //     tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str());
-            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%c','','%s')",
-                callid.c_str(), rxtx.c_str(), plen, fsize, state, timebuff);
+            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%d','%c','','%s')",
+                callid.c_str(), rxtx.c_str(), plen, fsize, wtime, state, timebuff);
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
