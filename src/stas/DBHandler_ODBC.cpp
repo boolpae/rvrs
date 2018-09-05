@@ -596,6 +596,10 @@ int DBHandler::insertTaskInfoRT(std::string downloadPath, std::string filename, 
 // args: call_id, counselor_code, task_stat etc
 int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
 {
+    // for strftime
+    time_t rawtime;
+    struct tm * timeinfo;
+    char timebuff [32];
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     int ret=0;
@@ -604,15 +608,23 @@ int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string 
 
     if (connSet)
     {
+        time (&rawtime);
+        timeinfo = localtime (&rawtime);
+
+        strftime (timebuff,sizeof(timebuff),"%F %T",timeinfo);
         //sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s'",
         //    state, callid.c_str(), counselorcode.c_str());
         if (errcode && strlen(errcode)) {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s'",
-                tbName, state, errcode, callid.c_str(), rxtx.c_str());
+            // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s'",
+            //     tbName, state, errcode, callid.c_str(), rxtx.c_str());
+            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%c','%s','%s')",
+                callid.c_str(), rxtx.c_str(), plen, fsize, state, errcode, timebuff);
         }
         else {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s'",
-                tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str());
+            // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s'",
+            //     tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str());
+            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%c','','%s')",
+                callid.c_str(), rxtx.c_str(), plen, fsize, state, timebuff);
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
