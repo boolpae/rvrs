@@ -248,6 +248,9 @@ FINISH:
         noti->stopWork();
         delete noti;
     }
+
+    // for immediatly finish, 2018-9-6
+    return 0;
     
     vfcm->release();
 	vdcm->release();

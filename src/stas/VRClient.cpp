@@ -429,7 +429,7 @@ void VRClient::thrdMain(VRClient* client) {
                     }
 
                     if (!vadres && (vBuff[item->spkNo-1].size()>nHeadLen)) {
-                        if (vBuff[item->spkNo-1].size() > 8000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
+                        if (vBuff[item->spkNo-1].size() > 15000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
                             // send buff to gearman
                             if (aDianum[item->spkNo-1] == 0) {
                                 sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
