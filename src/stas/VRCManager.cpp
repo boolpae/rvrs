@@ -120,6 +120,7 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
             m_Logger->warn("VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.");
 			return false;
 		}
+		disconnectGearman();
 		goto RECONNECT;
 	}
 
@@ -154,9 +155,12 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
                 m_Logger->warn("VRCManager::getGearmanFnames() - error Reconnect count 3 exceeded.");
                 return false;
             }
+			disconnectGearman();
             goto RECONNECT;
         }
 	}
+
+	disconnectGearman();
 	
 	getFnamesFromString(sRes, vFnames);
 
@@ -270,20 +274,13 @@ int16_t VRCManager::requestVRC(string& callid, string& counselcode, uint8_t jobT
 	std::lock_guard<std::mutex> g(m_mxQue);
 
 	// 1. vFnames에 실시간STT 처리를 위한 worker의 fname 가져오기 &vFnames
-#ifndef CONN_GEARMAN_PER_CALL   // Gearmand과 항시 연결일 경우에 사용
-	if (!getGearmanFnames(vFnames))
-#else   // 요청 시 마다 Gearman에 연결
-    if (!connectGearman() || !getGearmanFnames(vFnames))
-#endif
+    if (!getGearmanFnames(vFnames))
     {
 		//printf("\t[DEBUG] VRCManager::requestVRC() - error Failed to get gearman status\n");
         m_Logger->error("VRCManager::requestVRC() - error Failed to get gearman status");
 		return int16_t(3);	// Gearman으로부터 Fn Name 가져오기 실패
 	}
     
-#ifdef CONN_GEARMAN_PER_CALL
-    disconnectGearman();
-#endif
 	// DEBUG
 	// vFnames.push_back(callid);
 

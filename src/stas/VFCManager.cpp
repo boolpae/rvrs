@@ -111,6 +111,7 @@ size_t VFCManager::getWorkerCount()
             m_Logger->warn("VFCManager::getWorkerCount() - error Reconnect count 3 exceeded.");
 			return 0;
 		}
+        disconnectGearman();
 		goto RECONNECT;
 	}
 
@@ -145,6 +146,7 @@ size_t VFCManager::getWorkerCount()
                 m_Logger->warn("VFCManager::getWorkerCount() - error Reconnect count 3 exceeded.");
                 return 0;
             }
+            disconnectGearman();
             goto RECONNECT;
         }
 	}
