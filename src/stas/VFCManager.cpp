@@ -151,6 +151,7 @@ size_t VFCManager::getWorkerCount()
 
 	//printf("\t[DEBUG] - Gearman STATUS <<\n%s\n>>\n", sRes.c_str());
     //m_Logger->debug("\n --- Gearman STATUS --- \n%s ---------------------- \n", sRes.c_str());
+    disconnectGearman();
 	
 	return getWorkerCountFromString(sRes);
 }
