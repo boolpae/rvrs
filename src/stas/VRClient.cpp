@@ -402,7 +402,6 @@ void VRClient::thrdMain(VRClient* client) {
                 // vadres == 1 vBuff[item->spkNo-1].push_back();
                 // vadres == 0 and vBuff[item->spkNo-1].size() > 0 then send buff to gearman
                 posBuf = 0;
-
                 while ((item->lenVoiceData >= framelen) && ((item->lenVoiceData - posBuf) >= framelen)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
                     eframe[item->spkNo-1] += (client->m_framelen/8);
@@ -628,16 +627,6 @@ void VRClient::thrdMain(VRClient* client) {
                 vPos[item->spkNo -1].bpos = vPos[item->spkNo -1].epos + 1;
 
 #endif  // FAD_FUNC
-
-#ifdef FAD_FUNC
-                // 남은 FAD처리 후 남은(framelen보다 적게) 데이터를 vBuff에 적재
-                if (item->lenVoiceData - posBuf) {
-                    vpBuf = (uint8_t *)(item->voiceData+posBuf);
-                    for(size_t i=0; i<item->lenVoiceData - posBuf; i++) {
-                        vBuff[item->spkNo-1].push_back(vpBuf[i]);
-                    }
-                }
-#endif
 
 				if (!item->flag) {	// 호가 종료되었음을 알리는 flag, 채널 갯수와 flag(0)이 들어온 갯수를 비교해야한다.
 					//printf("\t[DEBUG] VRClient::thrdMain(%s) - final item delivered.\n", client->m_sCallId.c_str());
