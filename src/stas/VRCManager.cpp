@@ -229,21 +229,24 @@ VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t ge
 
 	RedisNode redisList[3]=
 	{
-		{0,"127.0.0.1", 7000, "", 8, 5, 0},
-		{1,"127.0.0.1", 7000, "", 8, 5, 0},
-		{2,"127.0.0.1", 7000, "", 8, 5, 0}
+		{0,"127.0.0.1", 6379, "12345", 8, 5, 0},
+		{1,"127.0.0.1", 6379, "12345", 8, 5, 0},
+		{2,"127.0.0.1", 6379, "12345", 8, 5, 0}
 	};
 
+	std::string redis_server_ip = config->getConfig("redis.addr", "127.0.0.1");
+	std::string redis_auth = config->getConfig("redis.password", "");
+
 	for(int i=0; i<3; i++) {
-		redisList[i].host = config->getConfig("redis.addr", "127.0.0.1").c_str();
+		redisList[i].host = redis_server_ip.c_str();
 		redisList[i].port = config->getConfig("redis.port", 6379);
-		redisList[i].passwd = config->getConfig("redis.password", "").c_str();
+		redisList[i].passwd = redis_auth.c_str();
 		redisList[i].poolsize = config->getConfig("redis.poolsize", 10);
 	}
 
 	ms_instance->m_xRedis.Init(CACHE_TYPE_MAX);
     bool bConn = ms_instance->m_xRedis.ConnectRedisCache(redisList, sizeof(redisList) / sizeof(RedisNode), 3, CACHE_TYPE_1);
-
+	//bConn = true;
 	if (!bConn) {
 		log4cpp::Category *logger = config->getLogger();
         logger->error("VRCManager::instance() - ERROR (Failed to connect redis server)");
