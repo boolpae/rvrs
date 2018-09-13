@@ -74,7 +74,7 @@ void Scheduler::thrdFuncScheduler(Scheduler *schd, VFCManager *vfcm)
                 logger->debug("thrdFuncScheduler (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
                 // put item to VFCMgr's Queue
                 if (schd->m_vfcmgr->pushItem(item/*item->getPath()+"/"+item->getFilename()*/) > 0) {
-                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'U', 0, 0, 0, item->getTableName().c_str());
+                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'U', 0, 0, 0, item->getTableName().c_str(), "");
                 }
             }
 
@@ -89,7 +89,7 @@ void Scheduler::thrdFuncScheduler(Scheduler *schd, VFCManager *vfcm)
                 logger->debug("thrdFuncScheduler (%s, %s)", item->getPath().c_str(), item->getFilename().c_str());
                 // put item to VFCMgr's Queue
                 if (schd->m_vfcmgr->pushItem(item/*item->getPath()+"/"+item->getFilename()*/) > 0) {
-                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'U', 0, 0, 0, item->getTableName().c_str());
+                    schd->m_sttdb->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'U', 0, 0, 0, item->getTableName().c_str(), "");
                 }
             }
 

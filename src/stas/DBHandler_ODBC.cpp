@@ -594,7 +594,7 @@ int DBHandler::insertTaskInfoRT(std::string downloadPath, std::string filename, 
 
 // VFClient모듈에서 사용되는 api로서 해당 task 작업 종료 후 상태 값을 update할 때 사용
 // args: call_id, counselor_code, task_stat etc
-int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
+int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode, const char *svr_nm)
 {
     // for strftime
     time_t rawtime;
@@ -617,14 +617,14 @@ int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string 
         if (errcode && strlen(errcode)) {
             // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s'",
             //     tbName, state, errcode, callid.c_str(), rxtx.c_str());
-            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%d','%c','%s','%s')",
-                callid.c_str(), rxtx.c_str(), plen, fsize, wtime, state, errcode, timebuff);
+            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','%s','%d','%d','%d','%c','%s','%s')",
+                callid.c_str(), rxtx.c_str(), svr_nm, plen, fsize, wtime, state, errcode, timebuff);
         }
         else {
             // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s'",
             //     tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str());
-            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','%d','%d','%d','%c','','%s')",
-                callid.c_str(), rxtx.c_str(), plen, fsize, wtime, state, timebuff);
+            sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','%s','%d','%d','%d','%c','','%s')",
+                callid.c_str(), rxtx.c_str(), svr_nm, plen, fsize, wtime, state, timebuff);
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
@@ -652,7 +652,7 @@ int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string 
     return ret;
 }
 
-int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, std::string regdate, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode)
+int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, std::string regdate, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode, const char *svr_nm)
 {
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
@@ -665,12 +665,12 @@ int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string 
         // sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s' AND REG_DTM='%s'",
         //     state, callid.c_str(), counselorcode.c_str(), regdate.c_str());
         if (errcode && strlen(errcode)) {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s' AND REG_DTM='%s'",
-                tbName, state, errcode, callid.c_str(), rxtx.c_str(), regdate.c_str());
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s',SV_NM='%s' WHERE CALL_ID='%s' AND RCD_TP='%s' AND REG_DTM='%s'",
+                tbName, state, errcode, svr_nm, callid.c_str(), rxtx.c_str(), regdate.c_str());
         }
         else {
-            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s' AND REG_DTM='%s'",
-                tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str(), regdate.c_str());
+            sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d,SV_NM='%s' WHERE CALL_ID='%s' AND RCD_TP='%s' AND REG_DTM='%s'",
+                tbName, state, fsize, plen, wtime, svr_nm, callid.c_str(), rxtx.c_str(), regdate.c_str());
         }
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
@@ -824,8 +824,72 @@ int DBHandler::getTaskInfo(std::vector< JobInfoItem* > &v, int availableCount, c
     return ret;
 }
 
+int DBHandler::getTimeoutTaskInfo(std::vector< JobInfoItem* > &v) 
+{
+    PConnSet connSet = m_pSolDBConnPool->getConnection();
+    int ret=0;
+    char sqlbuff[512];
+    SQLRETURN retcode;
+    
+    char callid[256];
+    int counselorcode;
+    char path[500];
+    char filename[256];
+    char regdate[24];
+    char rxtx[8];
+    int siCallId, siCCode, siPath, siFilename, siRxtx, siRegdate;
+
+    //m_Logger->debug("BEFORE DBHandler::getTimeoutTaskInfo - ConnectionPool_size(%d), ConnectionPool_active(%d), availableCount(%d)", ConnectionPool_size(m_pool), ConnectionPool_active(m_pool), availableCount);
+    
+    if (connSet)
+    {
+        sprintf(sqlbuff, "SELECT CALL_ID,CS_CD,PATH_NM,FILE_NM,REG_DTM,RCD_TP FROM TBL_JOB_INFO WHERE REG_DTM >= concat(date(now()), ' 00:00:00') and REG_DTM <= concat(date(now()), ' 23:59:59') and STATE='U' and DATE_SUB(now(), INTERVAL 1 HOUR) > REG_DTM");
+        //m_Logger->debug("BEFORE DBHandler::getTaskInfo - SQL(%s)", sqlbuff);
+        retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
+
+        if (retcode == SQL_SUCCESS) {
+            while (SQLFetch(connSet->stmt) == SQL_SUCCESS) 
+            {
+                memset(callid, 0, sizeof(callid));
+                memset(path, 0, sizeof(path));
+                memset(filename, 0, sizeof(filename));
+
+                SQLGetData(connSet->stmt, 1, SQL_C_CHAR, callid, sizeof(callid)-1, (SQLLEN *)&siCallId);
+                SQLGetData(connSet->stmt, 2, SQL_C_SLONG, &counselorcode, 0, (SQLLEN *)&siCCode);
+                SQLGetData(connSet->stmt, 3, SQL_C_CHAR, path, sizeof(path)-1, (SQLLEN *)&siPath);
+                SQLGetData(connSet->stmt, 4, SQL_C_CHAR, filename, sizeof(filename)-1, (SQLLEN *)&siFilename);
+                SQLGetData(connSet->stmt, 5, SQL_C_CHAR, regdate, sizeof(regdate)-1, (SQLLEN *)&siRegdate);
+                SQLGetData(connSet->stmt, 6, SQL_C_CHAR, rxtx, sizeof(rxtx)-1, (SQLLEN *)&siRxtx);
+
+                JobInfoItem *item = new JobInfoItem(std::string(callid), std::to_string(counselorcode), std::string(path), std::string(filename), std::string(regdate), std::string(rxtx));
+                v.push_back(item);
+            }
+        }
+        else if (retcode < 0) {
+            int odbcret = extract_error("DBHandler::getTimeoutTaskInfo() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+            if (odbcret == 2006) {
+                m_pSolDBConnPool->reconnectConnection(connSet);
+            }
+            ret = retcode;
+        }
+        retcode = SQLCloseCursor(connSet->stmt);
+        m_pSolDBConnPool->restoreConnection(connSet);
+
+        ret = v.size();
+    }
+    else
+    {
+        m_Logger->error("DBHandler::getTimeoutTaskInfo - can't get connection from pool");
+        ret = -1;
+    }
+
+    return ret;
+}
+
 void DBHandler::updateAllTask2Fail()
 {
+    // 추후(필요 시) getTimeoutTaskInfo()를 활용하고 CALL PROCEDURE 형태로 바꾸어야 한다.
+
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
     char sqlbuff[512];
@@ -833,7 +897,7 @@ void DBHandler::updateAllTask2Fail()
 
     if (connSet)
     {
-        sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='X' WHERE REG_DTM >= concat(date(now()), ' 00:00:00') and REG_DTM <= concat(date(now()), ' 23:59:59') and STATE='U' and DATE_SUB(now(), INTERVAL 1 HOUR) > REG_DTM");
+        sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='X',ERR_CD='E10200' WHERE REG_DTM >= concat(date(now()), ' 00:00:00') and REG_DTM <= concat(date(now()), ' 23:59:59') and STATE='U' and DATE_SUB(now(), INTERVAL 1 HOUR) > REG_DTM");
 
         retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
         if SQL_SUCCEEDED(retcode) {

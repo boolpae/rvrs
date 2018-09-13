@@ -629,6 +629,7 @@ void VRClient::thrdMain(VRClient* client) {
 #endif  // FAD_FUNC
 
 				if (!item->flag) {	// 호가 종료되었음을 알리는 flag, 채널 갯수와 flag(0)이 들어온 갯수를 비교해야한다.
+                    std::string svr_nm = "DEFAULT";
 					//printf("\t[DEBUG] VRClient::thrdMain(%s) - final item delivered.\n", client->m_sCallId.c_str());
                     client->m_Logger->debug("VRClient::thrdMain(%s, %d) - final item delivered.", client->m_sCallId.c_str(), item->spkNo);
 
@@ -650,83 +651,87 @@ void VRClient::thrdMain(VRClient* client) {
                                                     &result_size, &rc);
                     if (gearman_success(rc))
                     {
+                        std::string svalue = (const char*)value;
+                        svr_nm = svalue.substr(0, svalue.find("\n"));
+
+                        free(value);
+
+                        svalue.erase(0, svalue.find("\n")+1);
                         // Make use of value
-                        if (value) {
-                                std::string modValue = boost::replace_all_copy(std::string((const char*)value), "\n", " ");
+                        if (svr_nm.size() && svalue.size()) {
+                            std::string modValue = boost::replace_all_copy(svalue, "\n", " ");
                             // std::cout << "DEBUG : value(" << (char *)value << ") : size(" << result_size << ")" << std::endl;
                             //client->m_Logger->debug("VRClient::thrdMain(%s) - sttIdx(%d)\nsrc(%s)\ndst(%s)", client->m_sCallId.c_str(), sttIdx, srcBuff, dstBuff);
 
 #ifdef USE_XREDIS
-                                int64_t zCount=0;
-                                std::string sJsonValue;
-                                size_t in_size, out_size;
-                                // iconv_t it;
-                                char *utf_buf = NULL;
-                                char *input_buf_ptr = NULL;
-                                char *output_buf_ptr = NULL;
+                            int64_t zCount=0;
+                            std::string sJsonValue;
+                            size_t in_size, out_size;
+                            // iconv_t it;
+                            char *utf_buf = NULL;
+                            char *input_buf_ptr = NULL;
+                            char *output_buf_ptr = NULL;
 
-                                in_size = modValue.size();
-                                out_size = in_size * 2 + 1;
-                                utf_buf = (char *)malloc(out_size);
+                            in_size = modValue.size();
+                            out_size = in_size * 2 + 1;
+                            utf_buf = (char *)malloc(out_size);
 
-                                if (utf_buf) {
-                                    memset(utf_buf, 0, out_size);
+                            if (utf_buf) {
+                                memset(utf_buf, 0, out_size);
 
-                                    input_buf_ptr = (char *)modValue.c_str();
-                                    output_buf_ptr = utf_buf;
+                                input_buf_ptr = (char *)modValue.c_str();
+                                output_buf_ptr = utf_buf;
 
-                                    // it = iconv_open("UTF-8", "EUC-KR");
+                                // it = iconv_open("UTF-8", "EUC-KR");
 
-                                    iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
-                                    
-                                    // iconv_close(it);
+                                iconv(it, &input_buf_ptr, &in_size, &output_buf_ptr, &out_size);
+                                
+                                // iconv_close(it);
 
-                                    {
-                                        rapidjson::Document d;
-                                        rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
+                                {
+                                    rapidjson::Document d;
+                                    rapidjson::Document::AllocatorType& alloc = d.GetAllocator();
 
-                                        d.SetObject();
-                                        d.AddMember("IDX", diaNumber, alloc);
-                                        d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
-                                        d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
-                                        d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
-                                        d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
-                                        d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
+                                    d.SetObject();
+                                    d.AddMember("IDX", diaNumber, alloc);
+                                    d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
+                                    d.AddMember("SPK", rapidjson::Value((item->spkNo==1)?"R":"L", alloc).Move(), alloc);
+                                    d.AddMember("POS_START", sframe[item->spkNo -1]/10, alloc);
+                                    d.AddMember("POS_END", eframe[item->spkNo -1]/10, alloc);
+                                    d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
 
-                                        rapidjson::StringBuffer strbuf;
-                                        rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-                                        d.Accept(writer);
+                                    rapidjson::StringBuffer strbuf;
+                                    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+                                    d.Accept(writer);
 
-                                        sJsonValue = strbuf.GetString();
-                                    }
-
-                                    vVal.push_back(toString(diaNumber));
-                                    vVal.push_back(sJsonValue);
-
-                                    
-                                    // vVal.push_back(toString(diaNumber));
-                                    // vVal.push_back(modValue);
-
-                                    if ( !xRedis.zadd(dbi, client->getCallId(), vVal, zCount) ) {
-                                        client->m_Logger->error("VRClient::thrdMain(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
-                                    }
-
-                                    free(utf_buf);
+                                    sJsonValue = strbuf.GetString();
                                 }
+
+                                vVal.push_back(toString(diaNumber));
+                                vVal.push_back(sJsonValue);
+
+                                
+                                // vVal.push_back(toString(diaNumber));
+                                // vVal.push_back(modValue);
+
+                                if ( !xRedis.zadd(dbi, client->getCallId(), vVal, zCount) ) {
+                                    client->m_Logger->error("VRClient::thrdMain(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
+                                }
+
+                                free(utf_buf);
+                            }
 #endif
 
-                                if (client->m_s2d) {
-                                    client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
-                                }
-                                //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
-                                // to STTDeliver(file)
-                                if (client->m_deliver) {
-                                    client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10);
-                                }
-
-                                free(value);
-                                
-                                diaNumber++;
+                            if (client->m_s2d) {
+                                client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/);
+                            }
+                            //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
+                            // to STTDeliver(file)
+                            if (client->m_deliver) {
+                                client->m_deliver->insertSTT(client->m_sCallId, modValue/*boost::replace_all_copy(std::string((const char*)value), "\n", " ")*/, item->spkNo, sframe[item->spkNo -1]/10, eframe[item->spkNo -1]/10);
+                            }
+                            
+                            diaNumber++;
                         }
                     }
                     else if (gearman_failed(rc)){
@@ -756,7 +761,7 @@ void VRClient::thrdMain(VRClient* client) {
                             }
 #endif
                             client->m_s2d->updateCallInfo(client->m_sCallId, true);
-                            client->m_s2d->updateTaskInfo(client->m_sCallId, std::string("MN"), client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count());
+                            client->m_s2d->updateTaskInfo(client->m_sCallId, std::string("MN"), client->m_sCounselCode, 'Y', totalVLen, totalVLen/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count(), "TBL_JOB_INFO", "", svr_nm.c_str());
                         }
 #if 0
                         HAManager::getInstance()->deleteSyncItem(client->m_sCallId);

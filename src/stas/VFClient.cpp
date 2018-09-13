@@ -58,6 +58,13 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
     JobInfoItem* item;
     
+    str:string sValue;
+    std::string sFuncName="";
+    std::string svr_name="DEFAULT";
+    std::string err_code="";
+    size_t nPos1=0, nPos2=0;
+    int nFilesize=0;
+
     DBHandler *DBHandler = DBHandler::getInstance();
     FileHandler *FileHandler = FileHandler::getInstance();
     log4cpp::Category *logger = config->getLogger();
@@ -100,7 +107,6 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
 
     while(client->m_LiveFlag) {
         if(item = mgr->popItem()) {
-            str:string sValue;
 #ifdef USE_RAPIDJSON
             {
                 rapidjson::Document d;
@@ -150,9 +156,6 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                 if (value) {
                     //std::string sValue((const char*)value);
                     sValue = (const char*)value;
-                    std::string sFuncName="";
-                    size_t nPos1=0, nPos2=0;
-                    int nFilesize=0;
                     // std::cout << "STT RESULT <<\n" << (const char*)value << "\n>>" << std::endl;
                     // value의 값이 '{spk_flag'로 시작될 경우 화자 분리 로직으로 처리
                     // 화자 분리 또는 일반의 경우 동일하게 unsegment까지 우선 진행되어야 한다.
@@ -275,9 +278,11 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                         }
                     }
 #else   // USE_RAPIDJSON
-                    if (sValue[0] == 'E') {
-                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], error_code(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), sValue.c_str());
-                        DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), sValue.c_str());
+                    if (sValue[0] == 'E' && sValue[0] != '{') {
+                        err_code = sValue.substr(0, sValue.find("\n"));
+                        svr_name = sValue.substr(sValue.find("\n")+1);
+                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_stt). [%s : %s], error_code(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), err_code.c_str());
+                        DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), err_code.c_str(), svr_name.c_str());
                     }
                     else
                     // 2CH Wave...include RX,TX
@@ -292,22 +297,47 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                          */
                         std::string rx_unseg;
                         std::string tx_unseg;
-                        nFilesize = std::stoi(sValue.substr(0, sValue.find("\n")));
-                        std::string rx(sValue.substr(sValue.find("\n")+1, sValue.find("||")));    // 고객
-                        std::string tx(sValue.substr(sValue.find("||")+2));     // 상담원
+                        nPos1 = 0;
+                        nPos2 = 0;
+                        
+                        nPos2 = sValue.find("\n", nPos1) + 1;    // RES_CODE
+
+                        nPos1 = nPos2;
+                        nPos2 = sValue.find("\n", nPos1) + 1;
+                        svr_name = sValue.substr(nPos1, nPos2-nPos1-1);   // SERVER_NAME
+
+                        nPos1 = nPos2;
+                        nPos2 = sValue.find("\n", nPos1) + 1;
+                        nFilesize = std::stoi(sValue.substr(nPos1, nPos2-nPos1-1));   // FILE_SIZE
+
+                        nPos1 = nPos2;
+                        nPos2 = sValue.find("||", nPos1);
+                        std::string rx(sValue.substr(nPos1, nPos2-nPos1));    // 고객
+                        std::string tx(sValue.substr(nPos2+2));     // 상담원
 
                         value= gearman_client_do(gearClient, "vr_text", NULL, 
                                                         (const void*)(rx.c_str()), rx.size(),
                                                         &result_size, &rc);
                         if (gearman_success(rc)) {
-                            if (((const char*)(value))[0] == 'E') {
-                                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_rx). [%s : %s], ERROR-CODE(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), (const char*)value);
-                                DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), (const char*)value);
+                            sValue = (const char*)value;
+                            if (sValue[0] == 'E') {
+                                err_code = sValue.substr(0, sValue.find("\n"));
+                                svr_name = sValue.substr(sValue.find("\n")+1);
+                                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_rx). [%s : %s], ERROR-CODE(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), err_code.c_str());
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), err_code.c_str(), svr_name.c_str());
                                 free(value);
                             }
                             else {
+                                nPos1 = 0;
+                                nPos2 = 0;
+                                
+                                nPos2 = sValue.find("\n", nPos1) + 1;    // RES_CODE
+                                nPos1 = nPos2;
+                                nPos2 = sValue.find("\n", nPos1) + 1;
+                                svr_name = sValue.substr(nPos1, nPos2-nPos1-1);   // SERVER_NAME
+
                                 if (value) {
-                                    rx_unseg = (const char*)value;
+                                    rx_unseg = sValue.substr(nPos2);//(const char*)value;
                                     free(value);
                                 }
 
@@ -315,14 +345,25 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                                                 (const void*)(tx.c_str()), tx.size(),
                                                                 &result_size, &rc);
                                 if (gearman_success(rc)) {
-                                    if (((const char*)(value))[0] == 'E') {
-                                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_tx). [%s : %s], ERROR-CODE(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), (const char*)value);
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), (const char*)value);
+                                    sValue = (const char*)value;
+                                    if (sValue[0] == 'E') {
+                                        err_code = sValue.substr(0, sValue.find("\n"));
+                                        svr_name = sValue.substr(sValue.find("\n")+1);
+                                        logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text_tx). [%s : %s], ERROR-CODE(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), err_code.c_str());
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), err_code.c_str(), svr_name.c_str());
                                         free(value);
                                     }
                                     else {
+                                        nPos1 = 0;
+                                        nPos2 = 0;
+                                        
+                                        nPos2 = sValue.find("\n", nPos1) + 1;    // RES_CODE
+                                        nPos1 = nPos2;
+                                        nPos2 = sValue.find("\n", nPos1) + 1;
+                                        svr_name = sValue.substr(nPos1, nPos2-nPos1-1);   // SERVER_NAME
+
                                         if (value) {
-                                            tx_unseg = (const char*)value;
+                                            tx_unseg = sValue.substr(nPos2);//(const char*)value;
                                             free(value);
                                         }
 
@@ -373,7 +414,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                         }
                                         auto t2 = std::chrono::high_resolution_clock::now();
                                         logger->debug("VFClient::thrdFunc(%ld) - STT SUCCESS [%s : %s], timeout(%d), fsize(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, nFilesize);
-                                        DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count(), item->getTableName().c_str());
+                                        DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count(), item->getTableName().c_str(), "", svr_name.c_str());
                                     }
                                 }
                                 else {
@@ -393,41 +434,69 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                     else {
                         // # Parse Header
                         std::string fsize;
+                        nPos1 = 0;
+                        nPos2 = 0;
 
                         if (sValue.find("spk_flag") != string::npos) {
                             // 2. cond.(화자분리), 필요한 인자값 수집 - gearman function 이름값 가져오기
 
                             nPos1 = sValue.find("spk_node");
-                            nPos2 = sValue.find("'", nPos1) + 1;
-                            nPos1 = sValue.find("'", nPos2);
+                            nPos2 = sValue.find("\"", nPos1) + 1;
+                            nPos1 = sValue.find("\"", nPos2);
                             sFuncName = sValue.substr(nPos2, nPos1-nPos2);
-                            nPos2 = sValue.find("\n") + 1;
-                            nFilesize = std::stoi(sValue.c_str() + nPos2);
-                            nPos1 = sValue.find("\n", nPos2) + 1;
+                            nPos2 = sValue.find("}\n") + 2;
+                            nPos1 = nPos2;
+                            nPos2 = sValue.find("\n", nPos1) + 1;    // RES_CODE
+                            nPos1 = nPos2;
+                            nPos2 = sValue.find("\n", nPos1) + 1;
+                            svr_name = sValue.substr(nPos1, nPos2-nPos1-1);   // SERVER_NAME
+
+                            nPos1 = nPos2;
+                            nPos2 = sValue.find("\n", nPos1) + 1;
+                            nFilesize = std::stoi(sValue.substr(nPos1, nPos2 - nPos1 -1));
+                            nPos1 = nPos2;
+                            //sValue.find("\n");
                             //value = (void *)(sValue.c_str() + nPos1);
                             //result_size = strlen((const char*)value);
 
                         }
                         else {
-                            nFilesize = std::stoi(sValue.substr(0, sValue.find("\n")));
-                            nPos1 = sValue.find("\n");
+                            nPos2 = sValue.find("\n", nPos1) + 1;    // RES_CODE
+                            nPos1 = nPos2;
+                            nPos2 = sValue.find("\n", nPos1) + 1;
+                            svr_name = sValue.substr(nPos1, nPos2-nPos1-1);   // SERVER_NAME
+
+                            nPos1 = nPos2;
+                            nPos2 = sValue.find("\n", nPos1) + 1;
+                            nFilesize = std::stoi(sValue.substr(nPos1, nPos2 - nPos1 -1));
+                            nPos1 = nPos2;//sValue.find("\n");
                         }
                         // 2. Unsegment! : JOB_UNSEGMENT
                         value= gearman_client_do(gearClient, "vr_text", NULL, 
                                                         (const void*)(sValue.c_str() + nPos1), strlen(sValue.c_str() + nPos1),
                                                         &result_size, &rc);
                         if (gearman_success(rc)) {
-                            if (((const char*)(value))[0] == 'E') {
-                                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], ERROR-CODE(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), (const char*)value);
-                                DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), (const char*)value);
+                            sValue = (const char*)value;
+                            if (sValue[0] == 'E') {
+                                err_code = sValue.substr(0, sValue.find("\n"));
+                                svr_name = sValue.substr(sValue.find("\n")+1);
+                                logger->error("VFClient::thrdFunc(%ld) - failed gearman_client_do(vr_text). [%s : %s], ERROR-CODE(%s)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), err_code.c_str());
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'X', 0, 0, 0, item->getTableName().c_str(), err_code.c_str(), svr_name.c_str());
                                 free(value);
                             }
                             else {
+                                nPos1 = 0;
+                                nPos2 = 0;
+
+                                nPos2 = sValue.find("\n", nPos1) + 1;    // RES_CODE
+                                nPos1 = nPos2;
+                                nPos2 = sValue.find("\n", nPos1) + 1;
+                                svr_name = sValue.substr(nPos1, nPos2-nPos1-1);   // SERVER_NAME
                                 // Make use of value
                                 if (value) {
                                     uint32_t diaNumber=0;
                                     uint8_t spkno=0;
-                                    std::string strValue((const char*)value);
+                                    std::string strValue(sValue.substr(nPos2));//((const char*)value);
 
                                     free(value);
 
@@ -494,7 +563,7 @@ void VFClient::thrdFunc(VFCManager* mgr, VFClient* client)
                                 }
                                 auto t2 = std::chrono::high_resolution_clock::now();
                                 logger->debug("VFClient::thrdFunc(%ld) - STT SUCCESS [%s : %s], timeout(%d), fsize(%d)", client->m_nNumId, item->getCallId().c_str(), item->getFilename().c_str(), client->m_nGearTimeout, nFilesize);
-                                DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count(), item->getTableName().c_str());
+                                DBHandler->updateTaskInfo(item->getCallId(), item->getRxTxType(), item->getCounselorCode(), 'Y', nFilesize, nFilesize/16000, std::chrono::duration_cast<std::chrono::seconds>(t2-t1).count(), item->getTableName().c_str(), "", svr_name.c_str());
                             }
                         }
                         else if (gearman_failed(rc)) {
