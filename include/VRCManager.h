@@ -56,7 +56,7 @@ class VRCManager
     size_t m_framelen;
 
 public:
-	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	static VRCManager* instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimout, FileHandler *deliver, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	static void release();
 
 	int16_t requestVRC(string& callid, string& counselcode, uint8_t jobType, uint8_t noc);
@@ -78,7 +78,7 @@ public:
 #endif
 
 private:
-	VRCManager(int geartimeout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	VRCManager(int geartimeout, FileHandler *deliver, DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	virtual ~VRCManager();
 
 	bool connectGearman();
@@ -87,6 +87,7 @@ private:
 	void getFnamesFromString(std::string &gearResult, std::vector< std::string > &vFnames);
 	void setGearHost(string host) { m_sGearHost = host; }
 	void setGearPort(uint16_t port) { m_nGearPort = port; }
+	void getFnamesFromString4MT(std::string & gearResult, std::vector<std::string>& vFnames);
 
 #ifdef USE_XREDIS
 	xRedisClient m_xRedis;

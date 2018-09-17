@@ -199,6 +199,44 @@ void VRCManager::getFnamesFromString(std::string & gearResult, std::vector<std::
 
 }
 
+void VRCManager::getFnamesFromString4MT(std::string & gearResult, std::vector<std::string>& vFnames)
+{
+	std::string token;
+	char fname[64];
+	int c;
+	int r;
+	int w;
+	int totalWorkers;
+	size_t pos, npos;
+
+	pos = npos = 0;
+	totalWorkers = 0;
+
+	while ((npos = gearResult.find("\n", pos)) != string::npos) {
+
+		token = gearResult.substr(pos, npos - pos);
+
+		if (!strncmp(token.c_str() + (token.length() - 1), ".", 1)) {
+			break;
+		}
+
+		sscanf(token.c_str(), "%s\t%d\t%d\t%d", fname, &c, &r, &w);
+
+		if ((strlen(fname)==11) && (!strncmp(fname, "vr_realtime", 11))) {
+			// vFnames.push_back(std::string(fname));
+			totalWorkers += w;
+		}
+
+		pos = npos + 1;
+	}
+
+	for(int i=0; i<totalWorkers; i++) {
+		sprintf(fname, "vr_realtime_%d", i);
+		vFnames.push_back(std::string(fname));
+	}
+
+}
+
 VRCManager* VRCManager::instance(const std::string gearHostIp, const uint16_t gearHostPort, int geartimeout, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen)
 {
 	if (ms_instance) return ms_instance;

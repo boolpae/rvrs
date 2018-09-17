@@ -20,6 +20,7 @@ SOURCE			:= CallExecutor.cpp \
 				DBHandler_ODBC.cpp \
 				VDClient.cpp \
 				VRClient.cpp \
+				VRClientMT.cpp \
 				HAManager.cpp \
 				FileHandler.cpp \
 				VFCManager.cpp \
