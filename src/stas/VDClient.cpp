@@ -1,6 +1,12 @@
 
 #include "VDClient.h"
+
+#ifdef USE_REALTIME_POOL
+#include "VRClientMT.h"
+#else
 #include "VRClient.h"
+#endif
+
 #include "VRCManager.h"
 #include "WorkTracer.h"
 #include "HAManager.h"

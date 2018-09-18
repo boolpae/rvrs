@@ -1,3 +1,5 @@
+#ifndef USE_REALTIME_POOL
+
 
 #include "VRClient.h"
 #include "VRCManager.h"
@@ -854,3 +856,11 @@ xRedisClient& VRClient::getXRdedisClient()
     return m_Mgr->getRedisClient();
 }
 #endif
+
+
+
+
+
+
+
+#endif // USE_REALTIME_POOL

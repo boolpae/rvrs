@@ -1,3 +1,5 @@
+#ifndef USE_REALTIME_POOL
+
 #pragma once
 
 #include <stdint.h>
@@ -75,3 +77,8 @@ private:
 	static void thrdMain(VRClient* client);
 };
 
+
+
+
+
+#endif // USE_REALTIME_POOL

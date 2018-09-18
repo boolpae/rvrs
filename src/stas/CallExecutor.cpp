@@ -12,7 +12,13 @@
 #endif
 
 #include "HAManager.h"
+
+#ifdef USE_REALTIME_POOL
+#include "VRClientMT.h"
+#else
 #include "VRClient.h"
+#endif
+
 #include "stas.h"
 
 #include <thread>

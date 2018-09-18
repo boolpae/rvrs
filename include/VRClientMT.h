@@ -1,3 +1,5 @@
+#ifdef USE_REALTIME_POOL
+
 #pragma once
 
 #include <stdint.h>
@@ -5,6 +7,7 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#include <map>
 
 #include <log4cpp/Category.hh>
 
@@ -27,7 +30,29 @@ typedef struct _queItem {
 	uint8_t* voiceData;	// 디코딩된 3초 분량의 음성 데이터
 } QueItem;
 
-class VRClientMT
+class CtrlThreadInfo {
+private:
+	std::string ServerName;
+	uint64_t TotalVoiceDataLen;
+	uint32_t DiaNumber;
+	uint8_t RxState;
+	uint8_t TxState;
+	mutable std::mutex m_mxDianum;
+public:
+	CtrlThreadInfo();
+
+	void setServerName(std::string svrnm) { ServerName = svrnm; }
+	std::string getServerName() { return ServerName; }
+	void setTotalVoiceDataLen(uint64_t len) { TotalVoiceDataLen = len; }
+	uint64_t getTotalVoiceDataLen() { return TotalVoiceDataLen; }
+	uint32_t getDiaNumber();
+	uint8_t getRxState() { return RxState; }
+	void setRxState(uint8_t state) { RxState = state; }
+	uint8_t getTxState() { return TxState; }
+	void setTxState(uint8_t state) { TxState = state; }
+};
+
+class VRClient
 {
 	VRCManager* m_Mgr;
 
@@ -40,9 +65,6 @@ class VRClientMT
 	volatile uint8_t m_nLiveFlag;	// Threading Class로서 객체 삭제를 thread에서 수행하도록 설계
 	uint8_t m_cJobType;	// VRClient의 작업 타입(파일:F, 실시간:R)
 	uint8_t m_nNumofChannel;
-
-	volatile uint8_t m_RxState;
-	volatile uint8_t m_TxState;
 
 	queue< QueItem* > m_qRTQue;
 	std::thread m_thrd;
@@ -68,7 +90,7 @@ class VRClientMT
 public:
 
 public:
-	VRClientMT(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, string& counselcode, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
+	VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gearTimeout, string& fname, string& callid, string& counselcode, uint8_t jobType, uint8_t noc, FileHandler *deliver, /*log4cpp::Category *logger,*/ DBHandler* s2d, bool is_save_pcm, string pcm_path, size_t framelen);
 	void finish();
 
 	string& getFname() { return m_sFname; }
@@ -82,20 +104,14 @@ public:
 #endif
 
 private:
-	virtual ~VRClientMT();
-	static void thrdMain(VRClientMT* client);
-	static void thrdRxProcess(VRClientMT* client);
-	static void thrdTxProcess(VRClientMT* client);
+	virtual ~VRClient();
+	static void thrdMain(VRClient* client);
+	static void thrdRxProcess(VRClient* client);
+	static void thrdTxProcess(VRClient* client);
 
-	volatile uint32_t ms_diaNumber;
-	uint32_t getDiaNumber();
-
-	uint64_t m_totalVoiceDataLen;
-	void setTotalVoiceDataLen(uint64_t len) { m_totalVoiceDataLen = len; }
-	uint64_t getTotalVoiceDataLen() { return m_totalVoiceDataLen; }
-
-	std::string m_svrnm;
-	void setServerName(std::string svr_nm) { m_svrnm = svr_nm; }
-	std::string getServerName() { return m_svrnm; }
+	static std::map<std::string, std::shared_ptr<CtrlThreadInfo>> ThreadInfoTable;
 };
 
+
+
+#endif // USE_REALTIME_POOL

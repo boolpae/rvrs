@@ -1,6 +1,12 @@
 
 #include "VRCManager.h"
+
+#ifdef USE_REALTIME_POOL
+#include "VRClientMT.h"
+#else
 #include "VRClient.h"
+#endif
+
 #include "FileHandler.h"
 #include "stas.h"
 
@@ -162,8 +168,11 @@ bool VRCManager::getGearmanFnames(std::vector<std::string> &vFnames)
 
 	disconnectGearman();
 	
+#ifdef USE_REALTIME_POOL
+	getFnamesFromString4MT(sRes, vFnames);
+#else
 	getFnamesFromString(sRes, vFnames);
-
+#endif
 	//printf("\t[DEBUG] - Gearman STATUS <<\n%s\n>>\n", sRes.c_str());
     //m_Logger->debug("\n --- Gearman STATUS --- \n%s ---------------------- \n", sRes.c_str());
 	return true;
@@ -327,7 +336,10 @@ int16_t VRCManager::requestVRC(string& callid, string& counselcode, uint8_t jobT
 
 	for (iter = vFnames.begin(); iter != vFnames.end(); iter++) {
 		//if (!m_mWorkerTable.count(*iter)) break;
-		if (m_mWorkerTable.count(*iter) == 0) break;
+		if (m_mWorkerTable.count(*iter) == 0) {
+			m_Logger->debug("VRCManager::requestVRC() - The Function name of Worker(%s)", (*iter).c_str());
+			break;
+		}
 	}
 
 	if (iter != vFnames.end()) {
