@@ -494,8 +494,8 @@ void VRClient::thrdRxProcess(VRClient* client) {
                         sframe = eframe - 20;
                     }
 
-                    if (!vadres && (vBuff.size()>nHeadLen)) {
-                        if (vBuff.size() > 15000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
+                    if (/*(vBuff.size() > 96000) ||*/ (!vadres && (vBuff.size()>nHeadLen))) {
+                        if (vBuff.size() > 8000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
                             // send buff to gearman
                             if (aDianum == 0) {
                                 sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
@@ -507,11 +507,15 @@ void VRClient::thrdRxProcess(VRClient* client) {
                                 vBuff[i] = buf[i];
                             }
                             //client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
+                            auto d1 = std::chrono::high_resolution_clock::now();
                             value= gearman_client_do(gearClient, "vr_realtime", NULL, 
                                                             (const void*)&vBuff[0], vBuff.size(),
                                                             &result_size, &rc);
                                                             
                             aDianum++;
+                            auto d2 = std::chrono::high_resolution_clock::now();
+                            // std::chrono::duration_cast<std::chrono::miliseconds>(d2-d1).count()
+                            client->m_Logger->debug("VRClient::thrdRxProcess(%s) - stt working msecs(%d)", client->m_sCallId.c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(d2-d1).count());
                             
                             if (gearman_success(rc))
                             {
@@ -571,7 +575,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
                                         vVal.push_back(sJsonValue);
 
                                         if ( !xRedis.zadd(dbi, client->getCallId(), vVal, zCount) ) {
-                                            client->m_Logger->error("VRClient::thrdMain(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
+                                            client->m_Logger->error("VRClient::thrdRxProcess(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
                                         }
 
                                         free(utf_buf);
