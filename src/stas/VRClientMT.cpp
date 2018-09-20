@@ -297,6 +297,8 @@ void VRClient::thrdRxProcess(VRClient* client) {
     uint8_t *vpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff;
+    std::vector<uint8_t> vTempBuff;
+    std::vector<uint8_t>::iterator vIter;
     uint64_t totalVoiceDataLen;
     size_t framelen;
     std::string svr_nm;
@@ -533,9 +535,9 @@ void VRClient::thrdRxProcess(VRClient* client) {
 #endif
                     if ((client->tx_hold && (client->rx_sframe < client->tx_sframe)) || (!vadres && (vBuff.size()>nHeadLen))) {
                         if (client->tx_hold) {
-                            client->tx_sframe;
-                            client->tx_eframe;
-
+                            vTempBuff.clear();
+                            vTempBuff.assign(vBuff.begin() + (((client->tx_sframe - client->rx_sframe) * 16) + nHeadLen), vBuff.end());
+                            vBuff.erase(vBuff.begin() + (((client->tx_sframe - client->rx_sframe) * 16) + nHeadLen), vBuff.end());
                         }
                         if (vBuff.size() > 8000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
 #if 0 // VR로 데이터처리 요청 시 처리할 데이터의 sframe, eframe, buff.size 출력
@@ -672,6 +674,13 @@ void VRClient::thrdRxProcess(VRClient* client) {
 
                         }
                         client->rx_sframe = client->rx_eframe;
+
+                        if (client->tx_hold) {
+                            client->tx_hold = 0;
+                            for(vIter=vTempBuff.begin(); vIter!=vTempBuff.end(); vIter++) {
+                                vBuff.push_back(*vIter);
+                            }
+                        }
                     }
                     
                     posBuf += framelen;
@@ -863,6 +872,8 @@ void VRClient::thrdTxProcess(VRClient* client) {
     uint8_t *vpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff;
+    std::vector<uint8_t> vTempBuff;
+    std::vector<uint8_t>::iterator vIter;
     uint64_t totalVoiceDataLen;
     size_t framelen;
     std::string svr_nm;
@@ -1047,14 +1058,14 @@ void VRClient::thrdTxProcess(VRClient* client) {
 
                     // for channel sync
                     while (client->rx_eframe < client->tx_eframe) {
+                        if ( client->rx_hold ) break;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
 
                     client->tx_eframe += (client->m_framelen/8);
+
                     // Convert the read samples to int16
                     vadres = fvad_process(vad, (const int16_t *)vpBuf, client->m_framelen);
-
-                    //client->m_Logger->debug("VRClient::thrdMain(%s) - SUB WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), client->tx_sframe[item->spkNo -1], client->tx_eframe[item->spkNo -1], client->m_nGearTimeout);
 
                     if (vadres < 0) {
                         //client->m_Logger->error("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), client->tx_sframe[item->spkNo-1], client->tx_eframe[item->spkNo-1]);
@@ -1072,7 +1083,6 @@ void VRClient::thrdTxProcess(VRClient* client) {
                         // start ms
                         client->tx_sframe = client->tx_eframe - (client->m_framelen/8);//20;
                     }
-
 #ifdef DEBUGING
                     if (vadres && !before_vadres) {
                         // 음성 시작 점 - Voice Active Detection Poing
@@ -1098,8 +1108,34 @@ void VRClient::thrdTxProcess(VRClient* client) {
                         }
                     }
 #endif
-                    if (!vadres && (vBuff.size()>nHeadLen)) {
+                    if ((client->rx_hold && (client->tx_sframe < client->rx_sframe)) || (!vadres && (vBuff.size()>nHeadLen))) {
+                        if (client->rx_hold) {
+                            vTempBuff.clear();
+                            vTempBuff.assign(vBuff.begin() + (((client->rx_sframe - client->tx_sframe) * 16) + nHeadLen), vBuff.end());
+                            vBuff.erase(vBuff.begin() + (((client->rx_sframe - client->tx_sframe) * 16) + nHeadLen), vBuff.end());
+                        }
                         if (vBuff.size() > 15000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
+#if 0 // VR로 데이터처리 요청 시 처리할 데이터의 sframe, eframe, buff.size 출력
+                            if (1) {
+                                // 음성 시작 점 - Voice Active Detection Poing
+                                std::string filename = client->m_sCallId + std::string("_vadpoint_l.txt");
+                                std::ofstream pcmFile;
+
+                                pcmFile.open(filename, ios::out | ios::app);
+                                if (pcmFile.is_open()) {
+                                    pcmFile << client->tx_sframe << " " << client->tx_eframe << " " << vBuff.size()-nHeadLen << std::endl;
+                                    pcmFile.close();
+                                }
+                            }
+#endif
+
+                            if (!client->rx_hold) {
+                                client->tx_hold = 1;
+                                while (client->tx_hold) {
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                                }
+                            }
+
                             // send buff to gearman
                             if (aDianum == 0) {
                                 sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
@@ -1170,7 +1206,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
                                         vVal.push_back(sJsonValue);
 
                                         if ( !xRedis.zadd(dbi, client->getCallId(), vVal, zCount) ) {
-                                            client->m_Logger->error("VRClient::thrdMain(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
+                                            client->m_Logger->error("VRClient::thrdTxProcess(%s) - redis zadd(). [%s], zCount(%d)", client->m_sCallId.c_str(), dbi.GetErrInfo(), zCount);
                                         }
 
                                         free(utf_buf);
@@ -1204,6 +1240,13 @@ void VRClient::thrdTxProcess(VRClient* client) {
 
                         }
                         client->tx_sframe = client->tx_eframe;
+
+                        if (client->rx_hold) {
+                            client->rx_hold = 0;
+                            for(vIter=vTempBuff.begin(); vIter!=vTempBuff.end(); vIter++) {
+                                vBuff.push_back(*vIter);
+                            }
+                        }
                     }
                     
                     posBuf += framelen;
