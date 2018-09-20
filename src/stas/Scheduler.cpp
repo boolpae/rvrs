@@ -129,7 +129,8 @@ void Scheduler::thrdFuncStateUpdate(Scheduler* schd)
 
     while(schd->m_bLiveFlag) {
         int totalSleep = 0;
-        schd->m_sttdb->updateAllTask2Fail();
+        // schd->m_sttdb->updateAllTask2Fail();
+        schd->m_sttdb->updateAllTask2Fail2();
         
         while (totalSleep < 60) {
             std::this_thread::sleep_for(std::chrono::seconds(1));

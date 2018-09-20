@@ -886,6 +886,53 @@ int DBHandler::getTimeoutTaskInfo(std::vector< JobInfoItem* > &v)
     return ret;
 }
 
+void DBHandler::updateAllTask2Fail2()
+{
+    std::vector< JobInfoItem* > vItems;
+    std::vector< JobInfoItem* >::iterator iter;
+    JobInfoItem *jobInfo = nullptr;
+
+    getTimeoutTaskInfo(vItems);
+
+    if(vItems.size()) {
+        PConnSet connSet = m_pSolDBConnPool->getConnection();
+        char sqlbuff[512];
+        SQLRETURN retcode;
+        time_t rawtime;
+        struct tm * timeinfo;
+        char timebuff [32];
+
+        if (connSet)
+        {
+            time (&rawtime);
+            timeinfo = localtime (&rawtime);
+            strftime (timebuff,sizeof(timebuff),"%F %T",timeinfo);
+
+            for(iter= vItems.begin(); iter != vItems.end(); iter++) {
+                jobInfo = (*iter);
+                sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','DEFAULT','0','0','0','X','TM_OUT','%s')",
+                    jobInfo->getCallId().c_str(), jobInfo->getRxTxType().c_str(), timebuff);
+                retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
+
+                if SQL_SUCCEEDED(retcode) {
+                    m_Logger->debug("DBHandler::updateAllTask2Fail2() - Query<%s>", sqlbuff);
+                }
+                else {
+                    int odbcret = extract_error("DBHandler::updateAllTask2Fail2() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+                    if (odbcret == 2006) {
+                        m_pSolDBConnPool->reconnectConnection(connSet);
+                    }
+                }
+
+                delete jobInfo;
+            }
+            retcode = SQLCloseCursor(connSet->stmt);
+            m_pSolDBConnPool->restoreConnection(connSet);
+        }
+
+        vItems.clear();
+    } 
+}
 void DBHandler::updateAllTask2Fail()
 {
     // 추후(필요 시) getTimeoutTaskInfo()를 활용하고 CALL PROCEDURE 형태로 바꾸어야 한다.

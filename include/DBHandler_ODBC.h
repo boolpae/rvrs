@@ -87,6 +87,7 @@ public:
     int getBatchTask();
     void deleteBatchTask();
     void updateAllTask2Fail();  // 일정 시간(1시간)이 경과된 작업 중인 task에 대해 '실패' 상태로 변경
+    void updateAllTask2Fail2();
 
     // for Task working
     // VFClient에서 사용되는 api로서 작업 시작 전,

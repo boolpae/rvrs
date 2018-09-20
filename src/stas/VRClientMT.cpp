@@ -151,6 +151,13 @@ VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gea
 
 	m_Mgr = mgr;
 
+    rx_sframe=0;
+    rx_eframe=0;
+    tx_sframe=0;
+    tx_eframe=0;
+
+    rx_hold = 0;
+    tx_hold = 0;
     //thrd.detach();
 	//printf("\t[DEBUG] VRClinetMT Constructed.\n");
 	m_thrd = std::thread(VRClient::thrdMain, this);
@@ -290,8 +297,6 @@ void VRClient::thrdRxProcess(VRClient* client) {
     uint8_t *vpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff;
-    size_t sframe;
-    size_t eframe;
     uint64_t totalVoiceDataLen;
     size_t framelen;
     std::string svr_nm;
@@ -378,7 +383,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
 	if (client->m_cJobType == 'R') {
         uint32_t diaNumber=1;   // DB 실시간 STT 테이블에 저장될 호(Call)단위 Index 값
         Fvad *vad = NULL;
-        int vadres;
+        int vadres, before_vadres;
         int aDianum;
 
         vad = fvad_new();
@@ -410,12 +415,14 @@ void VRClient::thrdRxProcess(VRClient* client) {
 
         // write wav heaer to file(mmap);
         vBuff.clear();
-        sframe = 0;
-        eframe = 0;
+        client->rx_sframe = 0;
+        client->rx_eframe = 0;
+        client->rx_hold = 0;
         aDianum = 0;
         totalVoiceDataLen = 0;
         svr_nm = "DEFAULT";
 
+        vadres = before_vadres = 0;
 		while (search->getRxState())//(client->m_nLiveFlag)
 		{
 			while (!client->m_qRXQue.empty()) {
@@ -471,14 +478,20 @@ void VRClient::thrdRxProcess(VRClient* client) {
                 posBuf = 0;
                 while ((item->lenVoiceData >= framelen) && ((item->lenVoiceData - posBuf) >= framelen)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
-                    eframe += (client->m_framelen/8);
+
+                    // for channel sync
+                    while (client->tx_eframe < client->rx_eframe) {
+                        if ( client->tx_hold ) break;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
+
+                    client->rx_eframe += (client->m_framelen/8);
+
                     // Convert the read samples to int16
                     vadres = fvad_process(vad, (const int16_t *)vpBuf, client->m_framelen);
 
-                    //client->m_Logger->debug("VRClient::thrdMain(%s) - SUB WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
-
                     if (vadres < 0) {
-                        //client->m_Logger->error("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
+                        //client->m_Logger->error("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), client->rx_sframe[item->spkNo-1], client->rx_eframe[item->spkNo-1]);
                         continue;
                     }
 
@@ -491,11 +504,61 @@ void VRClient::thrdRxProcess(VRClient* client) {
                     
                     if (!vadres && (vBuff.size()<=nHeadLen)) {
                         // start ms
-                        sframe = eframe - 20;
+                        client->rx_sframe = client->rx_eframe - (client->m_framelen/8);//20;
+                    }
+#ifdef DEBUGING
+                    if (vadres && !before_vadres) {
+                        // 음성 시작 점 - Voice Active Detection Poing
+                        std::string filename = client->m_sCallId + std::string("_vadpoint_r.txt");
+                        std::ofstream pcmFile;
+
+                        pcmFile.open(filename, ios::out | ios::app);
+                        if (pcmFile.is_open()) {
+                            pcmFile << client->rx_sframe << " ";
+                            pcmFile.close();
+                        }
                     }
 
-                    if (/*(vBuff.size() > 96000) ||*/ (!vadres && (vBuff.size()>nHeadLen))) {
+                    if (!vadres && before_vadres) {
+                        // 음성 시작 점 - Voice Active Detection Poing
+                        std::string filename = client->m_sCallId + std::string("_vadpoint_r.txt");
+                        std::ofstream pcmFile;
+
+                        pcmFile.open(filename, ios::out | ios::app);
+                        if (pcmFile.is_open()) {
+                            pcmFile << client->rx_eframe << std::endl;
+                            pcmFile.close();
+                        }
+                    }
+#endif
+                    if ((client->tx_hold && (client->rx_sframe < client->tx_sframe)) || (!vadres && (vBuff.size()>nHeadLen))) {
+                        if (client->tx_hold) {
+                            client->tx_sframe;
+                            client->tx_eframe;
+
+                        }
                         if (vBuff.size() > 8000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
+#if 0 // VR로 데이터처리 요청 시 처리할 데이터의 sframe, eframe, buff.size 출력
+                            if (1) {
+                                // 음성 시작 점 - Voice Active Detection Poing
+                                std::string filename = client->m_sCallId + std::string("_vadpoint_r.txt");
+                                std::ofstream pcmFile;
+
+                                pcmFile.open(filename, ios::out | ios::app);
+                                if (pcmFile.is_open()) {
+                                    pcmFile << client->rx_sframe << " " << client->rx_eframe << " " << vBuff.size()-nHeadLen << std::endl;
+                                    pcmFile.close();
+                                }
+                            }
+#endif
+
+                            if (!client->tx_hold) {
+                                client->rx_hold = 1;
+                                while (client->rx_hold) {
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                                }
+                            }
+
                             // send buff to gearman
                             if (aDianum == 0) {
                                 sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
@@ -506,16 +569,16 @@ void VRClient::thrdRxProcess(VRClient* client) {
                             for(size_t i=0; i<strlen(buf); i++) {
                                 vBuff[i] = buf[i];
                             }
-                            //client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
-                            auto d1 = std::chrono::high_resolution_clock::now();
+                            //client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), client->rx_sframe[item->spkNo-1], client->rx_eframe[item->spkNo-1]);
+
+                            // auto d1 = std::chrono::high_resolution_clock::now();
                             value= gearman_client_do(gearClient, "vr_realtime", NULL, 
                                                             (const void*)&vBuff[0], vBuff.size(),
                                                             &result_size, &rc);
                                                             
                             aDianum++;
-                            auto d2 = std::chrono::high_resolution_clock::now();
-                            // std::chrono::duration_cast<std::chrono::miliseconds>(d2-d1).count()
-                            client->m_Logger->debug("VRClient::thrdRxProcess(%s) - stt working msecs(%d)", client->m_sCallId.c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(d2-d1).count());
+                            // auto d2 = std::chrono::high_resolution_clock::now();
+                            // client->m_Logger->debug("VRClient::thrdRxProcess(%s) - stt working msecs(%d)", client->m_sCallId.c_str(), std::chrono::duration_cast<std::chrono::milliseconds>(d2-d1).count());
                             
                             if (gearman_success(rc))
                             {
@@ -560,8 +623,8 @@ void VRClient::thrdRxProcess(VRClient* client) {
                                             d.AddMember("IDX", diaNumber, alloc);
                                             d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
                                             d.AddMember("SPK", rapidjson::Value("R", alloc).Move(), alloc);
-                                            d.AddMember("POS_START", sframe/10, alloc);
-                                            d.AddMember("POS_END", eframe/10, alloc);
+                                            d.AddMember("POS_START", client->rx_sframe/10, alloc);
+                                            d.AddMember("POS_END", client->rx_eframe/10, alloc);
                                             d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
 
                                             rapidjson::StringBuffer strbuf;
@@ -583,12 +646,12 @@ void VRClient::thrdRxProcess(VRClient* client) {
 #endif
                                     // to DB
                                     if (client->m_s2d) {
-                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe/10, eframe/10, modValue);
+                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, client->rx_sframe/10, client->rx_eframe/10, modValue);
                                     }
                                     //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                                     // to STTDeliver(file)
                                     if (client->m_deliver) {
-                                        client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, sframe/10, eframe/10);
+                                        client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, client->rx_sframe/10, client->rx_eframe/10);
                                     }
 
                                     free(value);
@@ -596,7 +659,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
                                 }
                             }
                             else if (gearman_failed(rc)){
-                                client->m_Logger->error("VRClient::thrdRxProcess(%s) - failed gearman_client_do(). [%lu : %lu], timeout(%d)", client->m_sCallId.c_str(), sframe, eframe, client->m_nGearTimeout);
+                                client->m_Logger->error("VRClient::thrdRxProcess(%s) - failed gearman_client_do(). [%lu : %lu], timeout(%d)", client->m_sCallId.c_str(), client->rx_sframe, client->rx_eframe, client->m_nGearTimeout);
                             }
                         }
 
@@ -608,10 +671,12 @@ void VRClient::thrdRxProcess(VRClient* client) {
                             vBuff.push_back(buf[i]);
 
                         }
-                        sframe = eframe;
+                        client->rx_sframe = client->rx_eframe;
                     }
                     
                     posBuf += framelen;
+
+                    before_vadres = vadres;
                 }
 
 				if (!item->flag) {	// 호가 종료되었음을 알리는 flag, 채널 갯수와 flag(0)이 들어온 갯수를 비교해야한다.
@@ -680,8 +745,8 @@ void VRClient::thrdRxProcess(VRClient* client) {
                                     d.AddMember("IDX", diaNumber, alloc);
                                     d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
                                     d.AddMember("SPK", rapidjson::Value("R", alloc).Move(), alloc);
-                                    d.AddMember("POS_START", sframe/10, alloc);
-                                    d.AddMember("POS_END", eframe/10, alloc);
+                                    d.AddMember("POS_START", client->rx_sframe/10, alloc);
+                                    d.AddMember("POS_END", client->rx_eframe/10, alloc);
                                     d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
 
                                     rapidjson::StringBuffer strbuf;
@@ -707,18 +772,18 @@ void VRClient::thrdRxProcess(VRClient* client) {
 #endif
 
                             if (client->m_s2d) {
-                                client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe/10, eframe/10, modValue);
+                                client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, client->rx_sframe/10, client->rx_eframe/10, modValue);
                             }
                             //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                             // to STTDeliver(file)
                             if (client->m_deliver) {
-                                client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, sframe/10, eframe/10);
+                                client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, client->rx_sframe/10, client->rx_eframe/10);
                             }
                             
                         }
                     }
                     else if (gearman_failed(rc)){
-                        client->m_Logger->error("VRClient::thrdRxProcess(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe, eframe, client->m_nGearTimeout);
+                        client->m_Logger->error("VRClient::thrdRxProcess(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), client->rx_sframe, client->rx_eframe, client->m_nGearTimeout);
                     }
 
                     // and clear buff, set msg header
@@ -751,7 +816,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
 				delete item;
 				// 예외 발생 시 처리 내용 : VDCManager의 removeVDC를 호출할 수 있어야 한다. - 이 후 VRClient는 item->flag(0)에 대해서만 처리한다.
 			}
-            //client->m_Logger->debug("VRClient::thrdMain(%s) - WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+            //client->m_Logger->debug("VRClient::thrdMain(%s) - WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), client->rx_sframe[item->spkNo -1], client->rx_eframe[item->spkNo -1], client->m_nGearTimeout);
 			std::this_thread::sleep_for(std::chrono::microseconds(10));//milliseconds(1));
 		}
         
@@ -798,8 +863,6 @@ void VRClient::thrdTxProcess(VRClient* client) {
     uint8_t *vpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff;
-    size_t sframe;
-    size_t eframe;
     uint64_t totalVoiceDataLen;
     size_t framelen;
     std::string svr_nm;
@@ -886,7 +949,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
 	if (client->m_cJobType == 'R') {
         uint32_t diaNumber=1;   // DB 실시간 STT 테이블에 저장될 호(Call)단위 Index 값
         Fvad *vad = NULL;
-        int vadres;
+        int vadres, before_vadres;
         int aDianum;
 
         vad = fvad_new();
@@ -918,12 +981,14 @@ void VRClient::thrdTxProcess(VRClient* client) {
 
         // write wav heaer to file(mmap);
         vBuff.clear();
-        sframe = 0;
-        eframe = 0;
+        client->tx_sframe = 0;
+        client->tx_eframe = 0;
+        client->tx_hold = 0;
         aDianum = 0;
         totalVoiceDataLen = 0;
         svr_nm = "DEFAULT";
 
+        vadres = before_vadres = 0;
 		while (search->getTxState())//(client->m_nLiveFlag)
 		{
 			while (!client->m_qTXQue.empty()) {
@@ -979,14 +1044,20 @@ void VRClient::thrdTxProcess(VRClient* client) {
                 posBuf = 0;
                 while ((item->lenVoiceData >= framelen) && ((item->lenVoiceData - posBuf) >= framelen)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
-                    eframe += (client->m_framelen/8);
+
+                    // for channel sync
+                    while (client->rx_eframe < client->tx_eframe) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
+
+                    client->tx_eframe += (client->m_framelen/8);
                     // Convert the read samples to int16
                     vadres = fvad_process(vad, (const int16_t *)vpBuf, client->m_framelen);
 
-                    //client->m_Logger->debug("VRClient::thrdMain(%s) - SUB WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+                    //client->m_Logger->debug("VRClient::thrdMain(%s) - SUB WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), client->tx_sframe[item->spkNo -1], client->tx_eframe[item->spkNo -1], client->m_nGearTimeout);
 
                     if (vadres < 0) {
-                        //client->m_Logger->error("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
+                        //client->m_Logger->error("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), client->tx_sframe[item->spkNo-1], client->tx_eframe[item->spkNo-1]);
                         continue;
                     }
 
@@ -999,9 +1070,34 @@ void VRClient::thrdTxProcess(VRClient* client) {
                     
                     if (!vadres && (vBuff.size()<=nHeadLen)) {
                         // start ms
-                        sframe = eframe - 20;
+                        client->tx_sframe = client->tx_eframe - (client->m_framelen/8);//20;
                     }
 
+#ifdef DEBUGING
+                    if (vadres && !before_vadres) {
+                        // 음성 시작 점 - Voice Active Detection Poing
+                        std::string filename = client->m_sCallId + std::string("_vadpoint_l.txt");
+                        std::ofstream pcmFile;
+
+                        pcmFile.open(filename, ios::out | ios::app);
+                        if (pcmFile.is_open()) {
+                            pcmFile << client->tx_sframe << " ";
+                            pcmFile.close();
+                        }
+                    }
+
+                    if (!vadres && before_vadres) {
+                        // 음성 시작 점 - Voice Active Detection Poing
+                        std::string filename = client->m_sCallId + std::string("_vadpoint_l.txt");
+                        std::ofstream pcmFile;
+
+                        pcmFile.open(filename, ios::out | ios::app);
+                        if (pcmFile.is_open()) {
+                            pcmFile << client->tx_eframe << std::endl;
+                            pcmFile.close();
+                        }
+                    }
+#endif
                     if (!vadres && (vBuff.size()>nHeadLen)) {
                         if (vBuff.size() > 15000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
                             // send buff to gearman
@@ -1014,7 +1110,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
                             for(size_t i=0; i<strlen(buf); i++) {
                                 vBuff[i] = buf[i];
                             }
-                            //client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), sframe[item->spkNo-1], eframe[item->spkNo-1]);
+                            //client->m_Logger->debug("VRClient::thrdMain(%d, %d, %s)(%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", nHeadLen, item->spkNo, buf, client->m_sCallId.c_str(), vBuff[item->spkNo-1].size(), client->tx_sframe[item->spkNo-1], client->tx_eframe[item->spkNo-1]);
                             value= gearman_client_do(gearClient, "vr_realtime", NULL, 
                                                             (const void*)&vBuff[0], vBuff.size(),
                                                             &result_size, &rc);
@@ -1059,8 +1155,8 @@ void VRClient::thrdTxProcess(VRClient* client) {
                                             d.AddMember("IDX", diaNumber, alloc);
                                             d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
                                             d.AddMember("SPK", rapidjson::Value("R", alloc).Move(), alloc);
-                                            d.AddMember("POS_START", sframe/10, alloc);
-                                            d.AddMember("POS_END", eframe/10, alloc);
+                                            d.AddMember("POS_START", client->tx_sframe/10, alloc);
+                                            d.AddMember("POS_END", client->tx_eframe/10, alloc);
                                             d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
 
                                             rapidjson::StringBuffer strbuf;
@@ -1082,12 +1178,12 @@ void VRClient::thrdTxProcess(VRClient* client) {
 #endif
                                     // to DB
                                     if (client->m_s2d) {
-                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe/10, eframe/10, modValue);
+                                        client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, client->tx_sframe/10, client->tx_eframe/10, modValue);
                                     }
                                     //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                                     // to STTDeliver(file)
                                     if (client->m_deliver) {
-                                        client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, sframe/10, eframe/10);
+                                        client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, client->tx_sframe/10, client->tx_eframe/10);
                                     }
 
                                     free(value);
@@ -1095,7 +1191,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
                                 }
                             }
                             else if (gearman_failed(rc)){
-                                client->m_Logger->error("VRClient::thrdTxProcess(%s) - failed gearman_client_do(). [%lu : %lu], timeout(%d)", client->m_sCallId.c_str(), sframe, eframe, client->m_nGearTimeout);
+                                client->m_Logger->error("VRClient::thrdTxProcess(%s) - failed gearman_client_do(). [%lu : %lu], timeout(%d)", client->m_sCallId.c_str(), client->tx_sframe, client->tx_eframe, client->m_nGearTimeout);
                             }
                         }
 
@@ -1107,10 +1203,12 @@ void VRClient::thrdTxProcess(VRClient* client) {
                             vBuff.push_back(buf[i]);
 
                         }
-                        sframe = eframe;
+                        client->tx_sframe = client->tx_eframe;
                     }
                     
                     posBuf += framelen;
+
+                    before_vadres = vadres;
                 }
 
 				if (!item->flag) {	// 호가 종료되었음을 알리는 flag, 채널 갯수와 flag(0)이 들어온 갯수를 비교해야한다.
@@ -1175,8 +1273,8 @@ void VRClient::thrdTxProcess(VRClient* client) {
                                     d.AddMember("IDX", diaNumber, alloc);
                                     d.AddMember("CALL_ID", rapidjson::Value(client->getCallId().c_str(), alloc).Move(), alloc);
                                     d.AddMember("SPK", rapidjson::Value("R", alloc).Move(), alloc);
-                                    d.AddMember("POS_START", sframe/10, alloc);
-                                    d.AddMember("POS_END", eframe/10, alloc);
+                                    d.AddMember("POS_START", client->tx_sframe/10, alloc);
+                                    d.AddMember("POS_END", client->tx_eframe/10, alloc);
                                     d.AddMember("VALUE", rapidjson::Value(utf_buf, alloc).Move(), alloc);
 
                                     rapidjson::StringBuffer strbuf;
@@ -1198,18 +1296,18 @@ void VRClient::thrdTxProcess(VRClient* client) {
 #endif
 
                             if (client->m_s2d) {
-                                client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, sframe/10, eframe/10, modValue);
+                                client->m_s2d->insertSTTData(diaNumber, client->m_sCallId, item->spkNo, client->tx_sframe/10, client->tx_eframe/10, modValue);
                             }
                             //STTDeliver::instance(client->m_Logger)->insertSTT(client->m_sCallId, std::string((const char*)value), item->spkNo, vPos[item->spkNo -1].bpos, vPos[item->spkNo -1].epos);
                             // to STTDeliver(file)
                             if (client->m_deliver) {
-                                client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, sframe/10, eframe/10);
+                                client->m_deliver->insertSTT(client->m_sCallId, modValue, item->spkNo, client->tx_sframe/10, client->tx_eframe/10);
                             }
                             
                         }
                     }
                     else if (gearman_failed(rc)){
-                        client->m_Logger->error("VRClient::thrdTxProcess(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe, eframe, client->m_nGearTimeout);
+                        client->m_Logger->error("VRClient::thrdTxProcess(%s) - failed gearman_client_do(). [%d : %d], timeout(%d)", client->m_sCallId.c_str(), client->tx_sframe, client->tx_eframe, client->m_nGearTimeout);
                     }
 
                     // and clear buff, set msg header
@@ -1241,7 +1339,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
 				delete item;
 				// 예외 발생 시 처리 내용 : VDCManager의 removeVDC를 호출할 수 있어야 한다. - 이 후 VRClient는 item->flag(0)에 대해서만 처리한다.
 			}
-            //client->m_Logger->debug("VRClient::thrdMain(%s) - WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), sframe[item->spkNo -1], eframe[item->spkNo -1], client->m_nGearTimeout);
+            //client->m_Logger->debug("VRClient::thrdMain(%s) - WHILE... [%d : %d], timeout(%d)", client->m_sCallId.c_str(), client->tx_sframe[item->spkNo -1], client->tx_eframe[item->spkNo -1], client->m_nGearTimeout);
 			std::this_thread::sleep_for(std::chrono::microseconds(10));//milliseconds(1));
 		}
         
