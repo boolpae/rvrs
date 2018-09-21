@@ -116,6 +116,7 @@ private:
     size_t rx_eframe;
     size_t tx_sframe;
     size_t tx_eframe;
+	uint8_t syncBreak;
 
 	uint8_t rx_hold;
 	uint8_t tx_hold;

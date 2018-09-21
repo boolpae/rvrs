@@ -62,7 +62,8 @@
 #define WAVE_FORMAT_MPEG         0X0050;
 #define WAVE_FORMAT_EXTENSIBLE   0XFFFE;
 
-
+#define CHANNEL_SYNC
+//#define DIAL_SYNC
 
 typedef struct
 {
@@ -155,6 +156,7 @@ VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gea
     rx_eframe=0;
     tx_sframe=0;
     tx_eframe=0;
+    syncBreak = 0;
 
     rx_hold = 0;
     tx_hold = 0;
@@ -297,8 +299,10 @@ void VRClient::thrdRxProcess(VRClient* client) {
     uint8_t *vpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff;
+#ifdef DIAL_SYNC_N_BUFF_CTRL
     std::vector<uint8_t> vTempBuff;
     std::vector<uint8_t>::iterator vIter;
+#endif
     uint64_t totalVoiceDataLen;
     size_t framelen;
     std::string svr_nm;
@@ -480,13 +484,18 @@ void VRClient::thrdRxProcess(VRClient* client) {
                 posBuf = 0;
                 while ((item->lenVoiceData >= framelen) && ((item->lenVoiceData - posBuf) >= framelen)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
-
+#ifdef CHANNEL_SYNC
                     // for channel sync
                     while (client->tx_eframe < client->rx_eframe) {
-                        if ( client->tx_hold ) break;
+                        if ( 
+                            client->syncBreak ||
+#ifdef DIAL_SYNC
+                            client->tx_hold || 
+#endif
+                            !item->flag) break;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
-
+#endif
                     client->rx_eframe += (client->m_framelen/8);
 
                     // Convert the read samples to int16
@@ -533,13 +542,21 @@ void VRClient::thrdRxProcess(VRClient* client) {
                         }
                     }
 #endif
-                    if ((client->tx_hold && (client->rx_sframe < client->tx_sframe)) || (!vadres && (vBuff.size()>nHeadLen))) {
-                        if (client->tx_hold) {
-                            vTempBuff.clear();
-                            vTempBuff.assign(vBuff.begin() + (((client->tx_sframe - client->rx_sframe) * 16) + nHeadLen), vBuff.end());
-                            vBuff.erase(vBuff.begin() + (((client->tx_sframe - client->rx_sframe) * 16) + nHeadLen), vBuff.end());
+                    if (
+                        client->tx_hold ||
+#ifdef DIAL_SYNC_N_BUFF_CTRL
+                        (client->tx_hold && (client->rx_sframe < client->tx_sframe)) || 
+#endif
+                        (!vadres && (vBuff.size()>nHeadLen))) {
+#ifdef DIAL_SYNC_N_BUFF_CTRL
+                        vTempBuff.clear();
+                        if ((vBuff.size() > 15000) && client->tx_hold && (client->rx_sframe < client->tx_sframe)) {
+                            size_t offset = (((client->tx_sframe - client->rx_sframe) * 16) + nHeadLen);
+                            vTempBuff.assign(vBuff.begin() + offset, vBuff.end());
+                            vBuff.erase(vBuff.begin() + offset, vBuff.end());
                         }
-                        if (vBuff.size() > 8000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
+#endif
+                        if (vBuff.size() > 15000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
 #if 0 // VR로 데이터처리 요청 시 처리할 데이터의 sframe, eframe, buff.size 출력
                             if (1) {
                                 // 음성 시작 점 - Voice Active Detection Poing
@@ -554,13 +571,14 @@ void VRClient::thrdRxProcess(VRClient* client) {
                             }
 #endif
 
+#ifdef DIAL_SYNC
                             if (!client->tx_hold) {
                                 client->rx_hold = 1;
                                 while (client->rx_hold) {
                                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                                 }
                             }
-
+#endif
                             // send buff to gearman
                             if (aDianum == 0) {
                                 sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
@@ -677,9 +695,11 @@ void VRClient::thrdRxProcess(VRClient* client) {
 
                         if (client->tx_hold) {
                             client->tx_hold = 0;
+#ifdef DIAL_SYNC_N_BUFF_CTRL
                             for(vIter=vTempBuff.begin(); vIter!=vTempBuff.end(); vIter++) {
                                 vBuff.push_back(*vIter);
                             }
+#endif
                         }
                     }
                     
@@ -817,6 +837,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
                     }
 
                     search->setRxState(0);//client->m_RxState = 0;
+                    client->syncBreak = 1;
                     client->m_Logger->debug("VRClient::thrdRxProcess(%s) - FINISH CALL.(%d)", client->m_sCallId.c_str(), search->getRxState());
                     break;
 				}
@@ -872,8 +893,10 @@ void VRClient::thrdTxProcess(VRClient* client) {
     uint8_t *vpBuf = NULL;
     size_t posBuf = 0;
     std::vector<uint8_t> vBuff;
+#ifdef DIAL_SYNC_N_BUFF_CTRL
     std::vector<uint8_t> vTempBuff;
     std::vector<uint8_t>::iterator vIter;
+#endif
     uint64_t totalVoiceDataLen;
     size_t framelen;
     std::string svr_nm;
@@ -1055,13 +1078,18 @@ void VRClient::thrdTxProcess(VRClient* client) {
                 posBuf = 0;
                 while ((item->lenVoiceData >= framelen) && ((item->lenVoiceData - posBuf) >= framelen)) {
                     vpBuf = (uint8_t *)(item->voiceData+posBuf);
-
+#ifdef CHANNEL_SYNC
                     // for channel sync
                     while (client->rx_eframe < client->tx_eframe) {
-                        if ( client->rx_hold ) break;
+                        if (
+                            client->syncBreak ||
+#ifdef DIAL_SYNC 
+                            client->rx_hold || 
+#endif
+                            !item->flag) break;
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
-
+#endif
                     client->tx_eframe += (client->m_framelen/8);
 
                     // Convert the read samples to int16
@@ -1108,12 +1136,20 @@ void VRClient::thrdTxProcess(VRClient* client) {
                         }
                     }
 #endif
-                    if ((client->rx_hold && (client->tx_sframe < client->rx_sframe)) || (!vadres && (vBuff.size()>nHeadLen))) {
-                        if (client->rx_hold) {
-                            vTempBuff.clear();
-                            vTempBuff.assign(vBuff.begin() + (((client->rx_sframe - client->tx_sframe) * 16) + nHeadLen), vBuff.end());
-                            vBuff.erase(vBuff.begin() + (((client->rx_sframe - client->tx_sframe) * 16) + nHeadLen), vBuff.end());
+                    if (
+                        client->rx_hold ||
+#ifdef DIAL_SYNC_N_BUFF_CTRL
+                        (client->rx_hold && (client->tx_sframe < client->rx_sframe)) || 
+#endif
+                        (!vadres && (vBuff.size()>nHeadLen))) {
+#ifdef DIAL_SYNC_N_BUFF_CTRL
+                        vTempBuff.clear();
+                        if ((vBuff.size() > 15000) && client->rx_hold && (client->tx_sframe < client->rx_sframe)) {
+                            size_t offset = (((client->rx_sframe - client->tx_sframe) * 16) + nHeadLen);
+                            vTempBuff.assign(vBuff.begin() + offset, vBuff.end());
+                            vBuff.erase(vBuff.begin() + offset, vBuff.end());
                         }
+#endif
                         if (vBuff.size() > 15000) {   // 8000 bytes, 0.5 이하의 음성데이터는 처리하지 않음
 #if 0 // VR로 데이터처리 요청 시 처리할 데이터의 sframe, eframe, buff.size 출력
                             if (1) {
@@ -1129,13 +1165,14 @@ void VRClient::thrdTxProcess(VRClient* client) {
                             }
 #endif
 
+#ifdef DIAL_SYNC
                             if (!client->rx_hold) {
                                 client->tx_hold = 1;
                                 while (client->tx_hold) {
                                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                                 }
                             }
-
+#endif
                             // send buff to gearman
                             if (aDianum == 0) {
                                 sprintf(buf, "%s_%d|%s|", client->m_sCallId.c_str(), item->spkNo, "FIRS");
@@ -1243,9 +1280,11 @@ void VRClient::thrdTxProcess(VRClient* client) {
 
                         if (client->rx_hold) {
                             client->rx_hold = 0;
+#ifdef DIAL_SYNC_N_BUFF_CTRL
                             for(vIter=vTempBuff.begin(); vIter!=vTempBuff.end(); vIter++) {
                                 vBuff.push_back(*vIter);
                             }
+#endif
                         }
                     }
                     
@@ -1374,6 +1413,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
                         }
                     }
                     search->setTxState(0);// client->m_TxState = 0;
+                    client->syncBreak = 1;
                     client->m_Logger->debug("VRClient::thrdTxProcess(%s) - FINISH CALL.(%d)", client->m_sCallId.c_str(), search->getTxState());
                     break;
 				}
