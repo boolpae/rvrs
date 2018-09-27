@@ -37,6 +37,37 @@ class JobInfoItem {
     std::string getTableName() { return m_tableName; }
 };
 
+#ifdef USE_UPDATE_POOL
+class UpdateInfoItem {
+private:
+    std::string callid;
+    std::string rxtx;
+    std::string counselorcode;
+    char state;
+    int fsize;
+    int plen;
+    int wtime;
+    std::string tbName;
+    std::string errcode;
+    std::string svr_nm;
+public:
+    UpdateInfoItem(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode, const char *svr_nm);
+    virtual ~UpdateInfoItem();
+
+    std::string getCallId() { return callid; }
+    std::string getRxTx() { return rxtx; }
+    std::string getCounselorCode() { return counselorcode; }
+    char getState() { return state; }
+    int getFileSize() { return fsize; }
+    int getPlayLength() { return plen; }
+    int getWorkingTime() { return wtime; }
+    std::string getTableName() { return tbName;}
+    std::string getErrCode() { return errcode ;}
+    std::string getServerName() { return svr_nm; }
+
+};
+#endif
+
 class RTSTTQueItem {
     uint32_t m_nDiaIdx;
 	std::string m_sCallId;
@@ -110,6 +141,9 @@ private:
     DBHandler(std::string dsn, int connCount);
 	static void thrdMain(DBHandler* s2d);
 	void insertSTTData(RTSTTQueItem* item);
+#ifdef USE_UPDATE_POOL
+    static void thrdUpdate(DBHandler* handle);
+#endif
 
 private:
     std::string m_sDsn;
@@ -120,6 +154,11 @@ private:
 
 	std::queue< RTSTTQueItem* > m_qRtSttQue;
 	std::thread m_thrd;
+#ifdef USE_UPDATE_POOL
+    std::queue< UpdateInfoItem* > m_qUpdateInfoQue;
+    std::thread m_thrdUpdate;
+    mutable std::mutex m_mxUpdateQue;
+#endif
 	mutable std::mutex m_mxQue;
 	mutable std::mutex m_mxDb;
     log4cpp::Category *m_Logger;
@@ -129,6 +168,10 @@ private:
 
     static DBHandler* m_instance;
 
+    static bool m_bThrdMain;
+#ifdef USE_UPDATE_POOL
+    static bool m_bThrdUpdate;
+#endif
 };
 
 

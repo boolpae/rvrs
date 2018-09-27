@@ -41,6 +41,10 @@ static int extract_error(const char *fn, SQLHANDLE handle, SQLSMALLINT type)
 }
 
 DBHandler* DBHandler::m_instance = nullptr;
+#ifdef USE_UPDATE_POOL
+bool DBHandler::m_bThrdMain = false;
+bool DBHandler::m_bThrdUpdate = false;
+#endif
 
 DBHandler::DBHandler(std::string dsn,int connCount)
 : m_sDsn(dsn), m_nConnCount(connCount), m_bLiveFlag(true), m_bInterDBUse(false)
@@ -54,7 +58,12 @@ DBHandler::DBHandler(std::string dsn,int connCount)
 DBHandler::~DBHandler()
 {
     m_bLiveFlag = false;
-    while(!m_bLiveFlag) {
+    while(
+        !m_bThrdMain
+#ifdef USE_UPDATE_POOL
+        || !m_bThrdUpdate
+#endif
+        ) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
@@ -67,7 +76,9 @@ DBHandler::~DBHandler()
     }
 
     if (m_thrd.joinable()) m_thrd.detach();
-
+#ifdef USE_UPDATE_POOL
+    if (m_thrdUpdate.joinable()) m_thrdUpdate.detach();
+#endif
     DBHandler::m_instance = nullptr;
 	m_Logger->debug("DBHandler Destructed.\n");
 }
@@ -249,9 +260,80 @@ void DBHandler::thrdMain(DBHandler * s2d)
     if (DBHandler::getInstance() && connSet)
         s2d->m_pSolDBConnPool->restoreConnection(connSet);
 
-    s2d->m_bLiveFlag = true;
+    m_bThrdMain = false;
     logger->debug("DBHandler::thrdMain() finish!\n");
 }
+
+#ifdef USE_UPDATE_POOL
+void DBHandler::thrdUpdate(DBHandler *s2d)
+{
+	std::lock_guard<std::mutex> *g;
+	UpdateInfoItem* item;
+    log4cpp::Category *logger;
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    char timebuff [32];
+    int ret=0;
+    char sqlbuff[512];
+    SQLRETURN retcode;
+
+    logger = config->getLogger();
+    PConnSet connSet = s2d->m_pSolDBConnPool->getConnection();//ConnectionPool_getConnection(s2d->m_pool);
+
+	while (s2d->m_bLiveFlag) {
+		while (!s2d->m_qUpdateInfoQue.empty()) {
+			g = new std::lock_guard<std::mutex>(s2d->m_mxUpdateQue);
+			item = s2d->m_qUpdateInfoQue.front();
+			s2d->m_qUpdateInfoQue.pop();
+			delete g;
+
+            time (&rawtime);
+            timeinfo = localtime (&rawtime);
+
+            strftime (timebuff,sizeof(timebuff),"%F %T",timeinfo);
+            //sprintf(sqlbuff, "UPDATE TBL_JOB_INFO SET STATE='%c' WHERE CALL_ID='%s' AND CS_CODE='%s'",
+            //    state, callid.c_str(), counselorcode.c_str());
+            if (item->getErrCode().size()) {
+                // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',ERR_CD='%s' WHERE CALL_ID='%s' AND RCD_TP='%s'",
+                //     tbName, state, errcode, callid.c_str(), rxtx.c_str());
+                sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','%s','%d','%d','%d','%c','%s','%s')",
+                    item->getCallId().c_str(), item->getRxTx().c_str(), item->getServerName().c_str(), item->getPlayLength(), item->getFileSize(), item->getWorkingTime(), item->getState(), item->getErrCode().c_str(), timebuff);
+            }
+            else {
+                // sprintf(sqlbuff, "UPDATE %s SET STATE='%c',FILE_SIZE=%d,REC_LENGTH=%d,WORKING_TIME=%d WHERE CALL_ID='%s' AND RCD_TP='%s'",
+                //     tbName, state, fsize, plen, wtime, callid.c_str(), rxtx.c_str());
+                sprintf(sqlbuff, "CALL PROC_JOB_STATISTIC_DAILY('%s','%s','%s','%d','%d','%d','%c','','%s')",
+                    item->getCallId().c_str(), item->getRxTx().c_str(), item->getServerName().c_str(), item->getPlayLength(), item->getFileSize(), item->getWorkingTime(), item->getState(), timebuff);
+            }
+
+            retcode = SQLExecDirect(connSet->stmt, (SQLCHAR *)sqlbuff, SQL_NTS);
+
+            if SQL_SUCCEEDED(retcode) {
+                logger->debug("DBHandler::thrdUpdate() - Query<%s>", sqlbuff);
+            }
+            else {
+                int odbcret = extract_error("DBHandler::thrdUpdate() - SQLExecDirect()", connSet->stmt, SQL_HANDLE_STMT);
+                if (odbcret == 2006) {
+                    s2d->m_pSolDBConnPool->reconnectConnection(connSet);
+                }
+                ret = 1;
+            }
+			delete item;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        //printf("DBHandler::thrdMain()\n");
+	}
+
+    if (DBHandler::getInstance() && connSet) {
+        retcode = SQLCloseCursor(connSet->stmt);
+        s2d->m_pSolDBConnPool->restoreConnection(connSet);
+    }
+
+    m_bThrdUpdate = false;
+    logger->debug("DBHandler::thrdUpdate() finish!\n");
+}
+#endif
 
 DBHandler* DBHandler::instance(std::string dsn, int connCount=10)
 {
@@ -264,6 +346,11 @@ DBHandler* DBHandler::instance(std::string dsn, int connCount=10)
     if (m_instance->m_pSolDBConnPool->createConnections(connCount))
     {
         m_instance->m_thrd = std::thread(DBHandler::thrdMain, m_instance);
+        m_bThrdMain = true;
+#ifdef USE_UPDATE_POOL
+        m_instance->m_thrdUpdate = std::thread(DBHandler::thrdUpdate, m_instance);
+        m_bThrdUpdate = true;
+#endif
     }
     else
     {
@@ -596,13 +683,17 @@ int DBHandler::insertTaskInfoRT(std::string downloadPath, std::string filename, 
 // args: call_id, counselor_code, task_stat etc
 int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode, const char *svr_nm)
 {
+    int ret=0;
+#ifdef USE_UPDATE_POOL
+	std::lock_guard<std::mutex> g(m_mxUpdateQue);
+	m_qUpdateInfoQue.push(new UpdateInfoItem(callid, rxtx, counselorcode, state, fsize, plen, wtime, tbName, errcode, svr_nm));
+#else
     // for strftime
     time_t rawtime;
     struct tm * timeinfo;
     char timebuff [32];
     // Connection_T con;
     PConnSet connSet = m_pSolDBConnPool->getConnection();
-    int ret=0;
     char sqlbuff[512];
     SQLRETURN retcode;
 
@@ -648,7 +739,7 @@ int DBHandler::updateTaskInfo(std::string callid, std::string rxtx, std::string 
         m_Logger->error("DBHandler::updateTaskInfo - can't get connection from pool");
         ret = -1;
     }
-
+#endif
     return ret;
 }
 
@@ -1015,3 +1106,16 @@ JobInfoItem::~JobInfoItem()
 {
 
 }
+
+#ifdef USE_UPDATE_POOL
+UpdateInfoItem::UpdateInfoItem(std::string callid, std::string rxtx, std::string counselorcode, char state, int fsize, int plen, int wtime, const char *tbName, const char *errcode, const char *svr_nm)
+: callid(callid), rxtx(rxtx), counselorcode(counselorcode), state(state), fsize(fsize), plen(plen), wtime(wtime), tbName(tbName), errcode(errcode), svr_nm(svr_nm)
+{
+
+}
+
+UpdateInfoItem::~UpdateInfoItem()
+{
+
+}
+#endif
