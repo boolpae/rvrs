@@ -62,8 +62,8 @@
 #define WAVE_FORMAT_MPEG         0X0050;
 #define WAVE_FORMAT_EXTENSIBLE   0XFFFE;
 
-#define CHANNEL_SYNC
-//#define DIAL_SYNC
+//#define CHANNEL_SYNC    // 두 화자 간의 음성 데이터 처리 속도를 맞추기 위한 정의
+//#define DIAL_SYNC       // 두 화자 간의 대화 내용을 맞추기 위한 정의(CHANNEL_SYNC가 이미 정의되어야 한다.)
 
 typedef struct
 {
@@ -493,6 +493,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
                             client->tx_hold || 
 #endif
                             !item->flag) break;
+                        // client->m_Logger->error("VRClient::thrdRxProcess syncBreak(%d), tx_hold(%d), flag(%d) (%s) - send buffer buff_len(%lu), spos(%lu), epos(%lu)", client->syncBreak, client->tx_hold, item->flag, client->m_sCallId.c_str());
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
 #endif
@@ -575,6 +576,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
                             if (!client->tx_hold) {
                                 client->rx_hold = 1;
                                 while (client->rx_hold) {
+                                    if (!item->flag) break;
                                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                                 }
                             }
@@ -1169,6 +1171,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
                             if (!client->rx_hold) {
                                 client->tx_hold = 1;
                                 while (client->tx_hold) {
+                                    if (!item->flag) break;
                                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                                 }
                             }
