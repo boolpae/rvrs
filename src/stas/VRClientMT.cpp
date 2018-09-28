@@ -163,8 +163,11 @@ VRClient::VRClient(VRCManager* mgr, string& gearHost, uint16_t gearPort, int gea
     //thrd.detach();
 	//printf("\t[DEBUG] VRClinetMT Constructed.\n");
 	m_thrd = std::thread(VRClient::thrdMain, this);
+    m_thrd.detach();
 	m_thrdRx = std::thread(VRClient::thrdRxProcess, this);
+    m_thrdRx.detach();
 	m_thrdTx = std::thread(VRClient::thrdTxProcess, this);
+    m_thrdTx.detach();
 
     m_Logger = config->getLogger();
     m_Logger->debug("VRClinetMT Constructed.");
@@ -278,7 +281,7 @@ void VRClient::thrdMain(VRClient* client) {
 
 	WorkTracer::instance()->insertWork(client->m_sCallId, client->m_cJobType, WorkQueItem::PROCTYPE::R_FREE_WORKER);
 
-	client->m_thrd.detach();
+	// client->m_thrd.detach();
 	delete client;
 }
 
@@ -364,7 +367,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
 
         search->setRxState(0);//client->m_RxState = 0;
         // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        client->m_thrdRx.detach();
+        // client->m_thrdRx.detach();
         // delete client;
         return;
     }
@@ -379,7 +382,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
 
         search->setRxState(0);// client->m_RxState = 0;
         // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        client->m_thrdRx.detach();
+        // client->m_thrdRx.detach();
         // delete client;
         return;
     }
@@ -400,7 +403,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
             search->setRxState(0);// client->m_RxState = 0;
             // std::this_thread::sleep_for(std::chrono::milliseconds(1));
             gearman_client_free(gearClient);
-            client->m_thrdRx.detach();
+            // client->m_thrdRx.detach();
             // delete client;
             return;
         }
@@ -874,7 +877,7 @@ void VRClient::thrdRxProcess(VRClient* client) {
     // search->setRxState(0);// client->m_RxState = 0;
     // client->m_Logger->debug("VRClient::thrdRxProcess(%s) - RxState(%d)", client->m_sCallId.c_str(), search->getRxState());
     // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	client->m_thrdRx.detach();
+	// client->m_thrdRx.detach();
 	// delete client;
 }
 
@@ -960,7 +963,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
 
         search->setTxState(0);// client->m_TxState = 0;
         // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        client->m_thrdTx.detach();
+        // client->m_thrdTx.detach();
         // delete client;
         return;
     }
@@ -975,7 +978,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
 
         search->setTxState(0);//// client->m_TxState = 0;
         // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        client->m_thrdTx.detach();
+        // client->m_thrdTx.detach();
         // delete client;
         return;
     }
@@ -996,7 +999,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
             search->setTxState(0);// client->m_TxState = 0;
             // std::this_thread::sleep_for(std::chrono::milliseconds(1));
             gearman_client_free(gearClient);
-            client->m_thrdTx.detach();
+            // client->m_thrdTx.detach();
             // delete client;
             return;
         }
@@ -1451,7 +1454,7 @@ void VRClient::thrdTxProcess(VRClient* client) {
     // search->setTxState(0);// client->m_TxState = 0;
     // client->m_Logger->debug("VRClient::thrdTxProcess(%s) - TxState(%d)", client->m_sCallId.c_str(), search->getTxState());
     // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	client->m_thrdTx.detach();
+	// client->m_thrdTx.detach();
 }
 
 void VRClient::insertQueItem(QueItem* item)
