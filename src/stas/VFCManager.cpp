@@ -229,7 +229,7 @@ void VFCManager::outputVFCStat()
 	}
 #endif
     if ( m_mWorkerTable.size() )
-        m_Logger->info("VFCManager::outputVRCStat() - Current working VFClient count(%d)", m_mWorkerTable.size());
+        m_Logger->debug("VFCManager::outputVRCStat() - Current working VFClient count(%d)", m_mWorkerTable.size());
 
 }
 
