@@ -119,6 +119,7 @@ int Configuration::configure(const int argc, const char *argv[]) {
 	std::string verbose;
 	std::string config_file;
 	std::string log_file;
+	std::string pid_file;
 
 	// 파라미터 분석 
 	options_description desc("Options");
@@ -135,6 +136,8 @@ int Configuration::configure(const int argc, const char *argv[]) {
 			"Number of threads to use")
 		("config-file,i", value<std::string>(&config_file),
 			"Configuration file, Read a file to configure")
+		("pid-file,P", value<std::string>(&pid_file),
+			"Process-ID file, Write a Process ID")
 		("log-file,l", value<std::string>(&log_file),
 			"Log file to write errors and information. "
 			"If this parameter is not setting(including configuration file if you set), "
@@ -225,6 +228,19 @@ int Configuration::configure(const int argc, const char *argv[]) {
 		fclose(stdout);
 		fclose(stderr);
 		setsid();
+	}
+
+	if (vm.count("pid-file")) {
+		//std::cout << "PIDFILE(" << pid_file << ") PID(" << getpid() << ")" << std::endl;
+		std::fstream fs;
+		fs.open(pid_file, std::fstream::out | std::fstream::trunc);
+		if (fs.is_open()) {
+			fs << getpid();
+			fs.close();
+		}
+		else
+			std::cout << "PIDFILE(" << pid_file << ") PID(" << getpid() << ")" << std::endl;
+
 	}
 
 	return EXIT_SUCCESS;
